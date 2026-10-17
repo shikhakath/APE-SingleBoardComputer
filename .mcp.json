@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "altium": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["${USERPROFILE}/mcp-servers/altium-mcp/start_server.py"]
+    }
+  }
+}
