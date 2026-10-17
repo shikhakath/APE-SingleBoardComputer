@@ -1,0 +1,239 @@
+\t (00:00:06) allegro 24.1 S004 (4290201) [4/17/2025] Windows SPB 64-bit Edition
+\t (00:00:06)     Journal start - Thu Apr  2 15:58:48 2026
+\t (00:00:06)         Host=LT5CD2219V5Y User=x1138897 Pid=20540 CPUs=8
+\t (00:00:06) CmdLine= c:\cadence\spb_24.1\tools\bin\allegro.exe C:\Users\x1138897\Deepak\SK-AM62B-P1\spar001a\PROC142A\3_BoardFile\Allegro\PROC142A_BRD.brd
+\t (00:00:06) 
+\t (00:00:06) Loading axlcore.cxt 
+\t (00:00:09) Opening existing design...
+\i (00:00:11) fillin yes 
+\w (00:00:11) WARNING(SPMHDB-213): DRC set to "out of date". The current product selection supports a different DRC capability than what is saved in the design.
+\i (00:00:12) QtSignal SPBFoldDockArea FoldAreaTabWidget currentChanged "PROC142A_BRD"
+\d (00:00:12) Design opened: C:/Users/x1138897/Deepak/SK-AM62B-P1/spar001a/PROC142A/3_BoardFile/Allegro/PROC142A_BRD.brd
+\i (00:00:12) trapsize 734
+\i (00:00:12) trapsize 754
+\i (00:00:12) trapsize 734
+\i (00:00:12) trapsize 862
+\i (00:00:13) generaledit 
+\i (00:00:19) zoom out 1 
+\i (00:00:19) setwindow pcb
+\i (00:00:19) zoom out -298.54 3042.89
+\i (00:00:19) trapsize 1724
+\i (00:00:20) zoom out 1 
+\i (00:00:20) setwindow pcb
+\i (00:00:20) zoom out -464.03 3070.47
+\i (00:00:20) trapsize 3448
+\i (00:00:20) zoom out 1 
+\i (00:00:20) setwindow pcb
+\i (00:00:20) zoom out -553.68 3098.06
+\i (00:00:20) trapsize 6895
+\i (00:00:20) zoom in 1 
+\i (00:00:20) setwindow pcb
+\i (00:00:20) zoom in 1652.88 3884.14
+\i (00:00:20) trapsize 3448
+\i (00:00:20) zoom in 1 
+\i (00:00:20) setwindow pcb
+\i (00:00:20) zoom in 1652.88 3884.14
+\i (00:00:20) trapsize 1724
+\i (00:00:24) QtSignal ColorVisibilityPane CVPViewDropdown CurrentIndexChanged "Film: VIEW_BOTH"
+\i (00:00:25) QtSignal ColorVisibilityPane CVPViewDropdown activated "Film: VIEW_BOTH"
+\i (00:00:26) zoom in 1 
+\i (00:00:26) setwindow pcb
+\i (00:00:26) zoom in 1049.53 3480.76
+\i (00:00:26) trapsize 862
+\i (00:00:26) zoom in 1 
+\i (00:00:26) setwindow pcb
+\i (00:00:26) zoom in 1049.53 3480.76
+\i (00:00:26) trapsize 431
+\i (00:00:26) zoom in 1 
+\i (00:00:26) setwindow pcb
+\i (00:00:26) zoom in 1048.68 3480.76
+\i (00:00:26) trapsize 215
+\i (00:00:27) zoom in 1 
+\i (00:00:27) setwindow pcb
+\i (00:00:27) zoom in 1037.47 3567.39
+\i (00:00:27) trapsize 108
+\i (00:00:27) zoom in 1 
+\i (00:00:27) setwindow pcb
+\i (00:00:27) zoom in 1037.47 3567.40
+\i (00:00:27) trapsize 54
+\i (00:00:31) show measure 
+\i (00:00:33) setwindow form.find
+\i (00:00:33) FORM find pins YES 
+\i (00:00:34) setwindow pcb
+\i (00:00:34) pick grid 1055.79 3564.27
+\t (00:00:34) last pick:  1056.00 3564.00
+\i (00:00:35) pick grid 1074.43 3563.84
+\t (00:00:35) last pick:  1074.00 3564.00
+\i (00:02:49) zoom out 1 
+\i (00:02:49) setwindow pcb
+\i (00:02:49) zoom out 1064.62 3560.93
+\i (00:02:49) trapsize 108
+\i (00:02:50) zoom out 1 
+\i (00:02:50) setwindow pcb
+\i (00:02:50) zoom out 1064.62 3560.94
+\i (00:02:50) trapsize 215
+\i (00:02:50) zoom out 1 
+\i (00:02:50) setwindow pcb
+\i (00:02:50) zoom out 1064.63 3560.93
+\i (00:02:50) trapsize 431
+\i (00:02:50) zoom out 1 
+\i (00:02:50) setwindow pcb
+\i (00:02:50) zoom out 1064.63 3560.94
+\i (00:02:50) trapsize 862
+\i (00:02:50) zoom out 1 
+\i (00:02:50) setwindow pcb
+\i (00:02:50) zoom out 1064.62 3560.93
+\i (00:02:50) trapsize 1724
+\i (00:02:53) setwindow form.find
+\i (00:02:53) FORM find pins NO 
+\i (00:02:55) setwindow pcb
+\i (00:02:55) show element 
+\i (00:02:58) setwindow text
+\i (00:02:58) close
+\i (00:02:59) setwindow text
+\i (00:02:59) close
+\i (00:03:02) setwindow pcb
+\i (00:03:02) show element 
+\i (00:03:04) setwindow text
+\i (00:03:04) close
+\i (00:03:09) setwindow pcb
+\i (00:03:09) cns show 
+\i (00:03:12) show element 
+\i (00:03:13) setwindow form.find
+\i (00:03:13) FORM find components YES 
+\i (00:03:16) setwindow pcb
+\i (00:03:16) pick grid 1050.83 4002.26
+\t (00:03:16) last pick:  1051.00 4002.00
+\i (00:03:21) setwindow text
+\i (00:03:21) close
+\i (00:03:26) setwindow pcb
+\i (00:03:26) pick grid 1074.97 3523.01
+\t (00:03:26) last pick:  1075.00 3523.00
+\i (00:03:29) setwindow text
+\i (00:03:29) close
+\i (00:03:30) setwindow pcb
+\i (00:03:30) pick grid 1071.52 3888.48
+\t (00:03:30) last pick:  1072.00 3888.00
+\i (00:07:09) zoom in 1 
+\i (00:07:09) setwindow pcb
+\t (00:07:09) [16:05:51.467712] Periodic Lic check successful
+[16:05:51.992000] Feature usage summary:
+[16:05:51.992000] Allegro_X_Designer_Layout
+[16:05:51.992000] PCB_design_studio
+[16:05:51.992000] Allegro_performance
+[16:05:51.992000] Allegro_performance_designer
+
+\i (00:07:09) zoom in 1254.26 3874.69
+\i (00:07:09) trapsize 862
+\i (00:07:09) zoom in 1 
+\i (00:07:09) setwindow pcb
+\i (00:07:09) zoom in 1254.26 3874.69
+\i (00:07:09) trapsize 431
+\i (00:07:11) zoom out 1 
+\i (00:07:11) setwindow pcb
+\i (00:07:11) zoom out 1232.72 3890.21
+\i (00:07:11) trapsize 862
+\i (00:07:13) pick grid 637.95 3857.46
+\t (00:07:13) last pick:  638.00 3857.00
+\i (00:07:15) zoom in 1 
+\i (00:07:15) setwindow pcb
+\i (00:07:15) zoom in 1025.84 3878.14
+\i (00:07:15) trapsize 431
+\i (00:07:15) zoom in 1 
+\i (00:07:15) setwindow pcb
+\i (00:07:15) zoom in 1025.84 3878.15
+\i (00:07:15) trapsize 215
+\i (00:07:16) zoom in 1 
+\i (00:07:16) setwindow pcb
+\i (00:07:16) zoom in 1025.84 3878.15
+\i (00:07:16) trapsize 108
+\i (00:07:16) zoom in 1 
+\i (00:07:16) setwindow pcb
+\i (00:07:16) zoom in 1025.84 3878.16
+\i (00:07:16) trapsize 54
+\i (00:07:17) zoom out 1 
+\i (00:07:17) setwindow pcb
+\i (00:07:17) zoom out 1024.65 3881.61
+\i (00:07:17) trapsize 108
+\i (00:07:18) zoom in 1 
+\i (00:07:18) setwindow pcb
+\i (00:07:18) zoom in 1019.91 3895.40
+\i (00:07:18) trapsize 54
+\i (00:07:18) zoom in 1 
+\i (00:07:18) setwindow pcb
+\i (00:07:18) zoom in 1019.91 3895.40
+\i (00:07:18) trapsize 27
+\i (00:07:22) zoom out 1 
+\i (00:07:22) setwindow pcb
+\i (00:07:22) zoom out 1023.57 3887.49
+\i (00:07:22) trapsize 54
+\i (00:07:23) zoom in 1 
+\i (00:07:23) setwindow pcb
+\i (00:07:23) zoom in 1029.28 3877.68
+\i (00:07:23) trapsize 27
+\i (00:07:24) zoom in 1 
+\i (00:07:24) setwindow pcb
+\i (00:07:24) zoom in 1029.29 3877.69
+\i (00:07:24) trapsize 13
+\i (00:07:24) zoom out 1 
+\i (00:07:24) setwindow pcb
+\i (00:07:24) zoom out 1029.29 3877.69
+\i (00:07:24) trapsize 27
+\i (00:07:25) zoom in 1 
+\i (00:07:25) setwindow pcb
+\i (00:07:25) zoom in 1031.17 3877.68
+\i (00:07:25) trapsize 13
+\i (00:07:30) zoom out 1 
+\i (00:07:30) setwindow pcb
+\i (00:07:30) zoom out 1031.20 3877.69
+\i (00:07:30) trapsize 27
+\i (00:07:31) zoom out 1 
+\i (00:07:31) setwindow pcb
+\i (00:07:31) zoom out 1031.19 3877.68
+\i (00:07:31) trapsize 54
+\i (00:07:31) zoom out 1 
+\i (00:07:31) setwindow pcb
+\i (00:07:31) zoom out 1031.19 3877.69
+\i (00:07:31) trapsize 108
+\i (00:07:31) zoom out 1 
+\i (00:07:31) setwindow pcb
+\i (00:07:31) zoom out 1031.20 3877.68
+\i (00:07:31) trapsize 215
+\i (00:07:31) zoom out 1 
+\i (00:07:31) setwindow pcb
+\i (00:07:31) zoom out 1031.19 3877.69
+\i (00:07:31) trapsize 431
+\i (00:07:32) zoom out 1 
+\i (00:07:32) setwindow pcb
+\i (00:07:32) zoom out 1031.19 3877.69
+\i (00:07:32) trapsize 862
+\i (00:07:33) zoom in 1 
+\i (00:07:33) setwindow pcb
+\i (00:07:33) zoom in 1193.22 4020.75
+\i (00:07:33) trapsize 431
+\i (00:07:33) zoom in 1 
+\i (00:07:33) setwindow pcb
+\i (00:07:33) zoom in 1193.22 4020.75
+\i (00:07:33) trapsize 215
+\i (00:07:33) zoom in 1 
+\i (00:07:33) setwindow pcb
+\i (00:07:33) zoom in 1193.22 4020.75
+\i (00:07:33) trapsize 108
+\i (00:07:34) zoom in 1 
+\i (00:07:34) setwindow pcb
+\i (00:07:34) zoom in 1183.95 4019.89
+\i (00:07:34) trapsize 54
+\i (00:07:35) zoom in 1 
+\i (00:07:35) setwindow pcb
+\i (00:07:35) zoom in 1183.95 4019.90
+\i (00:07:35) trapsize 27
+\i (00:07:42) exit 
+\t (00:07:42) Lic Summary:
+[16:06:25.004712] Cdslmd servers: dbdflames-ind11 lelvflames20 fllvflames56
+[16:06:25.529000] Feature usage summary:
+[16:06:25.529000] Allegro_X_Designer_Layout
+[16:06:25.529000] PCB_design_studio
+[16:06:25.529000] Allegro_performance
+[16:06:25.529000] Allegro_performance_designer
+
+\t (00:07:42)     Journal end - Thu Apr  2 16:06:25 2026

@@ -1,0 +1,13 @@
+# File: C:\Users\x1138897\Deepak\SK-AM62B-P1\spar001a\PROC142A\1_SCHEMATIC\ORCAD\Backup_SK_Schematic_For_Reference\TCA6408ARGTR_VQFN16.csv
+# Generated on: Tuesday Jan 14 10:51:54 2025
+
+Pin Number, Signal Name, Direction, IO Standard, Drive (mA), Slew Rate, Termination, IOB Delay, Diff Type, Diff Pair, Swap Group
+1,RESETSTATZ,UNUSED,,,,,,,,
+2,WLAN_SDIO_RST_3V3,BIDIR,,,,,,,,
+3,GPIO_TS_RSTN,BIDIR,,,,,,,,
+4,GPIO_AUD_RSTN,BIDIR,,,,,,,,
+5,GPIO_EMMC_RSTN,BIDIR,,,,,,,,
+11,IO_EXP1_INTN,UNUSED,,,,,,,,
+12,SOC_I2C1_SCL,INPUT,,,,,,,,
+13,SOC_I2C1_SDA,INPUT,,,,,,,,
+16,ADDR_IO_EXP1,UNUSED,,,,,,,,

@@ -1,0 +1,69 @@
+(ExpressProject ""
+  (ProjectVersion "19981106")
+  (SoftwareVersion "17.4-2019 S036 (4091683)  [2/25/2023]-[05/16/23]")
+  (ProjectType "PCB")
+  (Folder "Design Resources"
+    (Folder "Library")
+    ("Allegro Netlist Directory" "allegro")
+    (File ".\proc142a_sch.dsn"
+      (Type "Schematic Design"))
+    (BuildFileAddedOrDeleted "x")
+    (CompileFileAddedOrDeleted "x")
+    (DOCKED "TRUE")
+    (DOCKING_POSITION "59420")
+    (NoModify))
+  (Folder "Layout")
+  (Folder "Outputs"
+    (File ".\tca6424argjr_qfn32.csv"
+      (Type "Report"))
+    (File ".\tca6408argtr_vqfn16.csv"
+      (Type "Report"))
+    (File ".\am62-evm_bga425.csv"
+      (Type "Report")))
+  (Folder "Referenced Projects")
+  (Folder "PSpice Resources"
+    (Folder "Simulation Profiles")
+    (Folder "Model Libraries"
+      (Sort User))
+    (Folder "Stimulus Files"
+      (Sort User))
+    (Folder "Include Files"
+      (Sort User)))
+  (Folder "Logs")
+  (PartMRUSelector)
+  (GlobalState
+    (FileView
+      (Path "Design Resources")
+      (Path "Design Resources" ".\proc142a_sch.dsn")
+      (Path "Design Resources" ".\proc142a_sch.dsn" "SCHEMATIC1")
+      (Path "Outputs")
+      (Select "Design Resources"))
+    (HierarchyView)
+    (Doc
+      (Type "COrCapturePMDoc")
+      (Frame
+        (Placement "44 0 1 -1 -1 -1 -1 0 200 0 668"))
+      (Tab 0))
+    (Doc
+      (Type "COrSchematicDoc")
+      (Frame
+        (Placement "44 0 1 -1 -1 -1 -1 5 1674 24 686")
+        (Scroll "-344 0")
+        (Zoom "47")
+        (Occurrence "/"))
+      (Path
+         "C:\USERS\X1138897\DEEPAK\SK-AM62B-P1\SPAR001A\PROC142A\1_SCHEMATIC\ORCAD\BACKUP_SK_SCHEMATIC_FOR_REFERENCE\PROC142A_SCH.DSN")
+      (Schematic "SCHEMATIC1")
+      (Page "39. IO EXPANDER"))
+    (Doc
+      (Type "COrSchematicDoc")
+      (Frame
+        (Placement "44 0 1 -1 -1 -1 -1 5 1674 24 686")
+        (Scroll "0 0")
+        (Zoom "100")
+        (Occurrence "/"))
+      (Path
+         "C:\USERS\X1138897\DEEPAK\SK-AM62B-P1\SPAR001A\PROC142A\1_SCHEMATIC\ORCAD\BACKUP_SK_SCHEMATIC_FOR_REFERENCE\PROC142A_SCH.DSN")
+      (Schematic "SCHEMATIC1")
+      (Page "14. SOC POWER")))
+  (MPSSessionName "x1138897"))

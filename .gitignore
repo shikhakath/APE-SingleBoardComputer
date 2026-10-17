@@ -1,0 +1,16 @@
+# Altium Designer generated/temporary files
+History/
+__Previews/
+Project Logs for */
+Project Outputs for */
+*.SchDocPreview
+*.PcbDocPreview
+*.PrjPcbStructure
+*.$$$
+~$*
+.~lock.*
+
+# OS / editor
+Thumbs.db
+desktop.ini
+.DS_Store

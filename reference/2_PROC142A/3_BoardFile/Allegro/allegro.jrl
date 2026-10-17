@@ -1,0 +1,19 @@
+\t (00:00:14) allegro 17.4 S036 Windows SPB 64-bit Edition
+\t (00:00:14)     Journal start - Wed Apr  8 14:47:53 2026
+\t (00:00:14)         Host=LT5CD2219V5Y User=x1138897 Pid=24432 CPUs=8
+\t (00:00:14) CmdLine= C:\Cadence\SPB_17.4-silent\tools\bin\allegro.exe
+\t (00:00:14) 
+   (00:00:15) Loading axlcore.cxt 
+\t (00:00:15) Starting new design...
+\i (00:00:19) trapsize 116667
+\i (00:00:20) updateport CVPane
+\i (00:00:34) open 
+\i (00:00:41) fillin "C:/Users/x1138897/Deepak/TMDS62LEVM/Release Package/TMDS62LEVM Design File Package Orcad_Allegro (Rev. C)/PROC181/1_PROC181E1-1a/3_BoardFile/Allegro/PROC181E1-1_BRD.brd"
+\i (00:00:41) cd "C:/Users/x1138897/Deepak/TMDS62LEVM/Release Package/TMDS62LEVM Design File Package Orcad_Allegro (Rev. C)/PROC181/1_PROC181E1-1a/3_BoardFile/Allegro"
+\i (00:00:41) trapsize 654
+\i (00:00:41) QtSignal SPBFoldDockArea FoldAreaTabWidget currentChanged unnamed
+\t (00:00:41) Opening existing design...
+\w (00:00:44) WARNING(SPMHDB-212): Design features are disabled because selected product and options do not match design capability required: DiffPair Static Phase. DRC set "out of date".. Either select required product and options in Product Choices or click Update to Tier in File Properties to suppress the message. See Allegro PCB Design Solutions datasheet on www.cadence.com for mapping of products and options to design features.
+\i (00:01:24) fillin confirm
+\i (00:01:25) trapsize 1495550
+\t (00:01:25)     Journal end - Wed Apr  8 14:49:04 2026
