@@ -1,0 +1,238 @@
+function,signal,am62x_pad,mux_mode,ball,io_domain,voltage,net_name,notes
+eMMC (MMC0),MMC0_CLK,MMC0_CLK,0,J1,VDDSHV4,1.8V,EMMC_CLK,"to eMMC module connector; 0R/22R series option at SoC (SK); HS200 max; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+eMMC (MMC0),MMC0_CMD,MMC0_CMD,0,K1,VDDSHV4,1.8V,EMMC_CMD,"10k-47k pull-up to 1V8 (ROM enables internal pull-ups); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+eMMC (MMC0),MMC0_DAT0,MMC0_DAT0,0,K2,VDDSHV4,1.8V,EMMC_D0,"eMMC boot = MMC0 only; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+eMMC (MMC0),MMC0_DAT1,MMC0_DAT1,0,L1,VDDSHV4,1.8V,EMMC_D1,"eMMC boot = MMC0 only; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+eMMC (MMC0),MMC0_DAT2,MMC0_DAT2,0,L2,VDDSHV4,1.8V,EMMC_D2,"eMMC boot = MMC0 only; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+eMMC (MMC0),MMC0_DAT3,MMC0_DAT3,0,M1,VDDSHV4,1.8V,EMMC_D3,"eMMC boot = MMC0 only; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+eMMC (MMC0),MMC0_DAT4,MMC0_DAT4,0,M2,VDDSHV4,1.8V,EMMC_D4,"eMMC boot = MMC0 only; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+eMMC (MMC0),MMC0_DAT5,MMC0_DAT5,0,N1,VDDSHV4,1.8V,EMMC_D5,"eMMC boot = MMC0 only; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+eMMC (MMC0),MMC0_DAT6,MMC0_DAT6,0,N2,VDDSHV4,1.8V,EMMC_D6,"eMMC boot = MMC0 only; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+eMMC (MMC0),MMC0_DAT7,MMC0_DAT7,0,P1,VDDSHV4,1.8V,EMMC_D7,"eMMC boot = MMC0 only; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+eMMC (MMC0),GPIO0_11,OSPI0_CSn0,7,D25,VDDSHV1,1.8V,EMMC_RST_N,"AND(GPIO, RESETSTATz) in a 1.8V-powered LVC1G08 (5.5V-tolerant inputs) -> module RST_n; 10k pull-up so reset is released by default; enable RST_n_FUNCTION in EXT_CSD; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+microSD (MMC1),MMC1_CLK,MMC1_CLK,0,B21,VDDSHV5,"3.3V/1.8V (switched, LDO1)",SD_CLK,"UHS-I; pull-up DNP (SK); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+microSD (MMC1),MMC1_CMD,MMC1_CMD,0,A21,VDDSHV5,"3.3V/1.8V (switched, LDO1)",SD_CMD,"47k pull-up to the SWITCHED VDDSHV5 rail; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+microSD (MMC1),MMC1_DAT0,MMC1_DAT0,0,A22,VDDSHV5,"3.3V/1.8V (switched, LDO1)",SD_D0,"47k pull-up to the SWITCHED VDDSHV5 rail; SD boot = MMC1 only; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+microSD (MMC1),MMC1_DAT1,MMC1_DAT1,0,B22,VDDSHV5,"3.3V/1.8V (switched, LDO1)",SD_D1,"47k pull-up to the SWITCHED VDDSHV5 rail; SD boot = MMC1 only; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+microSD (MMC1),MMC1_DAT2,MMC1_DAT2,0,A20,VDDSHV5,"3.3V/1.8V (switched, LDO1)",SD_D2,"47k pull-up to the SWITCHED VDDSHV5 rail; SD boot = MMC1 only; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+microSD (MMC1),MMC1_DAT3,MMC1_DAT3,0,B20,VDDSHV5,"3.3V/1.8V (switched, LDO1)",SD_D3,"47k pull-up to the SWITCHED VDDSHV5 rail; SD boot = MMC1 only; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+microSD (MMC1),MMC1_SDCD,MMC1_SDCD,0,A23,VDDSHV0,3.3V,SD_CD_N,"VDDSHV0 pad (3.3V, not the switched rail); 100R series + 47k pull-up to 3V3; card switch pulls LOW when inserted (ROM needs LOW to SD-boot); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+microSD (MMC1),GPIO1_49,MMC1_SDWP,7,B23,VDDSHV0,3.3V,SD_VSEL,"to TPS65219 VSEL_SD (LDO1 3.3V/1.8V select), Octavo BRK practice; external pull sets 3.3V at power-up (polarity per TPS6521904 NVM - verify SLVUCL1); no SD write-protect; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+microSD (MMC1),GPIO1_1,RGMII2_RX_CTL,7,T23,VDDSHV2,3.3V,SD_PWR_EN,"AND(GPIO, RESETSTATz) -> TPS22996 dual switch EN (card VDD + VDDSHV5 cycle together); 10k pull-up so card is powered for ROM SD boot; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+M.2 Wi-Fi (MMC2 SDIO),MMC2_CLK,MMC2_CLK,0,D23,VDDSHV6,1.8V,WL_SDIO_CLK,"M.2 SDIO_CLK (1.8V); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+M.2 Wi-Fi (MMC2 SDIO),MMC2_CMD,MMC2_CMD,0,C23,VDDSHV6,1.8V,WL_SDIO_CMD,"47k pull-up to 1V8 (SK); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+M.2 Wi-Fi (MMC2 SDIO),MMC2_DAT0,MMC2_DAT0,0,D22,VDDSHV6,1.8V,WL_SDIO_D0,"47k pull-up to 1V8 (SK); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+M.2 Wi-Fi (MMC2 SDIO),MMC2_DAT1,MMC2_DAT1,0,C22,VDDSHV6,1.8V,WL_SDIO_D1,"47k pull-up to 1V8 (SK); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+M.2 Wi-Fi (MMC2 SDIO),MMC2_DAT2,MMC2_DAT2,0,D21,VDDSHV6,1.8V,WL_SDIO_D2,"47k pull-up to 1V8 (SK); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+M.2 Wi-Fi (MMC2 SDIO),MMC2_DAT3,MMC2_DAT3,0,C21,VDDSHV6,1.8V,WL_SDIO_D3,"47k pull-up to 1V8 (SK); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+M.2 Wi-Fi (MMC2 SDIO),GPIO0_71,MMC2_SDCD,7,D20,VDDSHV6,1.8V,WLAN_EN,"SK mapping (GPIO0_71); 1.8V to M.2-CC3351 WLAN_EN; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+M.2 Wi-Fi (MMC2 SDIO),GPIO0_72,MMC2_SDWP,7,C20,VDDSHV6,1.8V,WLAN_IRQ,"SK mapping (GPIO0_72); fit the pull-up (SK rev-B fix for production M.2-CC3351); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+M.2 Bluetooth (UART6),UART6_RXD,OSPI0_D4,3,B26,VDDSHV1,1.8V,BT_UART_RXD,"from M.2 UART_TXD; native 1.8V, no level shifter; MAIN_UART1 left free for the TIFS console; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+M.2 Bluetooth (UART6),UART6_TXD,OSPI0_D5,3,B27,VDDSHV1,1.8V,BT_UART_TXD,"to M.2 UART_RXD; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+M.2 Bluetooth (UART6),UART6_RTSn,OSPI0_D6,3,C27,VDDSHV1,1.8V,BT_UART_RTS_N,"to M.2 UART_CTS; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+M.2 Bluetooth (UART6),UART6_CTSn,OSPI0_D7,3,C28,VDDSHV1,1.8V,BT_UART_CTS_N,"from M.2 UART_RTS; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+M.2 Bluetooth (UART6),GPIO0_12,OSPI0_CSn1,7,C25,VDDSHV1,1.8V,BT_EN,"1.8V GPIO (SK used MCU_GPIO0_1 at 3.3V + TXS0104 down to 1.8V); 10k pull-down = BT off by default; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+M.2 (32 kHz),WKUP_CLKOUT0,WKUP_CLKOUT0,0,C7,VDDSHV_MCU,3.3V,M2_SUSCLK_32K,"3.3V, M.2 SUSCLK; program WKUP_CLKOUT0_CTRL to the 32.768 kHz LFOSC0 source; pad after reset RX/TX/PULL=Off/SS/Off, mux 0"
+"Ethernet (RGMII1, DP83867)",RGMII1_TXC,RGMII1_TXC,0,U23,VDDSHV2,3.3V,ETH_TXC,"22R series at SoC (SK); SoC adds TX delay internally; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"Ethernet (RGMII1, DP83867)",RGMII1_TX_CTL,RGMII1_TX_CTL,0,V23,VDDSHV2,3.3V,ETH_TX_CTL,"22R series at SoC; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"Ethernet (RGMII1, DP83867)",RGMII1_TD0,RGMII1_TD0,0,U25,VDDSHV2,3.3V,ETH_TD0,"22R series at SoC; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"Ethernet (RGMII1, DP83867)",RGMII1_TD1,RGMII1_TD1,0,V25,VDDSHV2,3.3V,ETH_TD1,"22R series at SoC; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"Ethernet (RGMII1, DP83867)",RGMII1_TD2,RGMII1_TD2,0,U24,VDDSHV2,3.3V,ETH_TD2,"22R series at SoC; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"Ethernet (RGMII1, DP83867)",RGMII1_TD3,RGMII1_TD3,0,V24,VDDSHV2,3.3V,ETH_TD3,"22R series at SoC; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"Ethernet (RGMII1, DP83867)",RGMII1_RXC,RGMII1_RXC,0,U20,VDDSHV2,3.3V,ETH_RXC,"PHY provides RX delay (RGMII-ID straps); series option at PHY; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"Ethernet (RGMII1, DP83867)",RGMII1_RX_CTL,RGMII1_RX_CTL,0,V20,VDDSHV2,3.3V,ETH_RX_CTL,"pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"Ethernet (RGMII1, DP83867)",RGMII1_RD0,RGMII1_RD0,0,U22,VDDSHV2,3.3V,ETH_RD0,"pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"Ethernet (RGMII1, DP83867)",RGMII1_RD1,RGMII1_RD1,0,V22,VDDSHV2,3.3V,ETH_RD1,"pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"Ethernet (RGMII1, DP83867)",RGMII1_RD2,RGMII1_RD2,0,U21,VDDSHV2,3.3V,ETH_RD2,"pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"Ethernet (RGMII1, DP83867)",RGMII1_RD3,RGMII1_RD3,0,V21,VDDSHV2,3.3V,ETH_RD3,"pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"Ethernet (RGMII1, DP83867)",MDIO0_MDC,MDIO0_MDC,0,V26,VDDSHV2,3.3V,ETH_MDC,"pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"Ethernet (RGMII1, DP83867)",MDIO0_MDIO,MDIO0_MDIO,0,U26,VDDSHV2,3.3V,ETH_MDIO,"2.2k pull-up to 3V3 (SK); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"Ethernet (RGMII1, DP83867)",GPIO0_88,RGMII2_TXC,7,R19,VDDSHV2,3.3V,ETH_PHY_RST_N,"AND(GPIO, RESETSTATz) -> PHY RESET_N; 10k pull-up so the PHY is out of reset for ROM Ethernet boot; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"Ethernet (RGMII1, DP83867)",GPIO0_87,RGMII2_TX_CTL,7,T20,VDDSHV2,3.3V,ETH_PHY_INT_N,"DP83867 INT/PWDN_N (open-drain), 10k pull-up to 3V3; dedicated GPIO rather than sharing EXTINTn with the PMIC nINT (SK shared EXTINTn); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA0,VOUT0_DATA0,0,P26,VDDSHV3,3.3V,DPI_D0,"RGB888 bit order per TI DSS: D[23:16]=R, D[15:8]=G, D[7:0]=B (verify vs SK p.43); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA1,VOUT0_DATA1,0,N25,VDDSHV3,3.3V,DPI_D1,"RGB888 bit order per TI DSS: D[23:16]=R, D[15:8]=G, D[7:0]=B (verify vs SK p.43); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA2,VOUT0_DATA2,0,N26,VDDSHV3,3.3V,DPI_D2,"RGB888 bit order per TI DSS: D[23:16]=R, D[15:8]=G, D[7:0]=B (verify vs SK p.43); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA3,VOUT0_DATA3,0,M25,VDDSHV3,3.3V,DPI_D3,"RGB888 bit order per TI DSS: D[23:16]=R, D[15:8]=G, D[7:0]=B (verify vs SK p.43); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA4,VOUT0_DATA4,0,M26,VDDSHV3,3.3V,DPI_D4,"RGB888 bit order per TI DSS: D[23:16]=R, D[15:8]=G, D[7:0]=B (verify vs SK p.43); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA5,VOUT0_DATA5,0,U27,VDDSHV3,3.3V,DPI_D5,"RGB888 bit order per TI DSS: D[23:16]=R, D[15:8]=G, D[7:0]=B (verify vs SK p.43); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA6,VOUT0_DATA6,0,T27,VDDSHV3,3.3V,DPI_D6,"RGB888 bit order per TI DSS: D[23:16]=R, D[15:8]=G, D[7:0]=B (verify vs SK p.43); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA7,VOUT0_DATA7,0,T28,VDDSHV3,3.3V,DPI_D7,"RGB888 bit order per TI DSS: D[23:16]=R, D[15:8]=G, D[7:0]=B (verify vs SK p.43); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA8,VOUT0_DATA8,0,R27,VDDSHV3,3.3V,DPI_D8,"RGB888 bit order per TI DSS: D[23:16]=R, D[15:8]=G, D[7:0]=B (verify vs SK p.43); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA9,VOUT0_DATA9,0,R28,VDDSHV3,3.3V,DPI_D9,"RGB888 bit order per TI DSS: D[23:16]=R, D[15:8]=G, D[7:0]=B (verify vs SK p.43); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA10,VOUT0_DATA10,0,P27,VDDSHV3,3.3V,DPI_D10,"RGB888 bit order per TI DSS: D[23:16]=R, D[15:8]=G, D[7:0]=B (verify vs SK p.43); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA11,VOUT0_DATA11,0,P28,VDDSHV3,3.3V,DPI_D11,"RGB888 bit order per TI DSS: D[23:16]=R, D[15:8]=G, D[7:0]=B (verify vs SK p.43); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA12,VOUT0_DATA12,0,N27,VDDSHV3,3.3V,DPI_D12,"RGB888 bit order per TI DSS: D[23:16]=R, D[15:8]=G, D[7:0]=B (verify vs SK p.43); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA13,VOUT0_DATA13,0,N28,VDDSHV3,3.3V,DPI_D13,"RGB888 bit order per TI DSS: D[23:16]=R, D[15:8]=G, D[7:0]=B (verify vs SK p.43); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA14,VOUT0_DATA14,0,M27,VDDSHV3,3.3V,DPI_D14,"RGB888 bit order per TI DSS: D[23:16]=R, D[15:8]=G, D[7:0]=B (verify vs SK p.43); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA15,VOUT0_DATA15,0,M28,VDDSHV3,3.3V,DPI_D15,"RGB888 bit order per TI DSS: D[23:16]=R, D[15:8]=G, D[7:0]=B (verify vs SK p.43); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA16,GPMC0_AD8,1,L27,VDDSHV3,3.3V,DPI_D16,"shares ball with BOOTMODE08: fixed 10k strap only (no DIP), bridge must not drive while in reset; pad after reset RX/TX/PULL=On/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA17,GPMC0_AD9,1,L28,VDDSHV3,3.3V,DPI_D17,"shares ball with BOOTMODE09: fixed 10k strap only (no DIP), bridge must not drive while in reset; pad after reset RX/TX/PULL=On/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA18,GPMC0_AD10,1,K27,VDDSHV3,3.3V,DPI_D18,"shares ball with BOOTMODE10: fixed 10k strap only (no DIP), bridge must not drive while in reset; pad after reset RX/TX/PULL=On/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA19,GPMC0_AD11,1,K28,VDDSHV3,3.3V,DPI_D19,"shares ball with BOOTMODE11: fixed 10k strap only (no DIP), bridge must not drive while in reset; pad after reset RX/TX/PULL=On/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA20,GPMC0_AD12,1,J28,VDDSHV3,3.3V,DPI_D20,"shares ball with BOOTMODE12: fixed 10k strap only (no DIP), bridge must not drive while in reset; pad after reset RX/TX/PULL=On/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA21,GPMC0_AD13,1,J27,VDDSHV3,3.3V,DPI_D21,"shares ball with BOOTMODE13: fixed 10k strap only (no DIP), bridge must not drive while in reset; pad after reset RX/TX/PULL=On/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA22,GPMC0_AD14,1,H28,VDDSHV3,3.3V,DPI_D22,"shares ball with BOOTMODE14: fixed 10k strap only (no DIP), bridge must not drive while in reset; pad after reset RX/TX/PULL=On/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DATA23,GPMC0_AD15,1,H27,VDDSHV3,3.3V,DPI_D23,"shares ball with BOOTMODE15: fixed 10k strap only (no DIP), bridge must not drive while in reset; pad after reset RX/TX/PULL=On/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_PCLK,VOUT0_PCLK,0,T26,VDDSHV3,3.3V,DPI_PCLK,"0R/22R series at SoC (SK reflection option); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_DE,VOUT0_DE,0,R25,VDDSHV3,3.3V,DPI_DE,"pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_HSYNC,VOUT0_HSYNC,0,P25,VDDSHV3,3.3V,DPI_HSYNC,"pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (VOUT0 DPI),VOUT0_VSYNC,VOUT0_VSYNC,0,R26,VDDSHV3,3.3V,DPI_VSYNC,"pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (control),GPIO0_89,RGMII2_TD0,7,T22,VDDSHV2,3.3V,HDMI_RST_N,"AND(GPIO, RESETSTATz) -> SiI9022A RESET#; 10k pull-down on GPIO side keeps bridge in reset until SW; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+HDMI bridge (control),GPIO0_90,RGMII2_TD1,7,R21,VDDSHV2,3.3V,HDMI_INT_N,"10k pull-up to 3V3; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"HDMI bridge (I2S, McASP2)",MCASP2_ACLKX,RGMII2_TD3,2,R20,VDDSHV2,3.3V,HDMI_I2S_SCK,"second McASP dedicated to HDMI audio (independent ALSA card); RGMII2 is unused (single PHY); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"HDMI bridge (I2S, McASP2)",MCASP2_AFSX,RGMII2_TD2,2,T21,VDDSHV2,3.3V,HDMI_I2S_WS,"pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"HDMI bridge (I2S, McASP2)",MCASP2_AXR0,RGMII2_RD2,2,T24,VDDSHV2,3.3V,HDMI_I2S_SD0,"pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"HDMI bridge (I2S, McASP2)",AUDIO_EXT_REFCLK0,RGMII2_RD3,2,R23,VDDSHV2,3.3V,HDMI_I2S_MCLK,"optional MCLK to SiI9022A (0R, DNP until bridge MCLK need is confirmed); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Audio codec (McASP1),MCASP1_ACLKX,GPMC0_BE0n_CLE,2,J26,VDDSHV3,3.3V,AUD_BCLK,"SK mapping; SoC is bit-clock master; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Audio codec (McASP1),MCASP1_AFSX,GPMC0_WAIT0,2,L25,VDDSHV3,3.3V,AUD_FSYNC,"SK mapping; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Audio codec (McASP1),MCASP1_AXR0,GPMC0_WEn,2,J25,VDDSHV3,3.3V,AUD_DOUT,"SoC TX -> codec DIN (SK mapping); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Audio codec (McASP1),MCASP1_AXR2,GPMC0_ADVn_ALE,2,H25,VDDSHV3,3.3V,AUD_DIN,"codec DOUT -> SoC RX (SK mapping); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Audio codec (McASP1),AUDIO_EXT_REFCLK1,GPMC0_WPn,1,G26,VDDSHV3,3.3V,AUD_MCLK,"SoC-generated MCLK; keep a DNP 12.288 MHz oscillator footprint (SK used an oscillator); codec PLL can also lock to BCLK; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Audio codec (control),GPIO1_3,RGMII2_RD0,7,T25,VDDSHV2,3.3V,AUD_RST_N,"TLV320AIC3106-class RESET; 10k pull-down; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+I2C1 (HDMI + codec),I2C1_SCL,I2C1_SCL,0,A13,VDDSHV0,3.3V,I2C1_SCL,"SiI9022A (0x39/0x3B + CEC 0x60/0x62) and codec (0x18/0x1B); 2.2k pull-up to 3V3; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+I2C1 (HDMI + codec),I2C1_SDA,I2C1_SDA,0,B13,VDDSHV0,3.3V,I2C1_SDA,"2.2k pull-up to 3V3; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Camera (CSI0 2-lane),CSI0_RXCLKP,CSI0_RXCLKP,-,U17,VDDA_1P8_CSIRX0,D-PHY (1.8V analog),CSI_CLK_P,100 ohm diff to 15-pin RPi camera FPC; no series parts
+Camera (CSI0 2-lane),CSI0_RXCLKN,CSI0_RXCLKN,-,V17,VDDA_1P8_CSIRX0,D-PHY (1.8V analog),CSI_CLK_N,100 ohm diff to 15-pin RPi camera FPC; no series parts
+Camera (CSI0 2-lane),CSI0_RXP0,CSI0_RXP0,-,U16,VDDA_1P8_CSIRX0,D-PHY (1.8V analog),CSI_D0_P,100 ohm diff to 15-pin RPi camera FPC; no series parts
+Camera (CSI0 2-lane),CSI0_RXN0,CSI0_RXN0,-,V16,VDDA_1P8_CSIRX0,D-PHY (1.8V analog),CSI_D0_N,100 ohm diff to 15-pin RPi camera FPC; no series parts
+Camera (CSI0 2-lane),CSI0_RXP1,CSI0_RXP1,-,U15,VDDA_1P8_CSIRX0,D-PHY (1.8V analog),CSI_D1_P,100 ohm diff to 15-pin RPi camera FPC; no series parts
+Camera (CSI0 2-lane),CSI0_RXN1,CSI0_RXN1,-,V15,VDDA_1P8_CSIRX0,D-PHY (1.8V analog),CSI_D1_N,100 ohm diff to 15-pin RPi camera FPC; no series parts
+Camera (I2C2),I2C2_SCL,GPMC0_CSn2,1,E26,VDDSHV3,3.3V,CAM_I2C_SCL,"dedicated camera bus (SK also used I2C2, behind a TCA9543A); 2.2k pull-up to 3V3; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Camera (I2C2),I2C2_SDA,GPMC0_CSn3,1,E25,VDDSHV3,3.3V,CAM_I2C_SDA,"2.2k pull-up to 3V3; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Camera (control),GPIO1_4,RGMII2_RD1,7,R24,VDDSHV2,3.3V,CAM_IO0,"RPi FPC pin 11 CAM_IO0 = camera power enable/reset; 10k pull-down; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Camera (control),MCU_GPIO0_14,MCU_MCAN0_RX,7,E1,VDDSHV_CANUART,3.3V,CAM_IO1,"optional RPi FPC pin 12 CAM_IO1 (LED/aux); 0R DNP; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+"USB0 (device, USB-C #1)",USB0_DP,USB0_DP,-,V12,VDDA_1P8_USB/VDDA_3P3_USB,USB2 PHY,USB0_DP,90 ohm diff; CMC with 0R bypass + ESD122 only; DFU boot port
+"USB0 (device, USB-C #1)",USB0_DM,USB0_DM,-,U12,VDDA_1P8_USB/VDDA_3P3_USB,USB2 PHY,USB0_DM,
+"USB0 (device, USB-C #1)",USB0_VBUS,USB0_VBUS,-,V11,VDDA_1P8_USB/VDDA_3P3_USB,USB2 PHY,USB0_VBUS_DIV,VBUS through the AM62x DS Fig 8-4 divider/clamp (16.5k/10k + 3.48k + 6.8V zener)
+"USB0 (device, USB-C #1)",USB0_DRVVBUS,USB0_DRVVBUS,0,C19,VDDSHV0,3.3V,USB0_DRVVBUS,"UNUSED (device only): leave unrouted; optional 10k pull-down (TI SK D-note: fit if USB deep-sleep wake is not used); pad after reset RX/TX/PULL=Off/Off/Down, mux 7"
+"USB1 (host, to hub)",USB1_DP,USB1_DP,-,V10,VDDA_1P8_USB/VDDA_3P3_USB,USB2 PHY,USB1_DP,90 ohm diff to hub upstream port
+"USB1 (host, to hub)",USB1_DM,USB1_DM,-,U10,VDDA_1P8_USB/VDDA_3P3_USB,USB2 PHY,USB1_DM,
+"USB1 (host, to hub)",USB1_VBUS,USB1_VBUS,-,U11,VDDA_1P8_USB/VDDA_3P3_USB,USB2 PHY,USB1_VBUS_DIV,divider from the hub 5V VBUS rail (same Fig 8-4 circuit; SK fitted it on USB1)
+"USB1 (host, to hub)",USB1_DRVVBUS,USB1_DRVVBUS,0,D19,VDDSHV0,3.3V,USB1_DRVVBUS,"host-mode VBUS enable: drives the USB-A 5V switch enable / hub VBUS-detect (divider); hub per-port PWRCTL may supersede it; pad after reset RX/TX/PULL=Off/Off/Down, mux 7"
+"USB1 (host, to hub)",GPIO1_2,RGMII2_RXC,7,R22,VDDSHV2,3.3V,USB_HUB_RST_N,"AND(GPIO, RESETSTATz) -> hub RESET_N; 10k pull-down; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+I2C0 (system),I2C0_SCL,I2C0_SCL,0,A12,VDDSHV0,3.3V,I2C0_SCL,"TPS65219 0x30, board-ID EEPROM (0x50; TI SK board-detect used 0x51), PD controller, TMP102 0x48; 2.2k pull-up; NOT on the header; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+I2C0 (system),I2C0_SDA,I2C0_SDA,0,B12,VDDSHV0,3.3V,I2C0_SDA,"2.2k pull-up to 3V3; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+PD controller,MCU_GPIO0_16,MCU_MCAN1_RX,7,F1,VDDSHV_CANUART,3.3V,PD_INT_N,"open-drain from PD controller, 10k pull-up; CANUART-domain pad, wake-capable; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,MCU_I2C0_SDA,MCU_I2C0_SDA,0,B7,VDDSHV_MCU,3.3V,HDR3_I2C1_SDA,"pin 3 (RPi GPIO2 SDA1); fail-safe open-drain IO; 1.8k pull-up to 3V3 (RPi value); not I2C0; pad after reset RX/TX/PULL=On/SS/NA, mux 7"
+RPi 40-pin header,MCU_I2C0_SCL,MCU_I2C0_SCL,0,A7,VDDSHV_MCU,3.3V,HDR5_I2C1_SCL,"pin 5 (RPi GPIO3 SCL1); fail-safe; 1.8k pull-up; SK used I2C2 via TCA9543A; pad after reset RX/TX/PULL=On/SS/NA, mux 7"
+RPi 40-pin header,CLKOUT0,EXT_REFCLK1,5,D16,VDDSHV0,3.3V,HDR7_GPIO4_GPCLK,"pin 7 (RPi GPIO4 GPCLK0); SK mapping; alt mode 7 = GPIO1_30; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,UART5_TXD,MCAN0_RX,1,A11,VDDSHV0,3.3V,HDR8_UART_TXD,"pin 8 (RPi GPIO14 TXD); SK/BRK mapping; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,UART5_RXD,MCAN0_TX,1,B11,VDDSHV0,3.3V,HDR10_UART_RXD,"pin 10 (RPi GPIO15 RXD); SK/BRK mapping; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,GPIO0_40,GPMC0_DIR,7,G25,VDDSHV3,3.3V,HDR11_GPIO17,"pin 11 (RPi GPIO17; SPI1_CE1 not available); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,MCASP0_ACLKX,MCASP0_ACLKX,0,A18,VDDSHV0,3.3V,HDR12_GPIO18_PCM_CLK,"pin 12 (RPi GPIO18 PCM_CLK); alt SPI2_CS1 (m1), ECAP2 APWM (m2), GPIO1_11 (m7); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,GPIO0_42,GPMC0_CSn1,7,F25,VDDSHV3,3.3V,HDR13_GPIO27,"pin 13; SK mapping; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,GPIO1_22,UART0_CTSn,7,A9,VDDSHV0,3.3V,HDR15_GPIO22,"pin 15; SK mapping; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,GPIO0_38,GPMC0_WAIT1,7,L26,VDDSHV3,3.3V,HDR16_GPIO23,"pin 16; SK mapping; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,GPIO0_31,GPMC0_CLK,7,K26,VDDSHV3,3.3V,HDR18_GPIO24,"pin 18 (SK used GPMC0_WPn, here taken by AUD_MCLK); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,SPI0_D0,SPI0_D0,0,D12,VDDSHV0,3.3V,HDR19_SPI0_MOSI,"pin 19 (RPi GPIO10 MOSI); SK mapping; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,SPI0_D1,SPI0_D1,0,C12,VDDSHV0,3.3V,HDR21_SPI0_MISO,"pin 21 (RPi GPIO9 MISO); SK mapping; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,GPIO1_23,UART0_RTSn,7,B9,VDDSHV0,3.3V,HDR22_GPIO25,"pin 22 (SK used OSPI0_CSn3, a 1.8V ball here); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,SPI0_CLK,SPI0_CLK,0,C11,VDDSHV0,3.3V,HDR23_SPI0_SCLK,"pin 23 (RPi GPIO11 SCLK); SK mapping; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,SPI0_CS0,SPI0_CS0,0,D13,VDDSHV0,3.3V,HDR24_SPI0_CE0_N,"pin 24 (RPi GPIO8 CE0); SK mapping; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,SPI0_CS1,SPI0_CS1,0,C13,VDDSHV0,3.3V,HDR26_SPI0_CE1_N,"pin 26 (RPi GPIO7 CE1); SK mapping; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,WKUP_I2C0_SDA,WKUP_I2C0_SDA,0,B8,VDDSHV_MCU,3.3V,HDR27_ID_SD,"pin 27 HAT-ID EEPROM bus (separate from I2C0/PMIC); fail-safe OD; 3.9k pull-up to 3V3; pad after reset RX/TX/PULL=On/SS/NA, mux 7"
+RPi 40-pin header,WKUP_I2C0_SCL,WKUP_I2C0_SCL,0,A8,VDDSHV_MCU,3.3V,HDR28_ID_SC,"pin 28 HAT-ID; fail-safe OD; 3.9k pull-up to 3V3; pad after reset RX/TX/PULL=On/SS/NA, mux 7"
+RPi 40-pin header,GPIO0_36,GPMC0_BE1n,7,K25,VDDSHV3,3.3V,HDR29_GPIO5,"pin 29; SK mapping; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,GPIO0_33,GPMC0_OEn_REn,7,H26,VDDSHV3,3.3V,HDR31_GPIO6,"pin 31; SK mapping; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,EHRPWM1_A,MCASP0_AXR1,6,A17,VDDSHV0,3.3V,HDR32_GPIO12_PWM0,"pin 32 (RPi PWM0); alt GPIO1_9 (m7), SPI2_CS2 (m1); SK had PRU eCAP on GPMC0_DIR; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,EHRPWM1_B,MCASP0_AXR0,6,B17,VDDSHV0,3.3V,HDR33_GPIO13_PWM1,"pin 33 (RPi PWM1); SK mapping; alt GPIO1_10; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,MCASP0_AFSX,MCASP0_AFSX,0,B18,VDDSHV0,3.3V,HDR35_GPIO19_PCM_FS,"pin 35 (RPi PCM_FS); alt SPI2_CS3, GPIO1_12 (RPi SPI1_MISO not possible); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,MCU_GPIO0_13,MCU_MCAN0_TX,7,E2,VDDSHV_CANUART,3.3V,HDR36_GPIO16,"pin 36 (RPi GPIO16; SPI1_CE2 not available); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,GPIO0_41,GPMC0_CSn0,7,F26,VDDSHV3,3.3V,HDR37_GPIO26,"pin 37; SK mapping; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,MCASP0_AXR3,MCASP0_AXR3,0,A16,VDDSHV0,3.3V,HDR38_GPIO20_PCM_DIN,"pin 38 (RPi PCM_DIN); alt SPI2_D0, GPIO1_7; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+RPi 40-pin header,MCASP0_AXR2,MCASP0_AXR2,0,B16,VDDSHV0,3.3V,HDR40_GPIO21_PCM_DOUT,"pin 40 (RPi PCM_DOUT); alt SPI2_D1, GPIO1_8 (RPi SPI1_SCLK not possible); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Debug (FT4232H),UART0_RXD,UART0_RXD,0,A10,VDDSHV0,3.3V,DBG_MAIN_UART0_RXD,"ch A: U-Boot/Linux console (ttyS2); isolation buffer (SN74AVC4T245/TXU0104) against back-power; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Debug (FT4232H),UART0_TXD,UART0_TXD,0,B10,VDDSHV0,3.3V,DBG_MAIN_UART0_TXD,"ch A; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Debug (FT4232H),UART1_RXD,MCASP0_AFSR,2,A19,VDDSHV0,3.3V,DBG_MAIN_UART1_RXD,"ch B: TIFS console (SK pins); BT moved to UART6 so no conflict; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Debug (FT4232H),UART1_TXD,MCASP0_ACLKR,2,B19,VDDSHV0,3.3V,DBG_MAIN_UART1_TXD,"ch B; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Debug (FT4232H),MCU_UART0_RXD,MCU_UART0_RXD,0,B2,VDDSHV_CANUART,3.3V,DBG_MCU_UART0_RXD,"ch C: MCU+ SDK console; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Debug (FT4232H),MCU_UART0_TXD,MCU_UART0_TXD,0,B3,VDDSHV_CANUART,3.3V,DBG_MCU_UART0_TXD,"ch C; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Debug (FT4232H),WKUP_UART0_RXD,WKUP_UART0_RXD,0,C2,VDDSHV_CANUART,3.3V,DBG_WKUP_UART0_RXD,"ch D: DM (R5) firmware console; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+Debug (FT4232H),WKUP_UART0_TXD,WKUP_UART0_TXD,0,C1,VDDSHV_CANUART,3.3V,DBG_WKUP_UART0_TXD,"ch D; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+JTAG (Tag-Connect),TCK,TCK,0,D9,VDDSHV_MCU,3.3V,JTAG_TCK,"pull-up to VDDSHV_MCU if traced; pad after reset RX/TX/PULL=On/Off/Up, mux 0"
+JTAG (Tag-Connect),TMS,TMS,0,C10,VDDSHV_MCU,3.3V,JTAG_TMS,"pull-up to VDDSHV_MCU if traced; pad after reset RX/TX/PULL=On/Off/Up, mux 0"
+JTAG (Tag-Connect),TDI,TDI,0,D10,VDDSHV_MCU,3.3V,JTAG_TDI,"pull-up to VDDSHV_MCU if traced; pad after reset RX/TX/PULL=On/Off/Up, mux 0"
+JTAG (Tag-Connect),TDO,TDO,0,D11,VDDSHV_MCU,3.3V,JTAG_TDO,"pad after reset RX/TX/PULL=Off/SS/Up, mux 0"
+JTAG (Tag-Connect),TRSTn,TRSTn,0,C9,VDDSHV_MCU,3.3V,JTAG_TRSTN,"separate pull-DOWN to VSS; the debug cable must drive TRSTn high (pick a Tag-Connect pinout that carries it); pad after reset RX/TX/PULL=On/Off/Down, mux 0"
+JTAG (Tag-Connect),EMU0,EMU0,0,D8,VDDSHV_MCU,3.3V,EMU0,"pull-up to VDDSHV_MCU if traced; pad after reset RX/TX/PULL=On/Off/Up, mux 0"
+JTAG (Tag-Connect),EMU1,EMU1,0,C8,VDDSHV_MCU,3.3V,EMU1,"pull-up to VDDSHV_MCU if traced; pad after reset RX/TX/PULL=On/Off/Up, mux 0"
+System / reset / PMIC,MCU_PORz,MCU_PORz,0,D6,VDDS_OSC0,1.8V,MCU_PORZ,from TPS65219 nRSTOUT through a fast buffer + 22 pF; 1.8V domain (fail-safe); never floating; release >= 9.5 ms after rails valid
+System / reset / PMIC,RESET_REQz,RESET_REQz,0,D17,VDDSHV0,3.3V,RESET_REQZ,"warm-reset button via Schmitt debounce; 10k pull-up to VDDSHV0 (Octavo 62_RESET_6); pad after reset RX/TX/PULL=On/Off/Up, mux 0"
+System / reset / PMIC,MCU_RESETz,MCU_RESETz,0,C5,VDDSHV_MCU,3.3V,MCU_RESETZ,"10k pull-up to VDDSHV_MCU + test point; pad after reset RX/TX/PULL=On/Off/Up, mux 0"
+System / reset / PMIC,PORz_OUT,PORz_OUT,0,D18,VDDSHV0,3.3V,PORZ_OUT,"test point (optional); BOOTMODE latch edge; pad after reset RX/TX/PULL=Off/SS/Off, mux 0"
+System / reset / PMIC,RESETSTATz,RESETSTATz,0,C18,VDDSHV0,3.3V,RESETSTATZ,"feeds the AND gates for eMMC, SD power, PHY, HDMI and hub resets; pad after reset RX/TX/PULL=Off/SS/Off, mux 0"
+System / reset / PMIC,MCU_RESETSTATz,MCU_RESETSTATz,0,C6,VDDSHV_MCU,3.3V,MCU_RESETSTATZ,"test point only; do not use as a reset source (erratum i2407); pad after reset RX/TX/PULL=Off/SS/Off, mux 0"
+System / reset / PMIC,MCU_ERRORn,MCU_ERRORn,0,D7,VDDS_OSC0,1.8V,MCU_ERRORN,"1.8V (VDDS_OSC0); 10k pull-down + test point (AM62x Table 5-74); pad after reset RX/TX/PULL=On/SS/Down, mux 0"
+System / reset / PMIC,EXTINTn,EXTINTn,0,C17,VDDSHV0,3.3V,PMIC_NINT,"from TPS65219 nINT; fail-safe open-drain input, 10k pull-up to 3V3; pad after reset RX/TX/PULL=Off/Off/NA, mux 7"
+System / reset / PMIC,PMIC_LPM_EN0,PMIC_LPM_EN0,0,D5,VDDSHV_CANUART,3.3V,PMIC_LPM_EN0,"to TPS65219 MODE/STBY (low-power entry; verify against SK p.13); pad after reset RX/TX/PULL=Off/SS/Off, mux 0"
+System / reset / PMIC,MCU_OSC0_XI,MCU_OSC0_XI,-,G1,VDDS_OSC0,1.8V,OSC_25M,25 MHz +/-50 ppm LVCMOS oscillator powered from VDDS_OSC0 (1.8V)
+System / reset / PMIC,MCU_OSC0_XO,MCU_OSC0_XO,-,G2,VDDS_OSC0,1.8V,GND,tie to VSS when XI is driven by an oscillator (Octavo checklist)
+System / reset / PMIC,WKUP_LFOSC0_XI,WKUP_LFOSC0_XI,-,H1,VDDS_OSC0,1.8V,LFOSC_XI,"32.768 kHz crystal, CL 6-12 pF"
+System / reset / PMIC,WKUP_LFOSC0_XO,WKUP_LFOSC0_XO,-,H2,VDDS_OSC0,1.8V,LFOSC_XO,32.768 kHz crystal
+User IO,MCU_GPIO0_0,MCU_SPI0_CS0,7,B6,VDDSHV_MCU,3.3V,USER_LED1,"LED + resistor to GND (active high); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+User IO,MCU_GPIO0_1,MCU_SPI0_CS1,7,A6,VDDSHV_MCU,3.3V,USER_LED2,"LED + resistor to GND (active high); pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+User IO,MCU_GPIO0_15,MCU_MCAN1_TX,7,F2,VDDSHV_CANUART,3.3V,USER_BTN_N,"SK SW4 mapping; 10k pull-up + ESD; wake-capable CANUART pad; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+eFuse,MCU_GPIO0_2,MCU_SPI0_CLK,7,A4,VDDSHV_MCU,3.3V,VPP_EFUSE_EN,"enables the DNP TLV75518 (VPP 1.8V); 10k pull-down so VPP stays off; pad after reset RX/TX/PULL=Off/Off/Off, mux 7"
+BOOTMODE strap,BOOTMODE00,GPMC0_AD0,Bootstrap,G28,VDDSHV3,3.3V,BOOTMODE00,"default 1: 10k pull-up; pull to VDDSHV3 or VSS, never floating"
+BOOTMODE strap,BOOTMODE01,GPMC0_AD1,Bootstrap,G27,VDDSHV3,3.3V,BOOTMODE01,"default 1: 10k pull-up; pull to VDDSHV3 or VSS, never floating"
+BOOTMODE strap,BOOTMODE02,GPMC0_AD2,Bootstrap,F28,VDDSHV3,3.3V,BOOTMODE02,"default 0: 10k pull-down; pull to VDDSHV3 or VSS, never floating"
+BOOTMODE strap,BOOTMODE03,GPMC0_AD3,Bootstrap,F27,VDDSHV3,3.3V,BOOTMODE03,"default 0: DIP (47k pull-down, switch to 3V3 via 1-2k); pull to VDDSHV3 or VSS, never floating"
+BOOTMODE strap,BOOTMODE04,GPMC0_AD4,Bootstrap,E28,VDDSHV3,3.3V,BOOTMODE04,"default 0: DIP; pull to VDDSHV3 or VSS, never floating"
+BOOTMODE strap,BOOTMODE05,GPMC0_AD5,Bootstrap,E27,VDDSHV3,3.3V,BOOTMODE05,"default 0: DIP; pull to VDDSHV3 or VSS, never floating"
+BOOTMODE strap,BOOTMODE06,GPMC0_AD6,Bootstrap,D28,VDDSHV3,3.3V,BOOTMODE06,"default 1: DIP (ON); pull to VDDSHV3 or VSS, never floating"
+BOOTMODE strap,BOOTMODE07,GPMC0_AD7,Bootstrap,D27,VDDSHV3,3.3V,BOOTMODE07,"default 0: 10k pull-down (FS mode); pull to VDDSHV3 or VSS, never floating"
+BOOTMODE strap,BOOTMODE08,GPMC0_AD8,Bootstrap,L27,VDDSHV3,3.3V,BOOTMODE08,"default 0: 10k pull-down (reserved); pull to VDDSHV3 or VSS, never floating; ball also = VOUT0_DATA16"
+BOOTMODE strap,BOOTMODE09,GPMC0_AD9,Bootstrap,L28,VDDSHV3,3.3V,BOOTMODE09,"default 1: 10k pull-up (MMC port 1); pull to VDDSHV3 or VSS, never floating; ball also = VOUT0_DATA17"
+BOOTMODE strap,BOOTMODE10,GPMC0_AD10,Bootstrap,K27,VDDSHV3,3.3V,BOOTMODE10,"default 1: 10k pull-up (backup = USB); pull to VDDSHV3 or VSS, never floating; ball also = VOUT0_DATA18"
+BOOTMODE strap,BOOTMODE11,GPMC0_AD11,Bootstrap,K28,VDDSHV3,3.3V,BOOTMODE11,"default 0: 10k pull-down; pull to VDDSHV3 or VSS, never floating; ball also = VOUT0_DATA19"
+BOOTMODE strap,BOOTMODE12,GPMC0_AD12,Bootstrap,J28,VDDSHV3,3.3V,BOOTMODE12,"default 0: 10k pull-down; pull to VDDSHV3 or VSS, never floating; ball also = VOUT0_DATA20"
+BOOTMODE strap,BOOTMODE13,GPMC0_AD13,Bootstrap,J27,VDDSHV3,3.3V,BOOTMODE13,"default 0: 10k pull-down (USB backup mode = DFU); pull to VDDSHV3 or VSS, never floating; ball also = VOUT0_DATA21"
+BOOTMODE strap,BOOTMODE14,GPMC0_AD14,Bootstrap,H28,VDDSHV3,3.3V,BOOTMODE14,"default 0: 10k pull-down (reserved); pull to VDDSHV3 or VSS, never floating; ball also = VOUT0_DATA22"
+BOOTMODE strap,BOOTMODE15,GPMC0_AD15,Bootstrap,H27,VDDSHV3,3.3V,BOOTMODE15,"default 0: 10k pull-down (reserved); pull to VDDSHV3 or VSS, never floating; ball also = VOUT0_DATA23"
+UNUSED,,CSI0_RXN2,,U14,VDDA_1P8_CSIRX0,D-PHY (1.8V analog),NC,leave unconnected (2-lane mode; AM62x Table 5-74)
+UNUSED,,CSI0_RXN3,,U13,VDDA_1P8_CSIRX0,D-PHY (1.8V analog),NC,leave unconnected (2-lane mode; AM62x Table 5-74)
+UNUSED,,CSI0_RXP2,,V14,VDDA_1P8_CSIRX0,D-PHY (1.8V analog),NC,leave unconnected (2-lane mode; AM62x Table 5-74)
+UNUSED,,CSI0_RXP3,,V13,VDDA_1P8_CSIRX0,D-PHY (1.8V analog),NC,leave unconnected (2-lane mode; AM62x Table 5-74)
+UNUSED,,GPMC0_AD0,,G28,VDDSHV3,3.3V,BOOTMODE00,BOOTMODE strap only (no runtime function)
+UNUSED,,GPMC0_AD1,,G27,VDDSHV3,3.3V,BOOTMODE01,BOOTMODE strap only (no runtime function)
+UNUSED,,GPMC0_AD2,,F28,VDDSHV3,3.3V,BOOTMODE02,BOOTMODE strap only (no runtime function)
+UNUSED,,GPMC0_AD3,,F27,VDDSHV3,3.3V,BOOTMODE03,BOOTMODE strap only (no runtime function)
+UNUSED,,GPMC0_AD4,,E28,VDDSHV3,3.3V,BOOTMODE04,BOOTMODE strap only (no runtime function)
+UNUSED,,GPMC0_AD5,,E27,VDDSHV3,3.3V,BOOTMODE05,BOOTMODE strap only (no runtime function)
+UNUSED,,GPMC0_AD6,,D28,VDDSHV3,3.3V,BOOTMODE06,BOOTMODE strap only (no runtime function)
+UNUSED,,GPMC0_AD7,,D27,VDDSHV3,3.3V,BOOTMODE07,BOOTMODE strap only (no runtime function)
+UNUSED,,MCU_SPI0_D0,,B5,VDDSHV_MCU,3.3V,NC,spare: leave unconnected (pad input buffer off after reset) or route to a test point
+UNUSED,,MCU_SPI0_D1,,A5,VDDSHV_MCU,3.3V,NC,spare: leave unconnected (pad input buffer off after reset) or route to a test point
+UNUSED,,MCU_UART0_CTSn,,B4,VDDSHV_CANUART,3.3V,NC,spare: leave unconnected (pad input buffer off after reset) or route to a test point
+UNUSED,,MCU_UART0_RTSn,,A3,VDDSHV_CANUART,3.3V,NC,spare: leave unconnected (pad input buffer off after reset) or route to a test point
+UNUSED,,OLDI0_A0N,,P2,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_A0P,,R1,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_A1N,,R2,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_A1P,,T1,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_A2N,,T2,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_A2P,,U2,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_A3N,,U3,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_A3P,,V3,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_A4N,,U4,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_A4P,,V4,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_A5N,,U5,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_A5P,,V5,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_A6N,,U6,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_A6P,,V6,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_A7N,,U7,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_A7P,,V7,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_CLK0N,,U8,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_CLK0P,,V8,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_CLK1N,,U9,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OLDI0_CLK1P,,V9,VDDA_1P8_OLDI0,LVDS (1.8V analog),NC,leave unconnected (OLDI0 not used; AM62x Table 5-74 / Octavo 62_OLDI_1)
+UNUSED,,OSPI0_CLK,,A24,VDDSHV1,1.8V,NC,spare: leave unconnected (pad input buffer off after reset) or route to a test point
+UNUSED,,OSPI0_DQS,,D26,VDDSHV1,1.8V,NC,spare: leave unconnected (pad input buffer off after reset) or route to a test point
+UNUSED,,OSPI0_LBCLKO,,C26,VDDSHV1,1.8V,NC,spare: leave unconnected (pad input buffer off after reset) or route to a test point
+UNUSED,,OSPI0_CSn2,,D24,VDDSHV1,1.8V,NC,spare: leave unconnected (pad input buffer off after reset) or route to a test point
+UNUSED,,OSPI0_CSn3,,C24,VDDSHV1,1.8V,NC,spare: leave unconnected (pad input buffer off after reset) or route to a test point
+UNUSED,,OSPI0_D0,,B24,VDDSHV1,1.8V,NC,spare: leave unconnected (pad input buffer off after reset) or route to a test point
+UNUSED,,OSPI0_D1,,A25,VDDSHV1,1.8V,NC,spare: leave unconnected (pad input buffer off after reset) or route to a test point
+UNUSED,,OSPI0_D2,,B25,VDDSHV1,1.8V,NC,spare: leave unconnected (pad input buffer off after reset) or route to a test point
+UNUSED,,OSPI0_D3,,A26,VDDSHV1,1.8V,NC,spare: leave unconnected (pad input buffer off after reset) or route to a test point
+UNUSED,,WKUP_UART0_CTSn,,D1,VDDSHV_CANUART,3.3V,NC,spare: leave unconnected (pad input buffer off after reset) or route to a test point
+UNUSED,,WKUP_UART0_RTSn,,D2,VDDSHV_CANUART,3.3V,NC,spare: leave unconnected (pad input buffer off after reset) or route to a test point

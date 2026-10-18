@@ -14,3 +14,7 @@ Project Outputs for */
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Generator output
+hardware/gen/out/
+__pycache__/

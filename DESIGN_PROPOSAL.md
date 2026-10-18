@@ -4,17 +4,62 @@
 
 | | |
 |---|---|
-| Status | **Proposal, for review.** No design work has started. |
+| Status | **Rev 2: decisions recorded, schematic started.** §0 lists what changed from Rev 1. |
 | Date | 2026-10-17 |
+| BOM | [`docs/bom/`](docs/bom/): priced, every part in stock, **$232.62 per board at qty 10** |
+| Schematic | [`hardware/gen/`](hardware/gen/): generator plus handoff guide for building it in Altium |
 | EDA | Altium Designer 26, driven partly through the Altium MCP server |
 | Inputs | `datasheets/` (AM625 DS, AM62x TRM, TPS65219 DS, OSD62x-PM overview), `reference/` (TI SK-AM62B-P1 rev PROC142B/142A), plus the public OSD62x-PM datasheet Rev 2.0 and Octavo app notes |
 | Research notes | [`docs/research/`](docs/research/): page-referenced notes behind every claim below |
 
 ---
 
+## 0. Rev 2: decisions and stock-driven changes (2026-10-17)
+
+Where this section conflicts with later sections, this section wins.
+
+**Your decisions:**
+
+| Topic | Decision |
+|---|---|
+| Form factor | **100 × 70 mm** (not the Raspberry Pi 85 × 56 mm) |
+| CPU speed | **1.4 GHz**, so the PMIC is TPS6521904 (0.85 V core at power-up) |
+| Wireless | **Included**: M.2 Key-E socket + TI M2-CC3351 Wi-Fi 6/BLE module |
+| Ethernet | **1 port** |
+| Audio | **Codec included**, prioritising cost and simplicity: TLV320AIC3104 + 3.5 mm TRRS jack |
+| eMMC | **Drop-in eMMC module** (Hardkernel/PINE64/Radxa 34-pin standard), 32 GB |
+| Debug | **The reference design's UART**: FT4232HL quad USB-UART on its own USB-C |
+| Power input | **USB-PD** over USB-C: TPS25730 sink, 5–9 V, also runs from plain 5 V chargers |
+| PCB | **JLCPCB standard stackup** JLC06161H-3313, 6 layers, 1.54 mm, fab and assembly at JLCPCB |
+| Display | **HDMI only.** The 40-pin LVDS FPC is dropped. |
+| Budget | ≤ $300 per board ideally, $400 maximum. Current estimate: **$232.62 at qty 10** |
+| Stock | **Every part must be in stock** |
+
+**Changes forced by the in-stock rule** (details in [`docs/bom/`](docs/bom/README.md)):
+
+| Was | Now | Consequence |
+|---|---|---|
+| SiI9022A HDMI bridge (out of stock) | **TI TFP410** | Output is DVI-compatible: video on any HDMI display, but **no HDMI audio or CEC**. Audio is via the codec. ADV7513 would give real HDMI with audio for +$21.90 per board. |
+| TPS6521904**RHB** | TPS6521904**RSM** (4×4 mm, 0.4 mm pitch) | Same NVM and pin numbering; footprint change only |
+| DP83867IR | DP83867**IS** | Pin-compatible superset; dummy straps on RX_D1/RX_D3 |
+| CP2105 debug idea | FT4232HL | Per your decision; LCSC stock at $12.60 |
+| Various SK connectors | In-stock equivalents | Listed in the BOM |
+
+**Other design consequences:**
+
+- **Bluetooth UART** moves to UART6 on the 1.8 V OSPI balls, so no level shifter is needed. The **second Ethernet port's RGMII2 balls** are reused for GPIOs and a second McASP. See [`docs/research/pinmux-allocation.md`](docs/research/pinmux-allocation.md).
+- **The 40-pin header loses Raspberry Pi SPI1**, which conflicts with I2S on pins 12/35/38/40. Pins 11 and 36 become plain GPIO.
+- **Recommended layer order** for the free JLC stackup is TOP / GND / SIG / **GND / PWR** / BOT. Your original order would put L3 signals 0.124 mm from the power plane.
+- **USB hub:** WCH CH335F, 4-port, 3.3 V only. Two ports go to USB-A.
+- **Boot straps:** default 0x0643 (SD card primary, USB DFU backup). **USB must not be selected as the primary boot device**, because bit 9 would then be read as core voltage, and it is fixed at 1 (0.75 V) on this 0.85 V board.
+
+**Open decisions:** see the end of [`docs/bom/README.md`](docs/bom/README.md) and §11.
+
+---
+
 ## 1. Summary
 
-I propose a **credit-card-size (85 × 56 mm) Linux SBC** with a Raspberry-Pi-compatible 40-pin header, built around the **OSD6254-1G-IPM** SiP. The power, boot and peripheral design reuses circuits from TI's **SK-AM62B-P1**, whose schematic, PMIC configuration and DDR4 technology match this part. Octavo's **OSD62-PM-BRK** is the secondary reference for the SiP-specific parts.
+I propose a **Linux SBC (Rev 2: 100 × 70 mm)** with a Raspberry-Pi-compatible 40-pin header, built around the **OSD6254-1G-IPM** SiP. The power, boot and peripheral design reuses circuits from TI's **SK-AM62B-P1**, whose schematic, PMIC configuration and DDR4 technology match this part. Octavo's **OSD62-PM-BRK** is the secondary reference for the SiP-specific parts.
 
 The SiP removes the hardest part of an AM62x board: the DDR4 interface. Everything else in the TI reference still applies: the PMIC, power sequencing, clocks, boot straps and all the peripherals. The SK-AM62B needs 10 layers mostly because of DDR4 and its 0.5 mm SoC. Without DDR4, I expect this board to fit on **6 layers with through-vias only** (Octavo's own breakout board uses 4).
 
@@ -23,15 +68,16 @@ The SiP removes the hardest part of an AM62x board: the DDR4 interface. Everythi
 | Item | Proposal |
 |---|---|
 | Processor | OSD6254-1G-IPM: AM6254, 4× Cortex-A53 @ **1.4 GHz**, Cortex-M4F, 3D GPU, PRU-SS, **1 GB DDR4** inside, -40 to 85 °C case |
-| Storage | 8-bit eMMC (16–32 GB, HS200) + microSD (UHS-I) |
-| Networking | 1× Gigabit Ethernet (DP83867 + RJ45 with magnetics). *Option:* Wi-Fi 6 / BLE via M.2 Key-E (TI M.2-CC3351) |
-| Display | HDMI (up to 1080p60) through a parallel-RGB→HDMI bridge, plus a 40-pin LVDS (OLDI) FPC compatible with TI's SK-LCD1 panel |
+| Storage | Drop-in 32 GB eMMC module (MMC0, 8-bit, HS200) + microSD (UHS-I) |
+| Networking | 1× Gigabit Ethernet (DP83867IS + HR911130A RJ45 with magnetics) + Wi-Fi 6 / BLE via M.2 Key-E (TI M2-CC3351) |
+| Display | HDMI connector, up to 1080p60, through a TFP410 DPI→DVI transmitter (no HDMI audio) |
+| Audio | TLV320AIC3104 codec, 3.5 mm TRRS headset jack |
 | Camera | MIPI CSI-2, 15-pin Raspberry-Pi camera FPC (2 lanes) |
-| USB | 2× USB-A host (USB 2.0 hub on USB1), USB-C for power plus USB0 device mode (gadget and DFU boot) |
-| Expansion | 40-pin Raspberry-Pi-compatible header (GPIO, I2C, SPI, UART, PWM) |
-| Debug | USB-C debug port with an on-board USB-UART bridge, Tag-Connect JTAG footprint, boot-mode DIP switch |
-| Power | 5 V / 3 A over USB-C. TPS65219 PMIC with the **TPS6521904** NVM, the same OPN as the SK-AM62B-P1 |
-| PCB | 85 × 56 mm, Raspberry Pi B-style mounting holes and header position, **6 layers**, 1.6 mm, through-vias only |
+| USB | 2× USB-A host (CH335F hub on USB1), USB-C for power plus USB0 device mode (gadget and DFU boot) |
+| Expansion | 40-pin Raspberry-Pi-style header (GPIO, I2C, SPI0, UART, PWM, I2S) |
+| Debug | FT4232HL quad USB-UART on its own USB-C, Tag-Connect TC2070 JTAG footprint, boot-mode DIP switch |
+| Power | USB-PD (TPS25730, 5–9 V) → LM61460 3.3 V + TPS63070 5 V. TPS6521904RSM PMIC, the same NVM as the SK-AM62B-P1. |
+| PCB | **100 × 70 mm**, **6 layers**, JLCPCB JLC06161H-3313 (1.54 mm), through-vias only |
 
 ---
 
@@ -341,7 +387,7 @@ Phase 1 can start as soon as you approve this proposal. Where tracks are indepen
 
 ---
 
-## 11. Decisions I need from you
+## 11. Decisions (Rev 1 questions, answered in §0)
 
 Recommended answers are in **bold**.
 

@@ -1,0 +1,501 @@
+ball,name,type,power_domain,group,am62x_pad,notes
+A2,VSS,ground,VSS,GND,VSS,
+A3,MCU_UART0_RTSN,signal,VDDSHV_CANUART,MCU/WKUP,MCU_UART0_RTSn,AMC D7; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A4,MCU_SPI0_CLK,signal,VDDSHV_MCU,MCU/WKUP,MCU_SPI0_CLK,AMC B7; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A5,MCU_SPI0_D1,signal,VDDSHV_MCU,MCU/WKUP,MCU_SPI0_D1,AMC D8; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A6,MCU_SPI0_CS1,signal,VDDSHV_MCU,MCU/WKUP,MCU_SPI0_CS1,AMC C8; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A7,MCU_I2C0_SCL,signal,VDDSHV_MCU,MCU/WKUP,MCU_I2C0_SCL,AMC B9; 1.8V/3.3V; I2C OD FS; mux@reset=7; after-reset RX/TX/PULL=On/SS/NA
+A8,WKUP_I2C0_SCL,signal,VDDSHV_MCU,MCU/WKUP,WKUP_I2C0_SCL,AMC E9; 1.8V/3.3V; I2C OD FS; mux@reset=7; after-reset RX/TX/PULL=On/SS/NA
+A9,UART0_CTSN,signal,VDDSHV0,I2C/UART/SPI/McASP,UART0_CTSn,AMC B14; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A10,UART0_RXD,signal,VDDSHV0,I2C/UART/SPI/McASP,UART0_RXD,AMC A13; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A11,MCAN0_RX,signal,VDDSHV0,I2C/UART/SPI/McASP,MCAN0_RX,AMC A15; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A12,I2C0_SCL,signal,VDDSHV0,I2C/UART/SPI/McASP,I2C0_SCL,AMC E12; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A13,I2C1_SCL,signal,VDDSHV0,I2C/UART/SPI/McASP,I2C1_SCL,AMC A17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A14,VSS,ground,VSS,GND,VSS,
+A15,VMON_VSYS,power,VMON_VSYS,POWER,VMON_VSYS,"divider input, 0.45 V threshold; tie to VSS if unused"
+A16,MCASP0_AXR3,signal,VDDSHV0,I2C/UART/SPI/McASP,MCASP0_AXR3,AMC B18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A17,MCASP0_AXR1,signal,VDDSHV0,I2C/UART/SPI/McASP,MCASP0_AXR1,AMC A18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A18,MCASP0_ACLKX,signal,VDDSHV0,I2C/UART/SPI/McASP,MCASP0_ACLKX,AMC C17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A19,MCASP0_AFSR,signal,VDDSHV0,I2C/UART/SPI/McASP,MCASP0_AFSR,AMC D15; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A20,MMC1_DAT2,signal,VDDSHV5,MMC1,MMC1_DAT2,AMC B20; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A21,MMC1_CMD,signal,VDDSHV5,MMC1,MMC1_CMD,AMC C18; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A22,MMC1_DAT0,signal,VDDSHV5,MMC1,MMC1_DAT0,AMC A19; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A23,MMC1_SDCD,signal,VDDSHV0,MMC1,MMC1_SDCD,AMC C15; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A24,OSPI0_CLK,signal,VDDSHV1,OSPI0,OSPI0_CLK,AMC G19; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A25,OSPI0_D1,signal,VDDSHV1,OSPI0,OSPI0_D1,AMC G17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A26,OSPI0_D3,signal,VDDSHV1,OSPI0,OSPI0_D3,AMC F20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+A27,VSS,ground,VSS,GND,VSS,
+B1,VSS,ground,VSS,GND,VSS,
+B2,MCU_UART0_RXD,signal,VDDSHV_CANUART,MCU/WKUP,MCU_UART0_RXD,AMC A8; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B3,MCU_UART0_TXD,signal,VDDSHV_CANUART,MCU/WKUP,MCU_UART0_TXD,AMC B6; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B4,MCU_UART0_CTSN,signal,VDDSHV_CANUART,MCU/WKUP,MCU_UART0_CTSn,AMC B8; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B5,MCU_SPI0_D0,signal,VDDSHV_MCU,MCU/WKUP,MCU_SPI0_D0,AMC E8; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B6,MCU_SPI0_CS0,signal,VDDSHV_MCU,MCU/WKUP,MCU_SPI0_CS0,AMC E7; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B7,MCU_I2C0_SDA,signal,VDDSHV_MCU,MCU/WKUP,MCU_I2C0_SDA,AMC A10; 1.8V/3.3V; I2C OD FS; mux@reset=7; after-reset RX/TX/PULL=On/SS/NA
+B8,WKUP_I2C0_SDA,signal,VDDSHV_MCU,MCU/WKUP,WKUP_I2C0_SDA,AMC A9; 1.8V/3.3V; I2C OD FS; mux@reset=7; after-reset RX/TX/PULL=On/SS/NA
+B9,UART0_RTSN,signal,VDDSHV0,I2C/UART/SPI/McASP,UART0_RTSn,AMC C13; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B10,UART0_TXD,signal,VDDSHV0,I2C/UART/SPI/McASP,UART0_TXD,AMC E11; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B11,MCAN0_TX,signal,VDDSHV0,I2C/UART/SPI/McASP,MCAN0_TX,AMC B13; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B12,I2C0_SDA,signal,VDDSHV0,I2C/UART/SPI/McASP,I2C0_SDA,AMC D14; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B13,I2C1_SDA,signal,VDDSHV0,I2C/UART/SPI/McASP,I2C1_SDA,AMC A16; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B14,VSS,ground,VSS,GND,VSS,
+B15,VMON_3P3_SOC,power,VMON_3P3_SOC,POWER,VMON_3P3_SOC,
+B16,MCASP0_AXR2,signal,VDDSHV0,I2C/UART/SPI/McASP,MCASP0_AXR2,AMC B17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B17,MCASP0_AXR0,signal,VDDSHV0,I2C/UART/SPI/McASP,MCASP0_AXR0,AMC D18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B18,MCASP0_AFSX,signal,VDDSHV0,I2C/UART/SPI/McASP,MCASP0_AFSX,AMC C16; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B19,MCASP0_ACLKR,signal,VDDSHV0,I2C/UART/SPI/McASP,MCASP0_ACLKR,AMC D16; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B20,MMC1_DAT3,signal,VDDSHV5,MMC1,MMC1_DAT3,AMC C19; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B21,MMC1_CLK,signal,VDDSHV5,MMC1,MMC1_CLK,AMC A20; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B22,MMC1_DAT1,signal,VDDSHV5,MMC1,MMC1_DAT1,AMC B19; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B23,MMC1_SDWP,signal,VDDSHV0,MMC1,MMC1_SDWP,AMC B15; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B24,OSPI0_D0,signal,VDDSHV1,OSPI0,OSPI0_D0,AMC F18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B25,OSPI0_D2,signal,VDDSHV1,OSPI0,OSPI0_D2,AMC F21; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B26,OSPI0_D4,signal,VDDSHV1,OSPI0,OSPI0_D4,AMC G21; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B27,OSPI0_D5,signal,VDDSHV1,OSPI0,OSPI0_D5,AMC H21; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+B28,VSS,ground,VSS,GND,VSS,
+C1,WKUP_UART0_TXD,signal,VDDSHV_CANUART,MCU/WKUP,WKUP_UART0_TXD,AMC C6; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+C2,WKUP_UART0_RXD,signal,VDDSHV_CANUART,MCU/WKUP,WKUP_UART0_RXD,AMC B5; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+C3,VSS,ground,VSS,GND,VSS,
+C4,VSS,ground,VSS,GND,VSS,
+C5,MCU_RESETZ,signal,VDDSHV_MCU,SYSTEM/RESET/JTAG,MCU_RESETz,AMC C9; 1.8V/3.3V; LVCMOS; mux@reset=0; after-reset RX/TX/PULL=On/Off/Up
+C6,MCU_RESETSTATZ,signal,VDDSHV_MCU,SYSTEM/RESET/JTAG,MCU_RESETSTATz,AMC A12; 1.8V/3.3V; LVCMOS; mux@reset=0; after-reset RX/TX/PULL=Off/SS/Off
+C7,WKUP_CLKOUT0,signal,VDDSHV_MCU,MCU/WKUP,WKUP_CLKOUT0,AMC B12; 1.8V/3.3V; LVCMOS; mux@reset=0; after-reset RX/TX/PULL=Off/SS/Off
+C8,EMU1,signal,VDDSHV_MCU,SYSTEM/RESET/JTAG,EMU1,AMC B10; 1.8V/3.3V; LVCMOS; mux@reset=0; after-reset RX/TX/PULL=On/Off/Up
+C9,TRSTN,signal,VDDSHV_MCU,SYSTEM/RESET/JTAG,TRSTn,AMC A11; 1.8V/3.3V; LVCMOS; mux@reset=0; after-reset RX/TX/PULL=On/Off/Down
+C10,TMS,signal,VDDSHV_MCU,SYSTEM/RESET/JTAG,TMS,AMC B11; 1.8V/3.3V; LVCMOS; mux@reset=0; after-reset RX/TX/PULL=On/Off/Up
+C11,SPI0_CLK,signal,VDDSHV0,I2C/UART/SPI/McASP,SPI0_CLK,AMC D12; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+C12,SPI0_D1,signal,VDDSHV0,I2C/UART/SPI/McASP,SPI0_D1,AMC A14; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+C13,SPI0_CS1,signal,VDDSHV0,I2C/UART/SPI/McASP,SPI0_CS1,AMC D13; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+C14,VSS,ground,VSS,GND,VSS,
+C15,VMON_1P8_SOC,power,VMON_1P8_SOC,POWER,VMON_1P8_SOC,
+C16,VPP,power,VPP,POWER,VPP,eFuse programming supply (1.8 V only when programming); NOT DDR VPP
+C17,EXTINTN,signal,VDDSHV0,SYSTEM/RESET/JTAG,EXTINTn,AMC B16; 1.8V/3.3V; I2C OD FS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/NA
+C18,RESETSTATZ,signal,VDDSHV0,SYSTEM/RESET/JTAG,RESETSTATz,AMC E14; 1.8V/3.3V; LVCMOS; mux@reset=0; after-reset RX/TX/PULL=Off/SS/Off
+C19,USB0_DRVVBUS,signal,VDDSHV0,USB,USB0_DRVVBUS,AMC D17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Down
+C20,MMC2_SDWP,signal,VDDSHV6,MMC2,MMC2_SDWP,AMC C20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+C21,MMC2_DAT3,signal,VDDSHV6,MMC2,MMC2_DAT3,AMC E20; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+C22,MMC2_DAT1,signal,VDDSHV6,MMC2,MMC2_DAT1,AMC D21; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+C23,MMC2_CMD,signal,VDDSHV6,MMC2,MMC2_CMD,AMC C21; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+C24,OSPI0_CSN3,signal,VDDSHV1,OSPI0,OSPI0_CSn3,AMC E18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+C25,OSPI0_CSN1,signal,VDDSHV1,OSPI0,OSPI0_CSn1,AMC F17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+C26,OSPI0_LBCLKO,signal,VDDSHV1,OSPI0,OSPI0_LBCLKO,AMC G18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+C27,OSPI0_D6,signal,VDDSHV1,OSPI0,OSPI0_D6,AMC G20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+C28,OSPI0_D7,signal,VDDSHV1,OSPI0,OSPI0_D7,AMC J21; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+D1,WKUP_UART0_CTSN,signal,VDDSHV_CANUART,MCU/WKUP,WKUP_UART0_CTSn,AMC A7; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+D2,WKUP_UART0_RTSN,signal,VDDSHV_CANUART,MCU/WKUP,WKUP_UART0_RTSn,AMC B4; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+D3,VSS,ground,VSS,GND,VSS,
+D4,VSS,ground,VSS,GND,VSS,
+D5,PMIC_LPM_EN0,signal,VDDSHV_CANUART,SYSTEM/RESET/JTAG,PMIC_LPM_EN0,AMC C7; 1.8V/3.3V; LVCMOS; mux@reset=0; after-reset RX/TX/PULL=Off/SS/Off
+D6,MCU_PORZ,signal,VDDS_OSC0,SYSTEM/RESET/JTAG,MCU_PORz,AMC B2; 1.8V; FS RESET; mux@reset=0
+D7,MCU_ERRORN,signal,VDDS_OSC0,SYSTEM/RESET/JTAG,MCU_ERRORn,AMC B1; 1.8V; LVCMOS; mux@reset=0; after-reset RX/TX/PULL=On/SS/Down
+D8,EMU0,signal,VDDSHV_MCU,SYSTEM/RESET/JTAG,EMU0,AMC D9; 1.8V/3.3V; LVCMOS; mux@reset=0; after-reset RX/TX/PULL=On/Off/Up
+D9,TCK,signal,VDDSHV_MCU,SYSTEM/RESET/JTAG,TCK,AMC C10; 1.8V/3.3V; LVCMOS; mux@reset=0; after-reset RX/TX/PULL=On/Off/Up
+D10,TDI,signal,VDDSHV_MCU,SYSTEM/RESET/JTAG,TDI,AMC D10; 1.8V/3.3V; LVCMOS; mux@reset=0; after-reset RX/TX/PULL=On/Off/Up
+D11,TDO,signal,VDDSHV_MCU,SYSTEM/RESET/JTAG,TDO,AMC E10; 1.8V/3.3V; LVCMOS; mux@reset=0; after-reset RX/TX/PULL=Off/SS/Up
+D12,SPI0_D0,signal,VDDSHV0,I2C/UART/SPI/McASP,SPI0_D0,AMC C12; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+D13,SPI0_CS0,signal,VDDSHV0,I2C/UART/SPI/McASP,SPI0_CS0,AMC C11; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+D14,VSS,ground,VSS,GND,VSS,
+D15,VDDS_OSC0,power,VDDS_OSC0,POWER,VDDS_OSC0,
+D16,EXT_REFCLK1,signal,VDDSHV0,SYSTEM/RESET/JTAG,EXT_REFCLK1,AMC C14; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+D17,RESET_REQZ,signal,VDDSHV0,SYSTEM/RESET/JTAG,RESET_REQz,AMC E15; 1.8V/3.3V; LVCMOS; mux@reset=0; after-reset RX/TX/PULL=On/Off/Up
+D18,PORZ_OUT,signal,VDDSHV0,SYSTEM/RESET/JTAG,PORz_OUT,AMC E13; 1.8V/3.3V; LVCMOS; mux@reset=0; after-reset RX/TX/PULL=Off/SS/Off
+D19,USB1_DRVVBUS,signal,VDDSHV0,USB,USB1_DRVVBUS,AMC E16; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Down
+D20,MMC2_SDCD,signal,VDDSHV6,MMC2,MMC2_SDCD,AMC D20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+D21,MMC2_DAT2,signal,VDDSHV6,MMC2,MMC2_DAT2,AMC E19; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+D22,MMC2_DAT0,signal,VDDSHV6,MMC2,MMC2_DAT0,AMC B21; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+D23,MMC2_CLK,signal,VDDSHV6,MMC2,MMC2_CLK,AMC E21; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+D24,OSPI0_CSN2,signal,VDDSHV1,OSPI0,OSPI0_CSn2,AMC E17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+D25,OSPI0_CSN0,signal,VDDSHV1,OSPI0,OSPI0_CSn0,AMC F19; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+D26,OSPI0_DQS,signal,VDDSHV1,OSPI0,OSPI0_DQS,AMC H20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+D27,GPMC0_AD7,signal,VDDSHV3,VOUT0/GPMC,GPMC0_AD7,AMC M20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=On/Off/Off; bootstrap BOOTMODE07
+D28,GPMC0_AD6,signal,VDDSHV3,VOUT0/GPMC,GPMC0_AD6,AMC L18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=On/Off/Off; bootstrap BOOTMODE06
+E1,MCU_MCAN0_RX,signal,VDDSHV_CANUART,MCU/WKUP,MCU_MCAN0_RX,AMC C4; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+E2,MCU_MCAN0_TX,signal,VDDSHV_CANUART,MCU/WKUP,MCU_MCAN0_TX,AMC C5; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+E3,VSS,ground,VSS,GND,VSS,
+E4,VSS,ground,VSS,GND,VSS,
+E5,VSS,ground,VSS,GND,VSS,
+E6,VSS,ground,VSS,GND,VSS,
+E7,VSS,ground,VSS,GND,VSS,
+E8,VSS,ground,VSS,GND,VSS,
+E9,VSS,ground,VSS,GND,VSS,
+E10,VSS,ground,VSS,GND,VSS,
+E11,VSS,ground,VSS,GND,VSS,
+E12,VSS,ground,VSS,GND,VSS,
+E13,VSS,ground,VSS,GND,VSS,
+E14,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+E15,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+E16,VSS,ground,VSS,GND,VSS,
+E17,VSS,ground,VSS,GND,VSS,
+E18,VSS,ground,VSS,GND,VSS,
+E19,VSS,ground,VSS,GND,VSS,
+E20,VSS,ground,VSS,GND,VSS,
+E21,VSS,ground,VSS,GND,VSS,
+E22,VSS,ground,VSS,GND,VSS,
+E23,VSS,ground,VSS,GND,VSS,
+E24,VSS,ground,VSS,GND,VSS,
+E25,GPMC0_CSN3,signal,VDDSHV3,VOUT0/GPMC,GPMC0_CSn3,AMC H19; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+E26,GPMC0_CSN2,signal,VDDSHV3,VOUT0/GPMC,GPMC0_CSn2,AMC H18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+E27,GPMC0_AD5,signal,VDDSHV3,VOUT0/GPMC,GPMC0_AD5,AMC L17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=On/Off/Off; bootstrap BOOTMODE05
+E28,GPMC0_AD4,signal,VDDSHV3,VOUT0/GPMC,GPMC0_AD4,AMC M21; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=On/Off/Off; bootstrap BOOTMODE04
+F1,MCU_MCAN1_RX,signal,VDDSHV_CANUART,MCU/WKUP,MCU_MCAN1_RX,AMC D6; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+F2,MCU_MCAN1_TX,signal,VDDSHV_CANUART,MCU/WKUP,MCU_MCAN1_TX,AMC D5; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+F3,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+F4,AM62X_RSVD1,reserved,,NC/RSVD,RSVD1,AMC C3; leave unconnected
+F5,AM62X_RSVD0,reserved,,NC/RSVD,RSVD0,AMC B3; leave unconnected
+F6,AM62X_RSVD2,reserved,,NC/RSVD,RSVD2,AMC E6; leave unconnected
+F7,AM62X_RSVD8,reserved,,NC/RSVD,RSVD8,AMC M5; leave unconnected
+F8,AM62X_RSVD4,reserved,,NC/RSVD,RSVD4,AMC R6; leave unconnected
+F9,AM62X_RSVD5,reserved,,NC/RSVD,RSVD5,AMC T13; leave unconnected
+F10,DDR_RSVD0,reserved,,NC/RSVD,,DDR reserved; no AM62x ball; leave unconnected
+F11,VDDSHV_CANUART,power,VDDSHV_CANUART,POWER,VDDSHV_CANUART,
+F12,VDDSHV_MCU,power,VDDSHV_MCU,POWER,VDDSHV_MCU,
+F13,VDDA_MCU,power,VDDA_MCU,POWER,VDDA_MCU,
+F14,VDDA_PLL2,power,VDDA_PLL2,POWER,VDDA_PLL2,
+F15,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+F16,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+F17,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+F18,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+F19,VSS,ground,VSS,GND,VSS,
+F20,VSS,ground,VSS,GND,VSS,
+F21,VSS,ground,VSS,GND,VSS,
+F22,VSS,ground,VSS,GND,VSS,
+F23,VSS,ground,VSS,GND,VSS,
+F24,VSS,ground,VSS,GND,VSS,
+F25,GPMC0_CSN1,signal,VDDSHV3,VOUT0/GPMC,GPMC0_CSn1,AMC H17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+F26,GPMC0_CSN0,signal,VDDSHV3,VOUT0/GPMC,GPMC0_CSn0,AMC J18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+F27,GPMC0_AD3,signal,VDDSHV3,VOUT0/GPMC,GPMC0_AD3,AMC L21; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=On/Off/Off; bootstrap BOOTMODE03
+F28,GPMC0_AD2,signal,VDDSHV3,VOUT0/GPMC,GPMC0_AD2,AMC L20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=On/Off/Off; bootstrap BOOTMODE02
+G1,MCU_OSC0_XI,signal,VDDS_OSC0,MCU/WKUP,MCU_OSC0_XI,AMC A5; 1.8V; HFOSC
+G2,MCU_OSC0_XO,signal,VDDS_OSC0,MCU/WKUP,MCU_OSC0_XO,AMC A6; 1.8V; HFOSC
+G3,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+G4,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+G5,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+G6,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+G7,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+G8,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+G9,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+G10,VDDSHV_CANUART,power,VDDSHV_CANUART,POWER,VDDSHV_CANUART,
+G11,VDDSHV_MCU,power,VDDSHV_MCU,POWER,VDDSHV_MCU,
+G12,VDD_CANUART,power,VDD_CANUART,POWER,VDD_CANUART,
+G13,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+G14,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+G15,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+G16,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+G17,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+G18,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+G19,VSS,ground,VSS,GND,VSS,
+G20,VSS,ground,VSS,GND,VSS,
+G21,VDDSHV5,power,VDDSHV5,POWER,VDDSHV5,
+G22,VDDSHV5,power,VDDSHV5,POWER,VDDSHV5,
+G23,VSS,ground,VSS,GND,VSS,
+G24,VSS,ground,VSS,GND,VSS,
+G25,GPMC0_DIR,signal,VDDSHV3,VOUT0/GPMC,GPMC0_DIR,AMC J19; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+G26,GPMC0_WPN,signal,VDDSHV3,VOUT0/GPMC,GPMC0_WPn,AMC J20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+G27,GPMC0_AD1,signal,VDDSHV3,VOUT0/GPMC,GPMC0_AD1,AMC L19; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=On/Off/Off; bootstrap BOOTMODE01
+G28,GPMC0_AD0,signal,VDDSHV3,VOUT0/GPMC,GPMC0_AD0,AMC K19; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=On/Off/Off; bootstrap BOOTMODE00
+H1,WKUP_LFOSC0_XI,signal,VDDS_OSC0,MCU/WKUP,WKUP_LFOSC0_XI,AMC A2; 1.8V; LFXOSC
+H2,WKUP_LFOSC0_XO,signal,VDDS_OSC0,MCU/WKUP,WKUP_LFOSC0_XO,AMC A3; 1.8V; LFXOSC
+H3,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+H4,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+H5,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+H6,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+H7,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+H8,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+H9,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+H10,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+H11,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+H12,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+H13,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+H14,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+H15,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+H16,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+H17,VDDR_CORE,power,VDDR_CORE,POWER,VDDR_CORE,
+H18,VDDR_CORE,power,VDDR_CORE,POWER,VDDR_CORE,
+H19,VSS,ground,VSS,GND,VSS,
+H20,VSS,ground,VSS,GND,VSS,
+H21,VDDSHV6,power,VDDSHV6,POWER,VDDSHV6,
+H22,VDDSHV6,power,VDDSHV6,POWER,VDDSHV6,
+H23,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+H24,VSS,ground,VSS,GND,VSS,
+H25,GPMC0_ADVN_ALE,signal,VDDSHV3,VOUT0/GPMC,GPMC0_ADVn_ALE,AMC K20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+H26,GPMC0_OEN_REN,signal,VDDSHV3,VOUT0/GPMC,GPMC0_OEn_REn,AMC K21; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+H27,GPMC0_AD15,signal,VDDSHV3,VOUT0/GPMC,GPMC0_AD15,AMC P20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=On/Off/Off; bootstrap BOOTMODE15
+H28,GPMC0_AD14,signal,VDDSHV3,VOUT0/GPMC,GPMC0_AD14,AMC P19; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=On/Off/Off; bootstrap BOOTMODE14
+J1,MMC0_CLK,signal,VDDSHV4,MMC0,MMC0_CLK,AMC Y1; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+J2,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+J3,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+J4,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+J5,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+J6,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+J7,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+J8,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+J9,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+J10,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+J11,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+J12,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+J13,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+J14,VSS,ground,VSS,GND,VSS,
+J15,VSS,ground,VSS,GND,VSS,
+J16,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+J17,VDDR_CORE,power,VDDR_CORE,POWER,VDDR_CORE,
+J18,VDDR_CORE,power,VDDR_CORE,POWER,VDDR_CORE,
+J19,VSS,ground,VSS,GND,VSS,
+J20,VSS,ground,VSS,GND,VSS,
+J21,VDDSHV0,power,VDDSHV0,POWER,VDDSHV0,
+J22,VDDSHV0,power,VDDSHV0,POWER,VDDSHV0,
+J23,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+J24,VSS,ground,VSS,GND,VSS,
+J25,GPMC0_WEN,signal,VDDSHV3,VOUT0/GPMC,GPMC0_WEn,AMC J17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+J26,GPMC0_BE0N_CLE,signal,VDDSHV3,VOUT0/GPMC,GPMC0_BE0n_CLE,AMC K17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+J27,GPMC0_AD13,signal,VDDSHV3,VOUT0/GPMC,GPMC0_AD13,AMC N19; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=On/Off/Off; bootstrap BOOTMODE13
+J28,GPMC0_AD12,signal,VDDSHV3,VOUT0/GPMC,GPMC0_AD12,AMC N17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=On/Off/Off; bootstrap BOOTMODE12
+K1,MMC0_CMD,signal,VDDSHV4,MMC0,MMC0_CMD,AMC V3; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+K2,MMC0_DAT0,signal,VDDSHV4,MMC0,MMC0_DAT0,AMC V2; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+K3,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+K4,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+K5,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+K6,VSS,ground,VSS,GND,VSS,
+K7,VSS,ground,VSS,GND,VSS,
+K8,VSS,ground,VSS,GND,VSS,
+K9,VSS,ground,VSS,GND,VSS,
+K10,VDDS_DDR,power,VDDS_DDR,POWER,VDDS_DDR + VDDS_DDR_C + DDR4 VDD/VDDQ (merged in SiP),1.2 V
+K11,VDDS_DDR,power,VDDS_DDR,POWER,VDDS_DDR + VDDS_DDR_C + DDR4 VDD/VDDQ (merged in SiP),1.2 V
+K12,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+K13,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+K14,VSS,ground,VSS,GND,VSS,
+K15,VSS,ground,VSS,GND,VSS,
+K16,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+K17,VDDR_CORE,power,VDDR_CORE,POWER,VDDR_CORE,
+K18,VDDR_CORE,power,VDDR_CORE,POWER,VDDR_CORE,
+K19,VSS,ground,VSS,GND,VSS,
+K20,VSS,ground,VSS,GND,VSS,
+K21,VDDSHV1,power,VDDSHV1,POWER,VDDSHV1,
+K22,VDDSHV1,power,VDDSHV1,POWER,VDDSHV1,
+K23,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+K24,VSS,ground,VSS,GND,VSS,
+K25,GPMC0_BE1N,signal,VDDSHV3,VOUT0/GPMC,GPMC0_BE1n,AMC K18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+K26,GPMC0_CLK,signal,VDDSHV3,VOUT0/GPMC,GPMC0_CLK,AMC M19; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+K27,GPMC0_AD10,signal,VDDSHV3,VOUT0/GPMC,GPMC0_AD10,AMC M17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=On/Off/Off; bootstrap BOOTMODE10
+K28,GPMC0_AD11,signal,VDDSHV3,VOUT0/GPMC,GPMC0_AD11,AMC N18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=On/Off/Off; bootstrap BOOTMODE11
+L1,MMC0_DAT1,signal,VDDSHV4,MMC0,MMC0_DAT1,AMC V1; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+L2,MMC0_DAT2,signal,VDDSHV4,MMC0,MMC0_DAT2,AMC W2; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+L3,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+L4,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+L5,VSS,ground,VSS,GND,VSS,
+L6,VSS,ground,VSS,GND,VSS,
+L7,VSS,ground,VSS,GND,VSS,
+L8,VSS,ground,VSS,GND,VSS,
+L9,VDDS_DDR,power,VDDS_DDR,POWER,VDDS_DDR + VDDS_DDR_C + DDR4 VDD/VDDQ (merged in SiP),1.2 V
+L10,VDDS_DDR,power,VDDS_DDR,POWER,VDDS_DDR + VDDS_DDR_C + DDR4 VDD/VDDQ (merged in SiP),1.2 V
+L11,VDDS_DDR,power,VDDS_DDR,POWER,VDDS_DDR + VDDS_DDR_C + DDR4 VDD/VDDQ (merged in SiP),1.2 V
+L12,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+L13,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+L14,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+L15,VDD_CORE,power,VDD_CORE,POWER,VDD_CORE + VDDA_DDR_PLL0 (merged in SiP),
+L16,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+L17,VDDR_CORE,power,VDDR_CORE,POWER,VDDR_CORE,
+L18,VDDR_CORE,power,VDDR_CORE,POWER,VDDR_CORE,
+L19,VSS,ground,VSS,GND,VSS,
+L20,VSS,ground,VSS,GND,VSS,
+L21,VDDSHV3,power,VDDSHV3,POWER,VDDSHV3,
+L22,VDDSHV3,power,VDDSHV3,POWER,VDDSHV3,
+L23,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+L24,VSS,ground,VSS,GND,VSS,
+L25,GPMC0_WAIT0,signal,VDDSHV3,VOUT0/GPMC,GPMC0_WAIT0,AMC P21; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+L26,GPMC0_WAIT1,signal,VDDSHV3,VOUT0/GPMC,GPMC0_WAIT1,AMC P17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+L27,GPMC0_AD8,signal,VDDSHV3,VOUT0/GPMC,GPMC0_AD8,AMC N20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=On/Off/Off; bootstrap BOOTMODE08
+L28,GPMC0_AD9,signal,VDDSHV3,VOUT0/GPMC,GPMC0_AD9,AMC N21; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=On/Off/Off; bootstrap BOOTMODE09
+M1,MMC0_DAT3,signal,VDDSHV4,MMC0,MMC0_DAT3,AMC W1; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+M2,MMC0_DAT4,signal,VDDSHV4,MMC0,MMC0_DAT4,AMC Y2; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+M3,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+M4,VSS,ground,VSS,GND,VSS,
+M5,VSS,ground,VSS,GND,VSS,
+M6,VSS,ground,VSS,GND,VSS,
+M7,VSS,ground,VSS,GND,VSS,
+M8,VDDS_DDR,power,VDDS_DDR,POWER,VDDS_DDR + VDDS_DDR_C + DDR4 VDD/VDDQ (merged in SiP),1.2 V
+M9,VDDS_DDR,power,VDDS_DDR,POWER,VDDS_DDR + VDDS_DDR_C + DDR4 VDD/VDDQ (merged in SiP),1.2 V
+M10,VDDS_DDR,power,VDDS_DDR,POWER,VDDS_DDR + VDDS_DDR_C + DDR4 VDD/VDDQ (merged in SiP),1.2 V
+M11,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+M12,VDDA_CORE_USB,power,VDDA_CORE_USB,POWER,VDDA_CORE_USB,
+M13,VDDA_CORE_CSIRX0,power,VDDA_CORE_CSIRX0,POWER,VDDA_CORE_CSIRX0,
+M14,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+M15,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+M16,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+M17,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+M18,AM62X_RSVD6,reserved,,NC/RSVD,RSVD6,AMC T14; leave unconnected
+M19,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+M20,VSS,ground,VSS,GND,VSS,
+M21,VDDSHV2,power,VDDSHV2,POWER,VDDSHV2,
+M22,VDDSHV2,power,VDDSHV2,POWER,VDDSHV2,
+M23,VSS,ground,VSS,GND,VSS,
+M24,VSS,ground,VSS,GND,VSS,
+M25,VOUT0_DATA3,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DATA3,AMC R19; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+M26,VOUT0_DATA4,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DATA4,AMC R20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+M27,VOUT0_DATA14,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DATA14,AMC U18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+M28,VOUT0_DATA15,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DATA15,AMC V20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+N1,MMC0_DAT5,signal,VDDSHV4,MMC0,MMC0_DAT5,AMC W3; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+N2,MMC0_DAT6,signal,VDDSHV4,MMC0,MMC0_DAT6,AMC W4; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+N3,VSS,ground,VSS,GND,VSS,
+N4,VSS,ground,VSS,GND,VSS,
+N5,VSS,ground,VSS,GND,VSS,
+N6,VSS,ground,VSS,GND,VSS,
+N7,VDDA_3P3_USB,power,VDDA_3P3_USB,POWER,VDDA_3P3_USB,
+N8,VDDS_DDR,power,VDDS_DDR,POWER,VDDS_DDR + VDDS_DDR_C + DDR4 VDD/VDDQ (merged in SiP),1.2 V
+N9,VDDS_DDR,power,VDDS_DDR,POWER,VDDS_DDR + VDDS_DDR_C + DDR4 VDD/VDDQ (merged in SiP),1.2 V
+N10,DDR_VPP,power,DDR_VPP,POWER,DDR4 VPP (no AM62x ball),"DDR4 VPP 2.5 V, 60 mA max"
+N11,VDDSHV4,power,VDDSHV4,POWER,VDDSHV4,
+N12,VDDA_TEMP,power,VDDA_TEMP,POWER,VDDA_TEMP0 + VDDA_TEMP1 (merged in SiP),
+N13,VDDA_PLL0,power,VDDA_PLL0,POWER,VDDA_PLL0,
+N14,VDDA_PLL1,power,VDDA_PLL1,POWER,VDDA_PLL1,
+N15,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+N16,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+N17,AM62X_RSVD3,reserved,,NC/RSVD,RSVD3,AMC F8; leave unconnected
+N18,AM62X_RSVD7,reserved,,NC/RSVD,RSVD7,AMC M4; leave unconnected
+N19,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+N20,VSS,ground,VSS,GND,VSS,
+N21,VSS,ground,VSS,GND,VSS,
+N22,VSS,ground,VSS,GND,VSS,
+N23,VSS,ground,VSS,GND,VSS,
+N24,VSS,ground,VSS,GND,VSS,
+N25,VOUT0_DATA1,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DATA1,AMC P18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+N26,VOUT0_DATA2,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DATA2,AMC R18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+N27,VOUT0_DATA12,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DATA12,AMC U19; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+N28,VOUT0_DATA13,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DATA13,AMC V21; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+P1,MMC0_DAT7,signal,VDDSHV4,MMC0,MMC0_DAT7,AMC V4; 1.8V/3.3V; SDIO; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+P2,OLDI0_A0N,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_A0N,AMC AA2; 1.8V; OLDI
+P3,VSS,ground,VSS,GND,VSS,
+P4,VSS,ground,VSS,GND,VSS,
+P5,VSS,ground,VSS,GND,VSS,
+P6,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+P7,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+P8,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+P9,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+P10,VDDSHV4,power,VDDSHV4,POWER,VDDSHV4,
+P11,VDDA_1P8_OLDI0,power,VDDA_1P8_OLDI0,POWER,VDDA_1P8_OLDI0,keep at 1.8 V even with OLDI0 unused (no VSS exception in AM62x Table 5-74)
+P12,VDDA_1P8_USB,power,VDDA_1P8_USB,POWER,VDDA_1P8_USB,
+P13,VDDA_1P8_CSIRX0,power,VDDA_1P8_CSIRX0,POWER,VDDA_1P8_CSIRX0,
+P14,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+P15,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+P16,VSS,ground,VSS,GND,VSS,
+P17,VSS,ground,VSS,GND,VSS,
+P18,VSS,ground,VSS,GND,VSS,
+P19,VSS,ground,VSS,GND,VSS,
+P20,VSS,ground,VSS,GND,VSS,
+P21,VSS,ground,VSS,GND,VSS,
+P22,VSS,ground,VSS,GND,VSS,
+P23,VSS,ground,VSS,GND,VSS,
+P24,VSS,ground,VSS,GND,VSS,
+P25,VOUT0_HSYNC,signal,VDDSHV3,VOUT0/GPMC,VOUT0_HSYNC,AMC W21; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+P26,VOUT0_DATA0,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DATA0,AMC R21; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+P27,VOUT0_DATA10,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DATA10,AMC T18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+P28,VOUT0_DATA11,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DATA11,AMC U20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+R1,OLDI0_A0P,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_A0P,AMC AA3; 1.8V; OLDI
+R2,OLDI0_A1N,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_A1N,AMC V5; 1.8V; OLDI
+R3,VSS,ground,VSS,GND,VSS,
+R4,VSS,ground,VSS,GND,VSS,
+R5,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+R6,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+R7,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+R8,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+R9,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+R10,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+R11,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+R12,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+R13,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+R14,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+R15,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+R16,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+R17,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+R18,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+R19,RGMII2_TXC,signal,VDDSHV2,RGMII,RGMII2_TXC,AMC Y18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+R20,RGMII2_TD3,signal,VDDSHV2,RGMII,RGMII2_TD3,AMC V16; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+R21,RGMII2_TD1,signal,VDDSHV2,RGMII,RGMII2_TD1,AMC U15; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+R22,RGMII2_RXC,signal,VDDSHV2,RGMII,RGMII2_RXC,AMC V18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+R23,RGMII2_RD3,signal,VDDSHV2,RGMII,RGMII2_RD3,AMC W20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+R24,RGMII2_RD1,signal,VDDSHV2,RGMII,RGMII2_RD1,AMC Y20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+R25,VOUT0_DE,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DE,AMC T17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+R26,VOUT0_VSYNC,signal,VDDSHV3,VOUT0/GPMC,VOUT0_VSYNC,AMC T16; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+R27,VOUT0_DATA8,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DATA8,AMC U21; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+R28,VOUT0_DATA9,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DATA9,AMC R17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+T1,OLDI0_A1P,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_A1P,AMC V6; 1.8V; OLDI
+T2,OLDI0_A2N,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_A2N,AMC U7; 1.8V; OLDI
+T3,VSS,ground,VSS,GND,VSS,
+T4,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+T5,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+T6,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+T7,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+T8,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+T9,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+T10,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+T11,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+T12,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+T13,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+T14,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+T15,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+T16,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+T17,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+T18,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+T19,VSS,ground,VSS,GND,VSS,
+T20,RGMII2_TX_CTL,signal,VDDSHV2,RGMII,RGMII2_TX_CTL,AMC Y21; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+T21,RGMII2_TD2,signal,VDDSHV2,RGMII,RGMII2_TD2,AMC W17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+T22,RGMII2_TD0,signal,VDDSHV2,RGMII,RGMII2_TD0,AMC AA20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+T23,RGMII2_RX_CTL,signal,VDDSHV2,RGMII,RGMII2_RX_CTL,AMC W19; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+T24,RGMII2_RD2,signal,VDDSHV2,RGMII,RGMII2_RD2,AMC Y19; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+T25,RGMII2_RD0,signal,VDDSHV2,RGMII,RGMII2_RD0,AMC W18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+T26,VOUT0_PCLK,signal,VDDSHV3,VOUT0/GPMC,VOUT0_PCLK,AMC U17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+T27,VOUT0_DATA6,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DATA6,AMC T21; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+T28,VOUT0_DATA7,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DATA7,AMC T19; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+U1,VSS,ground,VSS,GND,VSS,
+U2,OLDI0_A2P,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_A2P,AMC U6; 1.8V; OLDI
+U3,OLDI0_A3N,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_A3N,AMC W6; 1.8V; OLDI
+U4,OLDI0_A4N,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_A4N,AMC AA4; 1.8V; OLDI
+U5,OLDI0_A5N,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_A5N,AMC AA6; 1.8V; OLDI
+U6,OLDI0_A6N,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_A6N,AMC AA10; 1.8V; OLDI
+U7,OLDI0_A7N,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_A7N,AMC AA8; 1.8V; OLDI
+U8,OLDI0_CLK0N,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_CLK0N,AMC V7; 1.8V; OLDI
+U9,OLDI0_CLK1N,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_CLK1N,AMC Y7; 1.8V; OLDI
+U10,USB1_DM,signal,VDDA_1P8_USB/VDDA_3P3_USB,USB,USB1_DM,AMC W8; 1.8V/3.3V; USB2PHY
+U11,USB1_VBUS,signal,VDDA_1P8_USB/VDDA_3P3_USB,USB,USB1_VBUS,AMC U9; 1.8V/3.3V; USB2PHY
+U12,USB0_DM,signal,VDDA_1P8_USB/VDDA_3P3_USB,USB,USB0_DM,AMC AA11; 1.8V/3.3V; USB2PHY
+U13,CSI0_RXN3,signal,VDDA_1P8_CSIRX0,CSI0,CSI0_RXN3,AMC W12; 1.8V; D-PHY
+U14,CSI0_RXN2,signal,VDDA_1P8_CSIRX0,CSI0,CSI0_RXN2,AMC U12; 1.8V; D-PHY
+U15,CSI0_RXP1,signal,VDDA_1P8_CSIRX0,CSI0,CSI0_RXP1,AMC V12; 1.8V; D-PHY
+U16,CSI0_RXP0,signal,VDDA_1P8_CSIRX0,CSI0,CSI0_RXP0,AMC Y12; 1.8V; D-PHY
+U17,CSI0_RXCLKP,signal,VDDA_1P8_CSIRX0,CSI0,CSI0_RXCLKP,AMC AA13; 1.8V; D-PHY
+U18,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+U19,VSS,ground,VSS,GND,VSS,
+U20,RGMII1_RXC,signal,VDDSHV2,RGMII,RGMII1_RXC,AMC AA16; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+U21,RGMII1_RD2,signal,VDDSHV2,RGMII,RGMII1_RD2,AMC AA17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+U22,RGMII1_RD0,signal,VDDSHV2,RGMII,RGMII1_RD0,AMC W15; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+U23,RGMII1_TXC,signal,VDDSHV2,RGMII,RGMII1_TXC,AMC W16; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+U24,RGMII1_TD2,signal,VDDSHV2,RGMII,RGMII1_TD2,AMC Y17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+U25,RGMII1_TD0,signal,VDDSHV2,RGMII,RGMII1_TD0,AMC U14; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+U26,MDIO0_MDIO,signal,VDDSHV2,RGMII,MDIO0_MDIO,AMC U16; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+U27,VOUT0_DATA5,signal,VDDSHV3,VOUT0/GPMC,VOUT0_DATA5,AMC T20; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+U28,VSS,ground,VSS,GND,VSS,
+V2,VSS,ground,VSS,GND,VSS,
+V3,OLDI0_A3P,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_A3P,AMC W5; 1.8V; OLDI
+V4,OLDI0_A4P,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_A4P,AMC Y5; 1.8V; OLDI
+V5,OLDI0_A5P,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_A5P,AMC AA5; 1.8V; OLDI
+V6,OLDI0_A6P,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_A6P,AMC Y9; 1.8V; OLDI
+V7,OLDI0_A7P,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_A7P,AMC Y8; 1.8V; OLDI
+V8,OLDI0_CLK0P,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_CLK0P,AMC V8; 1.8V; OLDI
+V9,OLDI0_CLK1P,signal,VDDA_1P8_OLDI0,OLDI0,OLDI0_CLK1P,AMC AA7; 1.8V; OLDI
+V10,USB1_DP,signal,VDDA_1P8_USB/VDDA_3P3_USB,USB,USB1_DP,AMC W9; 1.8V/3.3V; USB2PHY
+V11,USB0_VBUS,signal,VDDA_1P8_USB/VDDA_3P3_USB,USB,USB0_VBUS,AMC V10; 1.8V/3.3V; USB2PHY
+V12,USB0_DP,signal,VDDA_1P8_USB/VDDA_3P3_USB,USB,USB0_DP,AMC Y10; 1.8V/3.3V; USB2PHY
+V13,CSI0_RXP3,signal,VDDA_1P8_CSIRX0,CSI0,CSI0_RXP3,AMC W11; 1.8V; D-PHY
+V14,CSI0_RXP2,signal,VDDA_1P8_CSIRX0,CSI0,CSI0_RXP2,AMC U11; 1.8V; D-PHY
+V15,CSI0_RXN1,signal,VDDA_1P8_CSIRX0,CSI0,CSI0_RXN1,AMC V13; 1.8V; D-PHY
+V16,CSI0_RXN0,signal,VDDA_1P8_CSIRX0,CSI0,CSI0_RXN0,AMC Y13; 1.8V; D-PHY
+V17,CSI0_RXCLKN,signal,VDDA_1P8_CSIRX0,CSI0,CSI0_RXCLKN,AMC AA14; 1.8V; D-PHY
+V18,NC,nc,,NC/RSVD,,Do not connect or route through (Octavo); may be used in future SiP versions
+V19,VSS,ground,VSS,GND,VSS,
+V20,RGMII1_RX_CTL,signal,VDDSHV2,RGMII,RGMII1_RX_CTL,AMC W14; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+V21,RGMII1_RD3,signal,VDDSHV2,RGMII,RGMII1_RD3,AMC Y15; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+V22,RGMII1_RD1,signal,VDDSHV2,RGMII,RGMII1_RD1,AMC Y16; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+V23,RGMII1_TX_CTL,signal,VDDSHV2,RGMII,RGMII1_TX_CTL,AMC V15; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+V24,RGMII1_TD3,signal,VDDSHV2,RGMII,RGMII1_TD3,AMC AA18; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+V25,RGMII1_TD1,signal,VDDSHV2,RGMII,RGMII1_TD1,AMC AA19; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+V26,MDIO0_MDC,signal,VDDSHV2,RGMII,MDIO0_MDC,AMC V17; 1.8V/3.3V; LVCMOS; mux@reset=7; after-reset RX/TX/PULL=Off/Off/Off
+V27,VSS,ground,VSS,GND,VSS,
