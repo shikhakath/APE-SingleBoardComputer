@@ -4,6 +4,29 @@ This folder builds the APE-SBC Altium schematic from Python. Symbols and sheets 
 
 **Status: written without Altium access.** Everything below `build.py check` has not run against a live Altium yet. Do the smoke test (step 5) before trusting any generated sheet, and report what breaks.
 
+**Schematic v0.1:** 16 sheets, 687 designators, 443 nets. `build.py check` passes with no single-node nets, no accidental connections and no overlaps. Open questions are in [`docs/schematic-open-items.md`](../../docs/schematic-open-items.md).
+
+| Sheet | Content |
+|---|---|
+| 01 Power input | USB-C PD (TPS25730), LM61460 3.3 V, TPS63070 5 V |
+| 02 PMIC | TPS6521904, 3.3 V IO switch, VPP and PHY 1.0 V LDOs |
+| 03 SiP power | 72 supply balls, beads, decoupling, VMON |
+| 04 SiP GND/NC | 104 VSS and 103 NC/RSVD balls |
+| 05 SiP IO | 221 signal balls, from the pin-assignment table |
+| 06 Clock/reset/boot | 25 MHz oscillator, 32 kHz crystal, MCU_PORz logic, buttons, boot straps and DIP switch |
+| 07 Storage | eMMC-module connector, microSD with UHS-I switching |
+| 08 Ethernet | DP83867IS, HR911130A |
+| 09 USB | USB0 device path, CH335F hub, dual USB-A |
+| 10 HDMI | TFP410, TPD12S016, HDMI-A |
+| 11 Audio | TLV320AIC3104, 12.288 MHz oscillator, TRRS jack |
+| 12 Camera | 15-pin Raspberry Pi CSI FPC |
+| 13 Wireless | M.2 Key-E for M2-CC3351 |
+| 14 Expansion | 40-pin header, HAT-ID EEPROM (DNP) |
+| 15 Debug | FT4232HL quad UART, isolation buffers, Tag-Connect JTAG |
+| 16 Misc | Board-ID EEPROM, TMP102, I2C0 pull-ups, LEDs, mounting holes |
+
+Footprints (`.PcbLib`) are not generated yet. Every symbol carries a footprint *name*; the names still need normalizing (see open items B12).
+
 ## How the work is split
 
 | Who | Does what |
@@ -86,7 +109,8 @@ Open the repository folder in Claude Code and approve the `altium` MCP server wh
 
 ## 7. Rules for editing
 
-- **Rebuilding a sheet erases it.** The builder clears every component, wire, net label, power port, junction and No-ERC marker on the target sheet, plus notes that start with `* `. Once you hand-edit a sheet in Altium, remove it from `SHEETS` in `build.py` and edit it only in Altium from then on.
+- **Rebuilding a sheet erases it.** The builder clears every component, wire, net label, power port, junction and No-ERC marker on the target sheet, plus notes that start with `* `. Once you hand-edit a sheet in Altium, add its module name (for example `s02_pmic`) to `FROZEN_SHEETS` in `build.py`. `build.py sheets` then skips it; naming it explicitly with `build.py sheet` still rebuilds it.
+- Sheets are found automatically (`sheets/sNN_*.py`), and so are symbols (`symbols.py` plus `SYMBOLS` in every `symlib/*.py`). Who owns which file, the fixed rail names and the SoC net names are in [`SHEET_CONTRACT.md`](SHEET_CONTRACT.md).
 - Connectivity is **by net name**. Every pin gets a short stub with a net label or a power/ground port. The project uses *Automatic* net scope and has no ports or sheet entries, so Altium treats net labels as global. Do not add ports or sheet entries unless you switch the whole project to hierarchical.
 - Net-name conventions:
   - Power rails are `<RAIL>_<VOLTAGE>`, for example `VCC_3V3_SYS`, `VDDS_DDR_1V2`, `DDR4_VPP_2V5`.
@@ -117,8 +141,12 @@ Open the repository folder in Claude Code and approve the `altium` MCP server wh
 | File | Purpose |
 |---|---|
 | `schgen.py` | Generator core: symbol layout, sheet placement, stubs and labels, pin-map check |
-| `symbols.py` | Every symbol, each IC with its datasheet pin-table reference |
+| `SHEET_CONTRACT.md` | Ownership, fixed rail and net names, rules for writing sheets |
+| `symbols.py` | Generic, shared, PMIC and SiP symbols, each IC with its datasheet pin-table reference |
+| `symlib/*.py` | Per-area symbols; each module exports `SYMBOLS` |
 | `sheets/sNN_*.py` | One module per sheet; `build(sch_dir)` returns a `Sheet` |
+| `data/osd6254_ballmap.csv` | All 500 SiP balls, verified against the Octavo datasheet |
+| `data/pinmux_allocation.csv` | SoC pin assignment: the source of every SoC-side net name |
 | `build.py` | Command-line driver |
 | `mcp_client.py` | Minimal stdio client for the Altium MCP server (no Claude needed) |
 | `altium/ape_sheet_builder.pas` | DelphiScript run through the MCP `run_altium_script` sandbox: builds one sheet from `C:\Users\Public\altium_mcp\ape_sheet_spec.txt` and saves it |

@@ -34,8 +34,13 @@ ORIENT_NAME = {0: "eRotate0", 1: "eRotate90", 2: "eRotate180", 3: "eRotate270"}
 DIR = {0: (1, 0), 1: (0, 1), 2: (-1, 0), 3: (0, -1)}
 
 GROUND_NETS = {"GND"}
-# Power-port nets: anything that looks like a supply rail
-RAIL_RE = re.compile(r"^(VCC|VDD|VDDS|VDDA|VSYS|VBUS|DDR4_VPP|VPP_|PP_|V5V|V3V3|V1V8)")
+# Power-port nets: supply rails. Control signals that merely start with a rail
+# prefix (VPP_EFUSE_EN, VBUS_DET, ...) stay net labels.
+RAIL_RE = re.compile(r"^(?!.*_(EN|N|DIV|DET|SEL|OK|FLT|PG)$)(VCC|VDD|VBUS|VSYS|DDR4_VPP|VPP_)")
+
+
+def is_rail(net: str) -> bool:
+    return bool(RAIL_RE.match(net))
 
 
 def overbar(name: str) -> str:
@@ -228,7 +233,7 @@ class Sheet:
             # Ground symbol points along the stub. Turning the stub down would
             # land on the next pin row's stub end (100 mil pitch) and short it.
             lines.append(f"POWER|{sx}|{sy}|{orient}|5|GND|0")
-        elif RAIL_RE.match(net):
+        elif is_rail(net):
             lines.append(f"POWER|{sx}|{sy}|{orient}|2|{net}|1")
         else:
             just = 2 if orient == 2 else 0
@@ -260,6 +265,57 @@ class Sheet:
                 if min(x1, x2) <= px <= max(x1, x2) and min(y1, y2) <= py <= max(y1, y2) and \
                         (x1 == x2 == px or y1 == y2 == py):
                     problems.append(f"{what} ({net}) touches a wire of {snet} at ({px},{py})")
+        return problems
+
+    SHEET_SIZE = {5: (11000, 8500), 6: (17000, 11000), 7: (22000, 17000), 8: (34000, 22000),
+                  9: (44000, 34000)}
+
+    def footprint_boxes(self):
+        """Approximate drawn extent of each placed part: body, pins, stubs and
+        label/port text (CHAR_W per character). Returns (label, x1, y1, x2, y2)."""
+        boxes = []
+        for pl in self.placed:
+            pins = [p for p in pl.symbol.pins
+                    if pl.symbol.part_count == 1 or p.part == pl.part]
+            xs, ys = [], []
+            for p in pins:
+                ex, ey = p.end()
+                xs += [p.x, ex]
+                ys += [p.y, ey]
+                net = pl.nets.get(p.number)
+                if net and net != "NC":
+                    stub = 100 if pl.symbol.designator_prefix in ("R", "C", "L", "FB", "D", "LED", "Y") else 200
+                    reach = stub + (0 if net in GROUND_NETS else len(net) * CHAR_W + 150)
+                    if net in GROUND_NETS:
+                        reach += 150
+                    dx, dy = DIR[p.orient]
+                    xs.append(ex + dx * reach)
+                    ys.append(ey + dy * reach)
+            for g in pl.symbol.graphics:
+                nums = [int(v) for v in g.split("|")[2:] if v.lstrip("-").isdigit()]
+                if g.startswith("rectangle"):
+                    xs += [nums[2], nums[4]]
+                    ys += [nums[3], nums[5]]
+            if not xs:
+                continue
+            boxes.append((f"{pl.designator}{'/' + str(pl.part) if pl.symbol.part_count > 1 else ''}",
+                          pl.x + min(xs), pl.y + min(ys) - 60, pl.x + max(xs), pl.y + max(ys) + 60))
+        return boxes
+
+    def check_layout(self) -> list[str]:
+        """Overlapping parts (including their label text) and parts off the sheet."""
+        problems = []
+        boxes = self.footprint_boxes()
+        for i, a in enumerate(boxes):
+            for b in boxes[i + 1:]:
+                if a[1] < b[3] and b[1] < a[3] and a[2] < b[4] and b[2] < a[4]:
+                    problems.append(f"{a[0]} overlaps {b[0]}")
+        w, h = self.SHEET_SIZE.get(self.style, (999999, 999999))
+        for lbl, x1, y1, x2, y2 in boxes:
+            if x1 < 300 or y1 < 300 or x2 > w - 300 or y2 > h - 300:
+                problems.append(f"{lbl} extends off the sheet ({x1},{y1})-({x2},{y2}) on {w}x{h}")
+            if x2 > w - 6500 and y1 < 1700:
+                problems.append(f"{lbl} runs into the title block area")
         return problems
 
     def check_pin_map(self, pin_map_text: str) -> list[str]:

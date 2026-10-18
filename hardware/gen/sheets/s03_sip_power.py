@@ -74,7 +74,7 @@ def build(sch_dir: str) -> Sheet:
            MPN="OSD6254-1G-IPM", Manufacturer="Octavo Systems")
 
     # ---- feed links and beads -------------------------------------------
-    sh.column(1500, 15400, [
+    sh.column(3000, 15400, [
         ("R300", RES, "VDD_CORE_0V85", "VDDR_CORE_0V85", "0R 0603 (VDDR_CORE from VDD_CORE)"),
         ("FB300", FB, "VDD_CORE_0V85", "VDDA_CORE_USB_0V85", BEAD_C),
         ("FB301", FB, "VDD_CORE_0V85", "VDDA_CORE_CSI_0V85", BEAD_C),
@@ -89,7 +89,7 @@ def build(sch_dir: str) -> Sheet:
     ])
 
     # ---- VMON_VSYS: 5 V divider, 0.45 V threshold -> trips at ~4.54 V ----
-    sh.column(1500, 10600, [
+    sh.column(3000, 10600, [
         ("R301", RES, "VCC_5V0", "VMON_VSYS", "10k 1% 0402"),
         ("R302", RES, "VMON_VSYS", "GND", "1.1k 1% 0402"),
         ("C300", CAP, "VMON_VSYS", "GND", "22pF 50V C0G 0402"),

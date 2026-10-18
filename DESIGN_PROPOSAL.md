@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| Status | **Rev 2: decisions recorded, schematic started.** §0 lists what changed from Rev 1. |
+| Status | **Rev 2: decisions recorded; schematic v0.1 generated (16 sheets, 687 parts), not yet compiled in Altium.** §0 lists what changed from Rev 1; open items in [`docs/schematic-open-items.md`](docs/schematic-open-items.md). |
 | Date | 2026-10-17 |
 | BOM | [`docs/bom/`](docs/bom/): priced, every part in stock, **$232.62 per board at qty 10** |
 | Schematic | [`hardware/gen/`](hardware/gen/): generator plus handoff guide for building it in Altium |

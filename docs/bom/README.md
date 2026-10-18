@@ -84,6 +84,21 @@ JLC06161H-3313, 1.54 mm finished. The recommended layer order is **TOP / GND / S
 | 90 Ω diff (USB) | 5.34 / 6 | 5.03 / 6 |
 | 100 Ω diff (Ethernet MDI, TMDS, CSI-2) | 4.69 / 8 | 4.33 / 8 |
 
+## Schematic reconciliation (schematic v0.1, 2026-10-17)
+
+The generated schematic (16 sheets, `hardware/gen`) has **687 designators: 629 fitted and 58 DNP**. Its parts match this BOM, apart from these additions made while drawing the sheets:
+
+| Addition | Where | Why | ≈ $/board |
+|---|---|---|---:|
+| SS34 Schottky (D103) | 01 power input | TPS25730 datasheet §8.5: VBUS-to-GND clamp | 0.03 |
+| BAT54WS (D902) | 09 USB | CH335F reset: keeps the hub out of CDP mode | 0.03 |
+| BLM18KG601SN1D ×5 | 10 HDMI, 11 audio, 12 camera | Separate TFP410 DVDD/PVDD/TVDD filtering (datasheet Fig 7-3), codec analog, camera supply | 0.10 |
+| Second zener + 3 resistors | 09 USB | USB1_VBUS divider (the AM62x host port also needs its VBUS pin handled) | 0.03 |
+| More passives than estimated | all | 257 capacitors and 244 resistors fitted, against ~181 and ~196 estimated | ≈ 0.6 |
+| DNP footprints | various | GB042-30P mechanical connector, VPP LDO, options | 0 |
+
+**Net effect: about +$0.8 per board.** The estimate becomes ≈ $233.4 per board at qty 10. The five reset AND gates priced under Clock+Reset+Boot can go: the sheets hold peripheral resets with resistors instead. That saves $0.22.
+
 ## Line items (140 placed lines)
 
 Plug-in modules and PCB/assembly fees are included as lines. Prices are USD per unit at the 10-board break.

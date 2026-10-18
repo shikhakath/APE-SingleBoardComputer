@@ -115,6 +115,38 @@ TLV755P = box("TLV755P_DBV", "TLV755P 500 mA LDO, SOT-23-5 (fixed output per OPN
     (4, "NC", "pas", "R"),
 ], footprint="SOT23-5_DBV")
 
+# ------------------------------------------------------------ shared logic / ESD
+# Used by several sheets, so they live here rather than in a symlib module.
+# SN74LVC1G08 DBV (SOT-23-5), ti.com/lit/ds/symlink/sn74lvc1g08.pdf Pin Functions.
+SN74LVC1G08 = box("SN74LVC1G08_DBV", "Single 2-input AND gate, SOT-23-5", [
+    (1, "A", "in", "L"), (2, "B", "in", "L"), (3, "GND", "pwr", "L"),
+    (5, "VCC", "pwr", "R"), (4, "Y", "out", "R"),
+], footprint="SOT23-5_DBV")
+# SN74LVC1G11 DCK (SC70-6), ti.com/lit/ds/symlink/sn74lvc1g11.pdf Table 4-1.
+SN74LVC1G11 = box("SN74LVC1G11_DCK", "Single 3-input AND gate, SC70-6", [
+    (1, "A", "in", "L"), (3, "B", "in", "L"), (6, "C", "in", "L"), (2, "GND", "pwr", "L"),
+    (5, "VCC", "pwr", "R"), (4, "Y", "out", "R"),
+], footprint="SC70-6_DCK")
+# SN74LVC2G17 DBV (SOT-23-6), ti.com/lit/ds/symlink/sn74lvc2g17.pdf Pin Functions.
+SN74LVC2G17 = box("SN74LVC2G17_DBV", "Dual Schmitt-trigger buffer, SOT-23-6", [
+    (1, "1A", "in", "L"), (3, "2A", "in", "L"), (2, "GND", "pwr", "L"),
+    (5, "VCC", "pwr", "R"), (6, "1Y", "out", "R"), (4, "2Y", "out", "R"),
+], footprint="SOT23-6_DBV")
+# TPD4E05U06 DQA (USON-10), ti.com/lit/ds/symlink/tpd4e05u06.pdf Table 4-2.
+# Four independent channels on pins 1/2/4/5; NC pins 6/7/9/10 are the
+# straight-through routing pads (leave unconnected).
+TPD4E05U06 = box("TPD4E05U06_DQA", "4-channel 0.5 pF ESD array, USON-10", [
+    (1, "D1+", "pas", "L"), (2, "D1-", "pas", "L"), (4, "D2+", "pas", "L"), (5, "D2-", "pas", "L"),
+    (3, "GND", "pwr", "R"), (8, "GND", "pwr", "R"),
+    (6, "NC", "pas", "R"), (7, "NC", "pas", "R"), (9, "NC", "pas", "R"), (10, "NC", "pas", "R"),
+], footprint="USON10_DQA")
+MOUNTING_HOLE = Symbol("MOUNTING_HOLE", "Plated mounting hole (pin to GND)",
+                       [Pin("1", "MH", "pas", "L", 1, 60, -40, 0, 2)],
+                       graphics=["ellipse|1|1|0|0|0|40|40", "ellipse|1|1|0|0|0|20|20"],
+                       designator_prefix="H", show_names=False, show_numbers=False)
+
+SHARED = [SN74LVC1G08, SN74LVC1G11, SN74LVC2G17, TPD4E05U06, MOUNTING_HOLE]
+
 # ------------------------------------------------------------ SiP
 # OSD6254-1G-IPM, 500-ball 0.5 mm BGA. Ball map: data/osd6254_ballmap.csv,
 # extracted from the Octavo OSD62x-PM datasheet Rev 2.0 (Tables 5-6/5-7 and
@@ -160,4 +192,4 @@ def _sip_symbol():
 
 OSD6254 = _sip_symbol()
 
-ALL = GENERIC + [TPS65219, TPS22965, TLV755P, OSD6254]
+ALL = GENERIC + SHARED + [TPS65219, TPS22965, TLV755P, OSD6254]

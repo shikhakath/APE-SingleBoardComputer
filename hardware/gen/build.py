@@ -37,26 +37,37 @@ PRJ_PATH = HW / "APE - Single Board Computer.PrjPcb"
 OUT = GEN / "out"
 BRIDGE = Path("C:/Users/Public/altium_mcp")
 
-# Sheet modules in gen/sheets/, in schematic order. Each defines build() -> Sheet.
-SHEETS = [
-    "s01_power_input",
-    "s02_pmic",
-    "s03_sip_power",
-]
+# Sheet modules are gen/sheets/sNN_*.py, built in NN order; each defines
+# build(sch_dir) -> Sheet. List a module stem here to stop regenerating a sheet
+# that has been hand-edited in Altium (see README section 7).
+FROZEN_SHEETS: set[str] = set()
 
 
-def load_sheets():
+def sheet_modules():
+    return sorted(p.stem for p in (GEN / "sheets").glob("s[0-9][0-9]_*.py"))
+
+
+def load_sheets(include_frozen=True):
     sheets = []
-    for name in SHEETS:
-        try:
-            mod = importlib.import_module(f"sheets.{name}")
-        except ModuleNotFoundError as e:
-            if e.name == f"sheets.{name}":
-                print(f"  (sheet module {name} not written yet - skipped)")
-                continue
-            raise
-        sheets.append(mod.build(str(SCH_DIR)))
+    for name in sheet_modules():
+        if name in FROZEN_SHEETS and not include_frozen:
+            continue
+        sheets.append(importlib.import_module(f"sheets.{name}").build(str(SCH_DIR)))
     return sheets
+
+
+def all_symbols():
+    """symbols.ALL plus SYMBOLS from every gen/symlib/*.py module."""
+    syms = list(symbols.ALL)
+    for p in sorted((GEN / "symlib").glob("*.py")):
+        if p.stem != "__init__":
+            syms += getattr(importlib.import_module(f"symlib.{p.stem}"), "SYMBOLS", [])
+    seen = {}
+    for s in syms:
+        if s.name in seen and seen[s.name] is not s:
+            raise ValueError(f"duplicate symbol name {s.name}")
+        seen[s.name] = s
+    return list(seen.values())
 
 
 # ------------------------------------------------------------------ check
@@ -67,7 +78,12 @@ def cmd_check():
     nets = defaultdict(list)
     owners = {}
     problems = []
+    exported = {s.name for s in all_symbols()}
     for sh in sheets:
+        for pl in sh.placed:
+            if pl.symbol.name not in exported:
+                problems.append(f"{sh.title}: {pl.designator} uses {pl.symbol.name}, "
+                                "which is not in symbols.ALL or any symlib SYMBOLS list")
         for pl in sh.placed:
             key = (pl.designator, pl.part)
             if key in owners:
@@ -76,6 +92,7 @@ def cmd_check():
         for net, nodes in sh.netlist().items():
             nets[net] += nodes
         problems += [f"{sh.title}: {p}" for p in sh.check_geometry()]
+        problems += [f"{sh.title}: layout: {p}" for p in sh.check_layout()]
     for net, nodes in sorted(nets.items()):
         if len(nodes) == 1 and not net.startswith("TP_"):
             problems.append(f"single-node net {net}: {nodes[0]}")
@@ -84,6 +101,13 @@ def cmd_check():
         w.writerow(["net", "node_count", "nodes"])
         for net, nodes in sorted(nets.items()):
             w.writerow([net, len(nodes), " ".join(sorted(nodes))])
+    with open(OUT / "rails.txt", "w") as f:
+        f.write("Power nets and what connects to them (review: every rail needs a source)\n\n")
+        for net, nodes in sorted(nets.items()):
+            if schgen.is_rail(net) or net == "GND":
+                parts = sorted({n.split(".")[0] for n in nodes})
+                ics = [p for p in parts if not p.startswith(("C", "TP"))]
+                f.write(f"{net:24s} {len(nodes):4d} pins  parts (no caps): {' '.join(ics)}\n")
     with open(OUT / "schematic_bom.csv", "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["designator", "part", "symbol", "comment", "sheet", "parameters"])
@@ -102,7 +126,7 @@ def cmd_check():
 
 def symbol_spec() -> str:
     lines = [f"LIBRARY|{LIB_PATH}"]
-    for sym in symbols.ALL:
+    for sym in all_symbols():
         lines += sym.spec_lines()
     return "\n".join(lines) + "\n"
 
@@ -186,7 +210,7 @@ def cmd_lib():
         if not save_docs([("SchLib", str(LIB_PATH))]) or not LIB_PATH.exists():
             print("could not create the library - create an empty SchLib at that path in Altium")
             return False
-    print(f"creating {len(symbols.ALL)} symbols in {LIB_PATH}")
+    print(f"creating {len(all_symbols())} symbols in {LIB_PATH}")
     res = mcp("create_symbols_batch", {"spec_file": str(spec)})
     print(json.dumps(res, indent=2)[:2000])
     return save_docs([("SchLib", str(LIB_PATH))])
@@ -219,7 +243,7 @@ def build_sheet(sh) -> bool:
 
 def cmd_sheets(names=None):
     ok = True
-    for sh in load_sheets():
+    for sh in load_sheets(include_frozen=bool(names)):
         if names and Path(sh.path).stem not in names and not any(
                 Path(sh.path).stem.startswith(n) for n in names):
             continue

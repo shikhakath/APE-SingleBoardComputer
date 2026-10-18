@@ -17,7 +17,8 @@ Rail map (TPS6521904 NVM, VSYS = 3.3 V):
 Open items: confirm the rail map and LDO1 bypass/LDO mode against TI SLVUCL1.
 """
 from schgen import Sheet
-from symbols import CAP, IND, RES, SW_PUSH, TESTPOINT, TLV755P, TPS22965, TPS65219, TVS_BI
+from symbols import CAP, IND, RES, TESTPOINT, TLV755P, TPS22965, TPS65219, TVS_BI
+from symlib.clock_reset import TS1187A
 
 C0402_100N = "100nF 16V X7R 0402"
 C0402_2U2 = "2.2uF 10V X5R 0402"
@@ -34,8 +35,8 @@ def build(sch_dir: str) -> Sheet:
         "13": "VCC_3V3_MAIN", "4": "VCC_3V3_MAIN", "5": "VCC_3V3_MAIN",
         "30": "VCC_3V3_MAIN", "26": "VCC_3V3_MAIN", "6": "VCC_3V3_MAIN",
         "20": "VDD_1V8", "22": "VCC_3V3_MAIN",
-        "25": "PMIC_PB_N", "28": "TP_PMIC_MODE_RESET", "31": "TP_PMIC_STBY",
-        "12": "PMIC_VSEL_SD",
+        "25": "PMIC_PB_N", "28": "TP_PMIC_MODE_RESET", "31": "PMIC_STBY",
+        "12": "SD_VSEL",
         "9": "I2C0_SDA", "10": "I2C0_SCL",
         "14": "PMIC_VDD1P8", "15": "GND", "33": "GND",
         "2": "PMIC_LX_B1", "3": "PMIC_LX_B1", "1": "VDD_CORE_0V85",
@@ -61,14 +62,14 @@ def build(sch_dir: str) -> Sheet:
     ])
 
     # ---- buck inductors (0.47 uH, DCR <= 50 mOhm, Isat >= 7.4 A B1 / 5.4 A B2-B3) ----
-    sh.column(10000, 13900, [
+    sh.column(11000, 13900, [
         ("L200", IND, "PMIC_LX_B1", "VDD_CORE_0V85", "0.47uH DFE252012F-R47M (Buck1, Isat 7.4A)", {"MPN": "DFE252012F-R47M=P2"}),
         ("L201", IND, "PMIC_LX_B2", "VDD_1V8", "0.47uH DFE252012F-R47M (Buck2)", {"MPN": "DFE252012F-R47M=P2"}),
         ("L202", IND, "PMIC_LX_B3", "VDDS_DDR_1V2", "0.47uH DFE252012F-R47M (Buck3)", {"MPN": "DFE252012F-R47M=P2"}),
     ], pitch=500)
 
     # ---- buck and LDO output capacitors (FB senses at these local caps) ----
-    sh.column(12500, 13900, [
+    sh.column(14000, 13900, [
         ("C210", CAP, "VDD_CORE_0V85", "GND", C0805_22U + " (Buck1 out)"),
         ("C211", CAP, "VDD_CORE_0V85", "GND", C0805_22U + " (Buck1 out)"),
         ("C212", CAP, "VDD_1V8", "GND", C0805_22U + " (Buck2 out)"),
@@ -76,29 +77,32 @@ def build(sch_dir: str) -> Sheet:
         ("C214", CAP, "VDDS_DDR_1V2", "GND", C0805_22U + " (Buck3 out)"),
         ("C215", CAP, "VDDS_DDR_1V2", "GND", C0805_22U + " (Buck3 out)"),
     ])
-    sh.column(15000, 13900, [
+    sh.column(17000, 13900, [
         ("C216", CAP, "VDD_SDIO_LDO1", "GND", C0402_2U2 + " (LDO1 out)"),
         ("C217", CAP, "VDD_LDO2", "GND", C0402_2U2 + " (LDO2 out, unused)"),
         ("C218", CAP, "VDDA_1V8", "GND", C0402_2U2 + " (LDO3 out)"),
         ("C219", CAP, "DDR4_VPP_2V5", "GND", C0402_2U2 + " (LDO4 out)"),
     ])
-    sh.note(12000, 14600, "FB_B1/B2/B3 route as traces to the local output caps (no remote sense)")
-    sh.note(12000, 14400, "Total C on each LDO rail incl. SiP-internal caps: LDO1/2 <= 20uF, LDO3/4 <= 30uF (slow ramp)")
+    sh.note(13500, 14600, "FB_B1/B2/B3 route as traces to the local output caps (no remote sense)")
+    sh.note(13500, 14400, "Total C on each LDO rail incl. SiP-internal caps: LDO1/2 <= 20uF, LDO3/4 <= 30uF (slow ramp)")
 
     # ---- control pull-ups, interrupt slew limiter, push button ----
     sh.column(2500, 9500, [
         ("R200", RES, "VCC_3V3_MAIN", "PMIC_PB_N", "10k"),
-        ("R201", RES, "VCC_3V3_MAIN", "PMIC_PGOOD", "10k"),
+        ("R201", RES, "VCC_3V3_MAIN", "PMIC_PGOOD", "2.2k (fast edge into the MCU_PORz gate, sheet 06)"),
         ("R202", RES, "VCC_3V3_SYS", "PMIC_INT_N", "10k"),
-        ("R203", RES, "PMIC_INT_N", "EXTINT_N", "62R (slew limiter, SK rev B)"),
-        ("C220", CAP, "EXTINT_N", "GND", "47pF 50V C0G 0402"),
-        ("R204", RES, "VCC_3V3_SYS", "PMIC_VSEL_SD", "10k (SD starts at 3.3 V)"),
+        ("R203", RES, "PMIC_INT_N", "PMIC_NINT", "62R (slew limiter, SK rev B)"),
+        ("C220", CAP, "PMIC_NINT", "GND", "47pF 50V C0G 0402"),
+        ("R204", RES, "VCC_3V3_SYS", "SD_VSEL", "10k (SD starts at 3.3 V)"),
         ("R205", RES, "VCC_3V3_MAIN", "EN_3V3_SYS", "10k (GPO2 is open drain)"),
-        ("SW200", SW_PUSH, "PMIC_PB_N", "GND", "Power button"),
         ("D200", TVS_BI, "PMIC_PB_N", "GND", "TPD1E10B06 ESD"),
+        ("R207", RES, "PMIC_LPM_EN0", "PMIC_STBY", "0R DNP (SoC low-power control; SK removed this link)",
+         {"DNP": "1"}),
     ])
+    sh.add("SW200", TS1187A, 6000, 6300, {"1": "PMIC_PB_N", "2": "PMIC_PB_N", "3": "GND", "4": "GND"},
+           comment="TS-1187A-B-A-B (POWER)", MPN="TS-1187A-B-A-B", Manufacturer="XKB Connection")
     sh.add("TP200", TESTPOINT, 6000, 8500, {"1": "TP_PMIC_MODE_RESET"}, comment="MODE/RESET (internal pull)")
-    sh.add("TP201", TESTPOINT, 6000, 8100, {"1": "TP_PMIC_STBY"}, comment="MODE/STBY")
+    sh.add("TP201", TESTPOINT, 6000, 8100, {"1": "PMIC_STBY"}, comment="MODE/STBY")
     sh.add("TP202", TESTPOINT, 6000, 7700, {"1": "TP_PMIC_GPO1"}, comment="GPO1")
     sh.add("TP203", TESTPOINT, 6000, 7300, {"1": "TP_PMIC_GPIO"}, comment="GPIO")
     sh.add("TP204", TESTPOINT, 6000, 6900, {"1": "VDD_LDO2"}, comment="LDO2")
