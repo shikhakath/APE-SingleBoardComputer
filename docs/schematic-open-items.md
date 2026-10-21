@@ -18,19 +18,21 @@ Priority: **A** = must resolve before layout, **B** = confirm at footprint/PCB s
 
 ## Footprint checks (manufacturer drawings without pad numbers)
 
+The footprints exist (`hardware/gen/fplib/`). Section 10 of `hardware/gen/README.md` lists what each one assumes.
+
 | # | Part | Assumption to verify |
 |---|---|---|
-| B2 | J100/J1500 USB-C (HRO TYPE-C-31-M-12) | Pads named A1B12, A4B9, B4A9, B1A12 for the shared pads; shell pegs S1–S4 |
+| B2 | J100/J1500 USB-C (HRO TYPE-C-31-M-12) | Pads named A1B12, A4B9, B4A9, B1A12 for the shared pads; shell slots S1/S2 front (0.6 × 1.4 mm), S3/S4 rear (0.6 × 1.7 mm) |
 | B3 | J1000 HDMI-A (XFCN) | Standard HDMI order 1–19; shell legs 20–23 |
 | B4 | J1100 TRRS jack PJ-320DB | 1 sleeve, 2 tip, 3 ring 1, 4 ring 2, 5 dummy (GND), CTIA |
 | B5 | J1200 CSI FPC (TE) | Both pad rows of each circuit share one number |
-| B6 | J700/J701 GB042 | Pins 1–34 agree across Radxa, ROCK 3A and ROCK64 documents. The hold-down pads (35–38 / 31–34) still need checking on a sample. |
+| B6 | J700/J701 GB042 | Pin functions 1–34 agree across Radxa, ROCK 3A and ROCK64 documents. The LS Mtron catalogue gives the land pattern but no pin numbers: pin 1 position and the row order (1–17 along one row, 18–34 back along the other) come from a third-party flex board with this plug. The catalogue shows no hold-down pads, so pins 35–38 / 31–34 were removed from the symbols. Check numbering and hold-downs on a sample. |
 | B7 | J702 microSD TF-01A | The "Cd" spring closes to the shell on insertion; the ROM needs SD_CD_N low with a card in |
 | B8 | J900 dual USB-A (Bossie) | Pads 1–4 lower port, 5–8 upper, 9–12 shell |
 | B9 | J1300 M.2 socket | SMT tabs numbered 76/77 |
 | B10 | J1400 header | Raspberry Pi odd/even numbering |
 | B11 | SW602 DIP switch | Position k = pads k and 9−k |
-| B12 | All | Footprint names are inconsistent; for example, three names for the same 3225 crystal. Normalize them when the PcbLib is built. |
+| B12 | All | Done: footprint names normalized (one name per package) and every pad checked against its symbol pin by `build.py check`; library in `hardware/gen/fplib/`. |
 
 ## Electrical items to confirm
 

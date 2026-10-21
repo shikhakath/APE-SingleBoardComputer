@@ -82,7 +82,7 @@ def build(sch_dir: str) -> Sheet:
         ("R602", RES, "LFOSC_XO_X", "LFOSC_XO", "0R 0402 (Rd, DS Fig 6-21)"),
         ("C602", CAP, "LFOSC_XI", "GND", "18pF 50V C0G 0402 (Cf1)"),
         ("C603", CAP, "LFOSC_XO_X", "GND", "18pF 50V C0G 0402 (Cf2)"),
-        ("R603", RES, "LFOSC_XI", "LFOSC_XO", "DNP (Rbias option, DS Fig 6-21)", DNP),
+        ("R603", RES, "LFOSC_XI", "LFOSC_XO", "0402 DNP (Rbias option, DS Fig 6-21)", DNP),
     ])
     sh.note(8000, 16700, "32 kHz: CL 9 pF with 2x18 pF. ESR 70k max -> Cshunt (C0 + PCB) <= 2-3 pF: short, guarded traces. LFXOSC_TRIM i_mult per CL.")
 

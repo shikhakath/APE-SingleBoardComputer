@@ -43,11 +43,11 @@ def build(sch_dir: str) -> Sheet:
         "25": "EMMC_CMD", "8": "EMMC_MOD_CLK", "12": "EMMC_MOD_RST_N", "15": "EMMC_MOD_DS",
         "20": "VDD_1V8", "21": "VDD_1V8", "22": "VCC_3V3_SYS", "23": "VCC_3V3_SYS",
         **{p: "GND" for p in ("1", "3", "5", "7", "9", "11", "13", "14", "16", "17", "18", "19",
-                              "24", "26", "28", "30", "32", "34", "35", "36", "37", "38")},
+                              "24", "26", "28", "30", "32", "34")},
     }, comment="GB042-34P-H10-E3000", MPN="GB042-34P-H10-E3000", Manufacturer="LS Mtron",
         Supplier="broker, consigned to JLC (STOCK RISK)")
     sh.add("J701", GB042_30P, 3600, 13000,
-           {str(n): "GND" for n in range(1, 35)},
+           {str(n): "GND" for n in range(1, 31)},
            comment="GB042-30P-H10-E3000 (DNP, retention only)", MPN="GB042-30P-H10-E3000",
            Manufacturer="LS Mtron", DNP="1")
 
@@ -94,7 +94,8 @@ def build(sch_dir: str) -> Sheet:
         "  EXT_CSD[162] RST_n_ENABLE = 1. Remove R711 if a module misbehaves.",
         "Pin 13 (CDN) is GND on all modules; pin 15 strobe unused (no HS400), 10k down (SK).",
         "J701 30-pin retention plug: footprint only (DNP); all contacts to GND.",
-        "Hold-down pads 35-38 / 31-34 per ROCK64 footprint - verify on a GB042 sample.",
+        "GB042 plugs have no hold-down pads (LS Mtron catalogue); contact numbering",
+        "  is from a third-party design - verify both on a sample (fplib/conn_io.py).",
     ]):
         sh.note(nx, ny - i * 200, t)
 

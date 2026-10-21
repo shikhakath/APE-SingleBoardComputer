@@ -56,7 +56,7 @@ if len(M2_KEY_E.pins) != 69:
 STANDOFF_M2 = Symbol("STANDOFF_SMT_M2", "SMT steel standoff, M2 thread (1 pad, to GND)",
                      [Pin("1", "PAD", "pas", "L", 1, 60, -40, 0, 2)],
                      graphics=["ellipse|1|1|0|0|0|40|40", "ellipse|1|1|0|0|0|15|15"],
-                     designator_prefix="H", footprint="WE_9774015243R",
+                     designator_prefix="H", footprint="STANDOFF_WE_9774015243R",
                      show_names=False, show_numbers=False)
 
 SYMBOLS = [M2_KEY_E, STANDOFF_M2]

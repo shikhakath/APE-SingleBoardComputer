@@ -134,12 +134,12 @@ def box(name, description, pins, part_count=1, prefix="U", footprint=""):
 
 
 def two_pin(name, description, graphics, prefix, pin_names=("1", "2"), kind="pas", reach=200,
-            body=30):
+            body=30, footprint=""):
     """Horizontal two-terminal symbol, pin ends at x = -reach and +reach."""
     p1 = Pin("1", pin_names[0], kind, "L", 1, reach - body, -body, 0, 2)
     p2 = Pin("2", pin_names[1], kind, "R", 1, reach - body, body, 0, 0)
     return Symbol(name, description, [p1, p2], graphics=graphics, designator_prefix=prefix,
-                  show_names=False, show_numbers=False)
+                  footprint=footprint, show_names=False, show_numbers=False)
 
 
 # ---------------------------------------------------------------- sheets
@@ -154,6 +154,7 @@ class Placed:
     nets: dict[str, str]
     comment: str = ""
     params: dict[str, str] = field(default_factory=dict)
+    footprint: str = ""         # per-part footprint (generic symbols); see footprints.resolve
 
 
 class Sheet:
@@ -166,11 +167,12 @@ class Sheet:
         self.extra: list[str] = []
 
     # placement --------------------------------------------------------
-    def add(self, designator, symbol, x, y, nets, part=1, comment="", **params):
+    def add(self, designator, symbol, x, y, nets, part=1, comment="", footprint="", **params):
         missing = [n for n in nets if n not in {p.number for p in symbol.pins}]
         if missing:
             raise KeyError(f"{designator}: unknown pins {missing}")
-        self.placed.append(Placed(designator, symbol, part, x, y, dict(nets), comment, params))
+        self.placed.append(Placed(designator, symbol, part, x, y, dict(nets), comment, params,
+                                  footprint))
         return self
 
     def note(self, x, y, text):
@@ -206,8 +208,8 @@ class Sheet:
             out.append(f"PART|{pl.designator}|{lib_path}|{pl.symbol.name}|{pid}|{pl.x}|{pl.y}|0|0")
             if pl.comment:
                 out.append(f"COMMENT|{pl.comment}")
-            if pl.symbol.footprint:
-                out.append(f"FOOTPRINT|{pl.symbol.footprint}")
+            if pl.footprint or pl.symbol.footprint:
+                out.append(f"FOOTPRINT|{pl.footprint or pl.symbol.footprint}")
             for k, v in pl.params.items():
                 out.append(f"PARAM|{k}|{v}")
         for (desig, part, num), (x, y, o) in self.pin_ends().items():

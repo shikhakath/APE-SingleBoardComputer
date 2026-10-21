@@ -17,9 +17,9 @@ from schgen import box
 #     https://dl.radxa.com/rock3/docs/hw/3a/radxa_rock_3a_v1310_schematic.pdf
 #   * PINE64 ROCK64 v2.0 schematic p.14 "EMMC SOCKET", J7101 footprint CFPC031035
 #     http://files.pine64.org/doc/rock64/ROCK64_Schematic_v2.0_20171019.pdf
-# Pins 35-38 are the four metal hold-down pads of the ROCK64 footprint (tied to
-# GND there); the GB042 series lists a "locking structure for the hold down".
-# Confirm the hold-down pad count against a sample before the footprint is drawn.
+# No hold-down pads: the LS Mtron catalogue's GB042 plug drawing and its PCB
+# layout show contacts only (fplib/conn_io.py has the source). The ROCK64
+# footprint's four extra pads are not on the LS drawing.
 # Pin 12: eMMC RST_n on Hardkernel/PINE64 modules, labelled "VCC 1V8" in the Radxa
 # brief. Pin 13: GND on the module (Odroid uses it as module detect CDN).
 # Pin 15: eMMC data strobe (HS400 only).
@@ -34,17 +34,15 @@ GB042_34P = box("GB042-34P-H10", "eMMC-module connector, LS Mtron GB042 34-pin 0
     (16, "GND", "pwr", "R"), (17, "GND", "pwr", "R"), (18, "GND", "pwr", "R"), (19, "GND", "pwr", "R"),
     (24, "GND", "pwr", "R"), (26, "GND", "pwr", "R"), (28, "GND", "pwr", "R"), (30, "GND", "pwr", "R"),
     (32, "GND", "pwr", "R"), (34, "GND", "pwr", "R"),
-    (35, "HD1", "pas", "R"), (36, "HD2", "pas", "R"), (37, "HD3", "pas", "R"), (38, "HD4", "pas", "R"),
 ], prefix="J", footprint="B2B_LSM_GB042-34P-H10")
 
 # LS Mtron GB042-30P-H10(-E3000), 30-pin plug, mechanical retention only for Radxa
 # dual-connector modules (no signals: Radxa brief RAD-DOC-0126 rev 1.1 section 4;
-# ROCK 3A v1.31 p.17 ties all 30 contacts, J5 pins 35-64, to GND). Same source
-# caveat as above: pins 31-34 are the hold-down pads by analogy with the 34-pin
-# part; verify on a sample.
+# ROCK 3A v1.31 p.17 ties all 30 contacts, J5 pins 35-64, to GND). No hold-down
+# pads, as for the 34-pin plug.
 GB042_30P = box("GB042-30P-H10", "eMMC-module retention connector, LS Mtron GB042 30-pin 0.4 mm B2B plug (mechanical, all GND)",
-                [(n, "GND", "pas", "L") for n in range(1, 16)] + [(31, "HD1", "pas", "L"), (32, "HD2", "pas", "L")]
-                + [(n, "GND", "pas", "R") for n in range(16, 31)] + [(33, "HD3", "pas", "R"), (34, "HD4", "pas", "R")],
+                [(n, "GND", "pas", "L") for n in range(1, 16)]
+                + [(n, "GND", "pas", "R") for n in range(16, 31)],
                 prefix="J", footprint="B2B_LSM_GB042-30P-H10")
 
 # ---------------------------------------------------------------- microSD
@@ -70,6 +68,6 @@ TPS22996 = box("TPS22996_DRL", "TPS22996 dual 4 A load switch with QOD and ON-cu
     (2, "VIN1", "pwr", "L"), (3, "VIN2", "pwr", "L"), (8, "VBIAS", "pwr", "L"),
     (1, "ON1", "in", "L"), (4, "ON2", "in", "L"), (5, "GND", "pwr", "L"),
     (7, "VOUT1", "pas", "R"), (6, "VOUT2", "pas", "R"),
-], footprint="SOT583-8_DRL")
+], footprint="SOT583-8")
 
 SYMBOLS = [GB042_34P, GB042_30P, TF_01A, TPS22996]

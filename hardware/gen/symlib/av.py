@@ -49,7 +49,7 @@ TFP410 = box("TFP410_PAP", "TI TFP410 DVI 1.0 transmitter, 24-bit DPI in, HTQFP-
     (22, "TXC+", "out", "R", 2), (21, "TXC-", "out", "R", 2),
     ("", "", "pas", "R", 2),
     (19, "TFADJ", "pas", "R", 2),
-], part_count=2, footprint="HTQFP64_PAP_PPAD")
+], part_count=2, footprint="HTQFP64_PAP_10X10")
 
 # TI TPD12S016PWR, TSSOP-24 (PW), no thermal pad.
 # https://www.ti.com/lit/ds/symlink/tpd12s016.pdf (SLLSE96F, Oct 2015)
@@ -67,7 +67,7 @@ TPD12S016 = box("TPD12S016_PW", "TI TPD12S016 HDMI companion: 5 V load switch, D
     ("", "", "pas", "R"),
     (23, "D2+", "pas", "R"), (22, "D2-", "pas", "R"), (21, "D1+", "pas", "R"), (20, "D1-", "pas", "R"),
     (18, "D0+", "pas", "R"), (17, "D0-", "pas", "R"), (16, "CLK+", "pas", "R"), (15, "CLK-", "pas", "R"),
-], footprint="TSSOP24_PW")
+], footprint="TSSOP24_4.4X7.8_P0.65")
 
 # XFCN HDMI-A-19F-S-D, HDMI type-A receptacle, 19 SMT contacts at 0.5 mm + 4 THT shell legs.
 # Drawing via LCSC C5151728: https://www.lcsc.com/datasheet/C5151728.pdf (XFCN rev A1, 2025-11-19).
@@ -120,7 +120,7 @@ AIC3104 = box("TLV320AIC3104_RHB", "TI TLV320AIC3104 low-power stereo codec, I2S
 OSC_3225 = box("OSC_3225_OE", "LVCMOS oscillator with output enable, 3.2x2.5 mm 4-pad", [
     (4, "VDD", "pwr", "L"), (1, "OE", "in", "L"), (2, "GND", "pwr", "L"),
     (3, "OUT", "out", "R"),
-], prefix="Y", footprint="OSC_SMD3225_4P")
+], prefix="Y", footprint="OSC_3225_4P")
 
 # Korean Hroparts PJ-320DB-5A (drawing PJ-320DB, variant -A), 3.5 mm 4-pole SMD jack.
 # https://www.lcsc.com/datasheet/C707225.pdf (single-sheet drawing, "Schematic" table + PCB layout).
@@ -131,7 +131,7 @@ OSC_3225 = box("OSC_3225_OE", "LVCMOS oscillator with output enable, 3.2x2.5 mm 
 JACK_TRRS = box("JACK_TRRS_PJ320DB", "3.5 mm TRRS jack, SMD, no switch (PJ-320DB-5A)", [
     (2, "TIP", "pas", "L"), (3, "RING1", "pas", "L"), (4, "RING2", "pas", "L"), (1, "SLEEVE", "pas", "L"),
     (5, "DUMMY", "pas", "L"),
-], prefix="J", footprint="JACK_PJ-320DB")
+], prefix="J", footprint="JACK_HRO_PJ-320DB")
 
 # ------------------------------------------------------------ camera (sheet 12)
 

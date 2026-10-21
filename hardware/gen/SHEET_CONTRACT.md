@@ -23,7 +23,7 @@ Every schematic sheet is a Python module. Several people or agents write sheets 
 | `s15_debug.py` | `debug_io.py` | FT4232HL, EEPROM, crystal, LDO, debug USB-C, isolation buffers, Tag-Connect TC2070 |
 | `s16_misc.py` | `misc.py` | Board-ID EEPROM, TMP102, I2C0 pull-ups, LEDs, mounting holes |
 
-**Do not edit** `schgen.py`, `symbols.py`, `build.py`, `data/*.csv`, or any module you don't own. Shared symbols for gates, ESD and mounting holes are in `symbols.py`: `SN74LVC1G08`, `SN74LVC1G11`, `SN74LVC2G17`, `TPD4E05U06`, `MOUNTING_HOLE`, plus the generic `RES`, `CAP`, `CAP_POL`, `IND`, `FB`, `DIODE`, `ZENER`, `TVS_BI`, `LED`, `XTAL2`, `TESTPOINT` and `SW_PUSH`.
+**Do not edit** `schgen.py`, `symbols.py`, `build.py`, `footprints.py`, `fplib/*.py`, `data/*.csv`, or any module you don't own. Shared symbols for gates, ESD and mounting holes are in `symbols.py`: `SN74LVC1G08`, `SN74LVC1G11`, `SN74LVC2G17`, `TPD4E05U06`, `MOUNTING_HOLE`, plus the generic `RES`, `CAP`, `CAP_POL`, `IND`, `FB`, `DIODE`, `ZENER`, `TVS_BI`, `LED`, `XTAL2`, `TESTPOINT` and `SW_PUSH`.
 
 ## Rails (fixed names)
 
@@ -95,7 +95,7 @@ BOOTMODE straps: `BOOTMODE00`–`BOOTMODE07` are strap-only nets. BOOTMODE08–1
 
 ## Rules for every sheet
 
-1. **Parts:** use the parts chosen in `docs/bom/APE-SBC_BOM_estimate.csv`. Set `comment=` to the value or MPN and pass `MPN=` and `Manufacturer=` parameters. If a BOM part is wrong for the circuit, pick an in-stock replacement (stock ≥ 10 boards at a real distributor) and report it.
+1. **Parts:** use the parts chosen in `docs/bom/APE-SBC_BOM_estimate.csv`. Set `comment=` to the value or MPN and pass `MPN=` and `Manufacturer=` parameters. Generic passives (`RES`, `CAP`, `FB`, `LED`) take their footprint from the EIA size code in the comment (`10k 1% 0402` → `R0402`); other generic parts from `PART_RULES` in `footprints.py`; pass `footprint=` to `Sheet.add()` (or in a `column()` params dict) to override. A new symbol needs a `footprint=` that exists in `fplib/` with one pad per pin number. If a BOM part is wrong for the circuit, pick an in-stock replacement (stock ≥ 10 boards at a real distributor) and report it.
 2. **Pinouts:**
    - Download the manufacturer datasheet into a new scratch directory, not the repo. Build the symbol from its pin table.
    - Above each symbol, put the datasheet URL and table or page in a comment.

@@ -7,6 +7,10 @@ Run from anywhere (paths are resolved from this file's location):
                                     (close the project in Altium first)
   python build.py smoke             build gen/out/smoke.SchDoc: proves the toolchain end to end
   python build.py lib               create the symbols in lib/APE-SBC.SchLib and save it
+  python build.py footprints [--fresh] [NAME ...]
+                                    create the footprints in lib/APE-SBC.PcbLib and save it
+                                    (--fresh: delete and regenerate the whole library;
+                                    NAME: add only these footprints to an existing one)
   python build.py sheet 02_PMIC     build one or more sheets by name
   python build.py sheets            build every sheet
 
@@ -27,10 +31,12 @@ GEN = Path(__file__).resolve().parent
 HW = GEN.parent
 sys.path.insert(0, str(GEN))
 
+import footprints  # noqa: E402
 import schgen  # noqa: E402
 import symbols  # noqa: E402
 
 LIB_PATH = HW / "lib" / "APE-SBC.SchLib"
+PCBLIB_PATH = HW / "lib" / "APE-SBC.PcbLib"
 SCH_DIR = HW / "sch"
 TEMPLATE_SHEET = HW / "Main.SchDoc"
 PRJ_PATH = HW / "APE - Single Board Computer.PrjPcb"
@@ -52,8 +58,16 @@ def load_sheets(include_frozen=True):
     for name in sheet_modules():
         if name in FROZEN_SHEETS and not include_frozen:
             continue
-        sheets.append(importlib.import_module(f"sheets.{name}").build(str(SCH_DIR)))
+        sh = importlib.import_module(f"sheets.{name}").build(str(SCH_DIR))
+        assign_footprints(sh)
+        sheets.append(sh)
     return sheets
+
+
+def assign_footprints(sh):
+    """Give every placed part its footprint name (footprints.resolve)."""
+    for pl in sh.placed:
+        pl.footprint = footprints.resolve(pl.symbol, pl.comment, pl.params, pl.footprint)
 
 
 def all_symbols():
@@ -96,6 +110,8 @@ def cmd_check():
     for net, nodes in sorted(nets.items()):
         if len(nodes) == 1 and not net.startswith("TP_"):
             problems.append(f"single-node net {net}: {nodes[0]}")
+    fp_problems, fp_used = footprints.check(all_symbols(), sheets)
+    problems += fp_problems
     with open(OUT / "netlist.csv", "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["net", "node_count", "nodes"])
@@ -118,7 +134,18 @@ def cmd_check():
     for sh in sheets:
         (OUT / f"{Path(sh.path).stem}.spec.txt").write_text(sh.spec(str(LIB_PATH)))
     (OUT / "symbols_spec.txt").write_text(symbol_spec())
-    print(f"{len(sheets)} sheets, {len(owners)} placed parts, {len(nets)} nets")
+    fps = footprints.all_footprints()
+    (OUT / "footprints_spec.txt").write_text(footprints.library_spec(fps, PCBLIB_PATH))
+    with open(OUT / "footprint_usage.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["footprint", "pads", "parts", "designators", "assumed_numbering"])
+        for fp in fps:
+            used = fp_used.get(fp.name, [])
+            w.writerow([fp.name, len(fp.pad_names()), len(used), " ".join(used), fp.assumed])
+    unused = [fp.name for fp in fps if fp.name not in fp_used]
+    print(f"{len(sheets)} sheets, {len(owners)} placed parts, {len(nets)} nets, {len(fps)} footprints")
+    if unused:
+        print("footprints not used by any placed part: " + " ".join(unused))
     print("\n".join(problems) if problems else "no problems found")
     print(f"reports in {OUT}")
     return not problems
@@ -143,7 +170,7 @@ def cmd_project():
     numbers = [int(l[9:-1]) for l in text.splitlines()
                if l.startswith("[Document") and l.endswith("]") and l[9:-1].isdigit()]
     n = max(numbers, default=0)
-    wanted = [Path(sh.path) for sh in load_sheets()] + [LIB_PATH]
+    wanted = [Path(sh.path) for sh in load_sheets()] + [LIB_PATH, PCBLIB_PATH]
     blocks = []
     for p in wanted:
         rel = str(p.relative_to(HW)).replace("/", "\\")
@@ -157,7 +184,7 @@ def cmd_project():
             "ClassGenNCAutoScope=None\nDItemRevisionGUID=\nGenerateClassCluster=0\nDocumentUniqueId=\n")
         print(f"  adding {rel}")
     if not blocks:
-        print("project already lists every sheet and the library")
+        print("project already lists every sheet and both libraries")
         return True
     # insert after the last [DocumentN] block
     marker = "\n[Configuration1]"
@@ -216,6 +243,61 @@ def cmd_lib():
     return save_docs([("SchLib", str(LIB_PATH))])
 
 
+def cmd_footprints(args):
+    """Create the footprints in lib/APE-SBC.PcbLib (see README section 5)."""
+    fresh = "--fresh" in args
+    names = [a for a in args if not a.startswith("--")]
+    fps = footprints.all_footprints()
+    if names:
+        unknown = sorted(set(names) - {fp.name for fp in fps})
+        if unknown:
+            print("no such footprint: " + " ".join(unknown))
+            return False
+        fps = [fp for fp in fps if fp.name in names]
+    PCBLIB_PATH.parent.mkdir(exist_ok=True)
+    if PCBLIB_PATH.exists() and fresh:
+        # create_footprints_batch appends: a footprint that already exists
+        # would be added a second time, so regenerate the whole file
+        try:
+            PCBLIB_PATH.unlink()
+        except PermissionError:
+            print(f"cannot delete {PCBLIB_PATH.name}: close it in Altium and rerun")
+            return False
+        print(f"deleted {PCBLIB_PATH.name} (it must be closed in Altium)")
+    elif PCBLIB_PATH.exists() and not names:
+        print(f"{PCBLIB_PATH.name} exists and create_footprints_batch adds footprints rather than "
+              "replacing them. Close the library in Altium and rerun with --fresh, or name only "
+              "the footprints that are new.")
+        return False
+    if not PCBLIB_PATH.exists():
+        # create_footprints_batch only opens an existing library (FPLIB record);
+        # opening a missing path makes Altium create an empty one, which the
+        # save script writes to disk (same approach as `lib`)
+        print(f"creating empty {PCBLIB_PATH.name}")
+        if not save_docs([("PcbLib", str(PCBLIB_PATH))]) or not PCBLIB_PATH.exists():
+            print("could not create the library - create an empty PcbLib at that path in Altium")
+            return False
+    OUT.mkdir(exist_ok=True)
+    spec = OUT / "footprints_spec.txt"
+    spec.write_text(footprints.library_spec(fps, PCBLIB_PATH), encoding="cp1252", errors="replace")
+    print(f"creating {len(fps)} footprints in {PCBLIB_PATH}")
+    res = mcp("create_footprints_batch", {"spec_file": str(spec)})
+    print(json.dumps(res, indent=2)[:2000])
+    if not save_docs([("PcbLib", str(PCBLIB_PATH))]):
+        return False
+    assumed = [fp for fp in fps if fp.assumed]
+    if assumed:
+        print("pad numbering assumed (check against the part before layout):")
+        for fp in assumed:
+            print(f"  {fp.name}: {fp.assumed}")
+    query = footprints.paste_rule_query(fps)
+    if query:
+        print("exposed pads with windowed paste: add a Paste Mask Expansion rule of -2.5 mm for")
+        print("  " + query)
+    return (res.get("created") == len(fps) and not res.get("failed")
+            and not res.get("primitive_errors"))
+
+
 def build_sheet(sh) -> bool:
     path = Path(sh.path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -258,6 +340,7 @@ def cmd_smoke():
     sh.add("C1", symbols.CAP, 2000, 5600, {"1": "VCC_3V3_SYS", "2": "GND"}, comment="100nF")
     sh.add("U1", symbols.TPS65219, 5000, 7000, {"13": "VCC_3V3_MAIN", "33": "GND", "9": "SMOKE_A",
                                                 "10": "SMOKE_B"}, comment="TPS6521904RHBR")
+    assign_footprints(sh)
     OUT.mkdir(exist_ok=True)
     return build_sheet(sh)
 
@@ -272,6 +355,7 @@ def main(argv):
         "project": lambda: cmd_project(),
         "smoke": lambda: cmd_smoke(),
         "lib": lambda: cmd_lib(),
+        "footprints": lambda: cmd_footprints(rest),
         "sheet": lambda: cmd_sheets(rest),
         "sheets": lambda: cmd_sheets(),
     }

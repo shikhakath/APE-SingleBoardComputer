@@ -16,9 +16,9 @@ from schgen import box
 #   numbers A1B12, A4B9, B4A9, B1A12 (slash dropped). The other eight pads carry
 #   one contact each: A5 CC1, A6 DP1, A7 DN1, A8 SBU1, B5 CC2, B6 DP2, B7 DN2,
 #   B8 SBU2.
-#   Shell: 4 plated oval slots (two 0.60 x 2.00/1.70 front, two 0.60 x 1.40/1.70
-#   rear); the drawing does not number them, so they are S1/S2 (front) and
-#   S3/S4 (rear). The two 0.60 mm round holes are non-plated locating posts (no pin).
+#   Shell: 4 plated oval slots (two 0.60 x 1.40 front, at the board edge; two
+#   0.60 x 1.70 rear, next to the SMD pads); the drawing does not number them,
+#   so they are S1/S2 (front) and S3/S4 (rear). The two 0.60 mm round holes are non-plated locating posts (no pin).
 TYPE_C_31_M_12 = box("TYPE-C-31-M-12", "USB Type-C receptacle, USB 2.0 16-contact, SMD R/A, 4 THT shell pegs", [
     ("A1B12", "GND", "pas", "L"),
     ("B1A12", "GND", "pas", "L"),
@@ -137,7 +137,7 @@ LM61460 = box("LM61460_RJR", "LM61460 36 V 6 A synchronous buck, adjustable, VQF
     ("", "", "pas", "R"),
     (4, "FB", "in", "R"),
     (5, "PGOOD", "oc", "R"),
-], footprint="VQFN-HR14_RJR_3P5X4")
+], footprint="VQFN-HR14_RJR_3.5X4")
 
 # ------------------------------------------------------------ 5 V buck-boost
 # TI TPS63070 RNM (VQFN-HR-15 2.5x3), https://www.ti.com/lit/ds/symlink/tps63070.pdf
@@ -163,6 +163,6 @@ TPS63070 = box("TPS63070_RNM", "TPS63070 2-16 V 3.6 A buck-boost, adjustable, VQ
     (5, "FB", "in", "R"),
     (6, "FB2", "pas", "R"),
     (2, "PG", "oc", "R"),
-], footprint="VQFN-HR15_RNM_2P5X3")
+], footprint="VQFN-HR15_RNM_2.5X3")
 
 SYMBOLS = [TYPE_C_31_M_12, TVS2200, TPS25730D, LM61460, TPS63070]

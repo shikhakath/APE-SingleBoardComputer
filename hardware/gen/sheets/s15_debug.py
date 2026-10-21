@@ -201,7 +201,7 @@ def build(sch_dir: str) -> Sheet:
         ("R1526", RES, "VCC_3V3_SYS", "EMU0", "10k 1% 0402"),
         ("R1527", RES, "VCC_3V3_SYS", "EMU1", "10k 1% 0402"),
         ("R1528", RES, "JTAG_TRSTN", "GND", "4.7k 1% 0402 (TRSTn pull-down)"),
-        ("R1529", RES, "VCC_3V3_SYS", "JTAG_SRST_N", "4.7k DNP (sheet 06 R604 already pulls SRST up)", {"DNP": "1"}),
+        ("R1529", RES, "VCC_3V3_SYS", "JTAG_SRST_N", "4.7k 0402 DNP (sheet 06 R604 already pulls SRST up)", {"DNP": "1"}),
     ])
     sh.add("U1510", TPD4E05U06, 27000, 11500, {
         "1": "JTAG_TCK", "2": "JTAG_TMS", "4": "JTAG_TDI", "5": "JTAG_TDO_TC",

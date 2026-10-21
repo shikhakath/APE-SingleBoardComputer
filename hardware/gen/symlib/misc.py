@@ -21,7 +21,7 @@ AT24C512C = box("AT24C512C_SOIC8", "512 Kbit I2C EEPROM, SOIC-8 (SSHD: 2.5-5.5 V
     (4, "GND", "pwr", "L"),
     (5, "SDA", "io", "R"),
     (6, "SCL", "in", "R"),
-], footprint="SOIC8_150MIL")
+], footprint="SOIC8_3.9X4.9_P1.27")
 
 # TI TMP102AIDRLR, I2C temperature sensor, SOT-563 (DRL).
 # https://www.ti.com/lit/ds/symlink/tmp102.pdf  (SBOS397I) Section 4 Pin
@@ -34,6 +34,6 @@ TMP102 = box("TMP102_DRL", "TMP102 digital temperature sensor, I2C, SOT-563", [
     (6, "SDA", "io", "R"),
     (1, "SCL", "in", "R"),
     (3, "ALERT", "oc", "R"),
-], footprint="SOT563_DRL")
+], footprint="SOT563-6")
 
 SYMBOLS = [AT24C512C, TMP102]

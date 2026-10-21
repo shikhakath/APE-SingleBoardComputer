@@ -71,7 +71,7 @@ DP83867_RGZ = box("DP83867_RGZ", "DP83867IS/E/CS 10/100/1000 Ethernet PHY, RGMII
 XTAL4_3225 = box("XTAL4_3225", "Crystal, 3.2x2.5 mm, 4 pads (1/3 crystal, 2/4 case GND)", [
     (1, "X1", "pas", "L"), (2, "GND", "pas", "L"),
     (3, "X2", "pas", "R"), (4, "GND", "pas", "R"),
-], prefix="Y", footprint="XTAL_SMD3225-4P")
+], prefix="Y", footprint="XTAL_3225_4P")
 
 # HanRun HR911130A RJ45 with 1000BASE-T magnetics and LEDs (LCSC C54408),
 # datasheet p.1 "Schematics" (pins P1-P10, LEDs 11-14) and p.2 "Mounting Pattern":

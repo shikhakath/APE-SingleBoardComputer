@@ -88,15 +88,15 @@ def build(sch_dir: str) -> Sheet:
 
     # ---- control pull-ups, interrupt slew limiter, push button ----
     sh.column(2500, 9500, [
-        ("R200", RES, "VCC_3V3_MAIN", "PMIC_PB_N", "10k"),
-        ("R201", RES, "VCC_3V3_MAIN", "PMIC_PGOOD", "2.2k (fast edge into the MCU_PORz gate, sheet 06)"),
-        ("R202", RES, "VCC_3V3_SYS", "PMIC_INT_N", "10k"),
-        ("R203", RES, "PMIC_INT_N", "PMIC_NINT", "62R (slew limiter, SK rev B)"),
+        ("R200", RES, "VCC_3V3_MAIN", "PMIC_PB_N", "10k 0402"),
+        ("R201", RES, "VCC_3V3_MAIN", "PMIC_PGOOD", "2.2k 0402 (fast edge into the MCU_PORz gate, sheet 06)"),
+        ("R202", RES, "VCC_3V3_SYS", "PMIC_INT_N", "10k 0402"),
+        ("R203", RES, "PMIC_INT_N", "PMIC_NINT", "62R 0402 (slew limiter, SK rev B)"),
         ("C220", CAP, "PMIC_NINT", "GND", "47pF 50V C0G 0402"),
-        ("R204", RES, "VCC_3V3_SYS", "SD_VSEL", "10k (SD starts at 3.3 V)"),
-        ("R205", RES, "VCC_3V3_MAIN", "EN_3V3_SYS", "10k (GPO2 is open drain)"),
+        ("R204", RES, "VCC_3V3_SYS", "SD_VSEL", "10k 0402 (SD starts at 3.3 V)"),
+        ("R205", RES, "VCC_3V3_MAIN", "EN_3V3_SYS", "10k 0402 (GPO2 is open drain)"),
         ("D200", TVS_BI, "PMIC_PB_N", "GND", "TPD1E10B06 ESD"),
-        ("R207", RES, "PMIC_LPM_EN0", "PMIC_STBY", "0R DNP (SoC low-power control; SK removed this link)",
+        ("R207", RES, "PMIC_LPM_EN0", "PMIC_STBY", "0R 0402 DNP (SoC low-power control; SK removed this link)",
          {"DNP": "1"}),
     ])
     sh.add("SW200", TS1187A, 6000, 6300, {"1": "PMIC_PB_N", "2": "PMIC_PB_N", "3": "GND", "4": "GND"},
@@ -129,7 +129,7 @@ def build(sch_dir: str) -> Sheet:
     sh.column(13500, 5500, [
         ("C225", CAP, "VCC_3V3_SYS", "GND", "1uF 10V X5R 0402 (VPP LDO in, DNP)", {"DNP": "1"}),
         ("C226", CAP, "VPP_EFUSE_1V8", "GND", "2.2uF 10V X5R 0402 (VPP LDO out, DNP)", {"DNP": "1"}),
-        ("R206", RES, "VPP_EFUSE_EN", "GND", "100k (keeps VPP off)"),
+        ("R206", RES, "VPP_EFUSE_EN", "GND", "100k 0402 (keeps VPP off)"),
         ("C227", CAP, "VDD_1V8", "GND", "1uF 10V X5R 0402 (PHY LDO in)"),
         ("C228", CAP, "VDD_1V0_PHY", "GND", "1uF 10V X5R 0402 (PHY LDO out)"),
     ])

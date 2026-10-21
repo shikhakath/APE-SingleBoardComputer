@@ -37,7 +37,7 @@ HDR_2X20 = box("HDR_2X20_2541WV", "Pin header 2x20 2.54 mm, Raspberry Pi 40-pin 
 # Electrical table p.4: Ihold 1.10 A, Itrip 2.20 A, Vmax 6 V. Two terminals, not polarized.
 PTC_BSMD1206 = two_pin("PTC_BSMD1206", "PTC resettable fuse, 1206, not polarized", [
     "rectangle|1|1|0|-100|-35|100|35", "line|1|1|-80|-60|60|60", "line|1|1|60|60|100|60"],
-    "F", body=100)
+    "F", body=100, footprint="FUSE_BHFUSE_BSMD1206")
 
 # Shanghai Belling BL24C32A-SFRC, 32 Kbit I2C EEPROM, TSSOP-8 (LCSC C177775).
 # https://www.lcsc.com/datasheet/lcsc_datasheet_2304140030_BL-Shanghai-Belling-BL24C32A-SFRC_C177775.pdf
@@ -47,7 +47,7 @@ BL24C32A = box("BL24C32A_TSSOP8", "BL24C32A 32 Kbit I2C EEPROM (2-byte address),
     (1, "A0", "in", "L"), (2, "A1", "in", "L"), (3, "A2", "in", "L"),
     (7, "WP", "in", "L"), (4, "GND", "pwr", "L"),
     (8, "VCC", "pwr", "R"), (5, "SDA", "io", "R"), (6, "SCL", "in", "R"),
-], footprint="TSSOP-8_4.4X3.0_P0.65")
+], footprint="TSSOP8_4.4X3.0_P0.65")
 
 # ------------------------------------------------------------ sheet 15
 
@@ -91,7 +91,7 @@ FT4232HL = box("FT4232HL", "FT4232H quad Hi-Speed USB to UART/MPSSE, LQFP-64", [
     (48, "DDBUS0/TXD", "io", "R"), (52, "DDBUS1/RXD", "io", "R"), (53, "DDBUS2", "io", "R"),
     (54, "DDBUS3", "io", "R"), (55, "DDBUS4", "io", "R"), (57, "DDBUS5", "io", "R"),
     (58, "DDBUS6", "io", "R"), (59, "DDBUS7", "io", "R"),
-], footprint="LQFP-64_10X10_P0.5")
+], footprint="LQFP64_10X10_P0.5")
 
 # TI SN74AVC4T245PWR, TSSOP-16 (PW). https://www.ti.com/lit/ds/symlink/sn74avc4t245.pdf
 # (SCES576I, Feb 2025) Table 4-1 Pin Functions, column "D, DGV, PW, RGY"; Table 7-1
@@ -106,7 +106,7 @@ SN74AVC4T245 = box("SN74AVC4T245_PW", "Dual 2-bit dual-supply bus transceiver, I
     ("", "", "pas", "R"), ("", "", "pas", "R"),
     (13, "1B1", "io", "R"), (12, "1B2", "io", "R"), (11, "2B1", "io", "R"), (10, "2B2", "io", "R"),
     (9, "GND", "pwr", "R"),
-], footprint="TSSOP-16_4.4X5.0_P0.65")
+], footprint="TSSOP16_4.4X5.0_P0.65")
 
 # Diodes AP2112K-3.3TRG1, 600 mA LDO, SOT-23-5 (SOT25).
 # https://www.diodes.com/assets/Datasheets/AP2112.pdf (DS39724 Rev. 2-2) Pin Assignments
@@ -114,7 +114,7 @@ SN74AVC4T245 = box("SN74AVC4T245_PW", "Dual 2-bit dual-supply bus transceiver, I
 AP2112K = box("AP2112K_SOT25", "AP2112K 600 mA CMOS LDO, fixed output, SOT-23-5", [
     (1, "VIN", "pwr", "L"), (3, "EN", "in", "L"), (2, "GND", "pwr", "L"),
     (5, "VOUT", "pwr", "R"), (4, "NC", "pas", "R"),
-], footprint="SOT-23-5")
+], footprint="SOT23-5")
 
 # Microchip 93LC46BT-I/OT, 1 Kbit Microwire EEPROM, x16 only, SOT-23-6 (OT).
 # https://ww1.microchip.com/downloads/en/DeviceDoc/20001749K.pdf (DS20001749K)
@@ -122,7 +122,7 @@ AP2112K = box("AP2112K_SOT25", "AP2112K 600 mA CMOS LDO, fixed output, SOT-23-5"
 EE93LC46B = box("93LC46B_OT", "93LC46B 1 Kbit Microwire EEPROM (64 x 16), SOT-23-6", [
     (5, "CS", "in", "L"), (4, "CLK", "in", "L"), (3, "DI", "in", "L"), (2, "VSS", "pwr", "L"),
     (6, "VCC", "pwr", "R"), (1, "DO", "out", "R"),
-], footprint="SOT-23-6")
+], footprint="SOT23-6")
 
 # YXC X322512MSB4SI, 12 MHz 20 pF +/-10 ppm crystal, 3.2 x 2.5 mm, 4 pads (YSX321SL series).
 # https://www.lcsc.com/datasheet/lcsc_datasheet_2403291504_YXC-Crystal-Oscillators-X322512MSB4SI_C9002.pdf
@@ -130,7 +130,7 @@ EE93LC46B = box("93LC46B_OT", "93LC46B 1 Kbit Microwire EEPROM (64 x 16), SOT-23
 X322512MSB4SI = box("X322512MSB4SI", "Crystal 3225 4-pad (1/3 crystal, 2/4 case GND)", [
     (1, "X1", "pas", "L"), (2, "GND", "pas", "L"),
     (3, "X2", "pas", "R"), (4, "GND", "pas", "R"),
-], prefix="Y", footprint="XTAL_3225_4PAD")
+], prefix="Y", footprint="XTAL_3225_4P")
 
 # TI TPD2E001DRLR, 2-channel low-capacitance ESD with VCC rail, SOT-5 (DRL).
 # https://www.ti.com/lit/ds/symlink/tpd2e001.pdf (SLLS684I) Section 5 Pin Functions,
@@ -138,7 +138,7 @@ X322512MSB4SI = box("X322512MSB4SI", "Crystal 3225 4-pad (1/3 crystal, 2/4 case 
 TPD2E001 = box("TPD2E001_DRL", "2-channel USB ESD array with VCC clamp rail, SOT-5 (DRL)", [
     (3, "IO1", "pas", "L"), (5, "IO2", "pas", "L"), (2, "NC", "pas", "L"),
     (1, "VCC", "pwr", "R"), (4, "GND", "pwr", "R"),
-], prefix="U", footprint="SOT-553_DRL")
+], prefix="U", footprint="SOT553-5")
 
 # The debug USB-C (HRO TYPE-C-31-M-12, LCSC C165948) is the same part as USB-C #1, so
 # sheet 15 reuses symlib.power_input.TYPE_C_31_M_12 (one library part, one footprint).
@@ -158,7 +158,7 @@ TC2070 = box("TC2070_TI14", "Tag-Connect TC2070-NL footprint, TI 14-pin JTAG pin
     (2, "nTRST", "pas", "R"), (4, "TDIS", "pas", "R"), (6, "KEY", "pas", "R"),
     (8, "GND", "pas", "R"), (10, "GND", "pas", "R"), (12, "GND", "pas", "R"),
     (14, "EMU1", "pas", "R"),
-], prefix="J", footprint="TC2070-NL-FP")
+], prefix="J", footprint="TC2070-NL")
 
 SYMBOLS = [HDR_2X20, PTC_BSMD1206, BL24C32A, FT4232HL, SN74AVC4T245, AP2112K, EE93LC46B,
            X322512MSB4SI, TPD2E001, TC2070]

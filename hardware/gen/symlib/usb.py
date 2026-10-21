@@ -48,7 +48,7 @@ CH335F = box("CH335F", "WCH CH335F USB 2.0 HS 4-port MTT hub, per-port power/OC,
     (15, "DM4", "io", "R"),
     (5, "PWREN4#/SUSP", "out", "R"),
     (18, "OVCUR4#", "in", "R"),
-], footprint="QFN28_4X4_P0.4_EP")
+], footprint="QFN28_4X4_P0.4")
 
 # TI TPS2041B/TPS2051B datasheet SLVS514P (Aug 2024),
 # https://www.ti.com/lit/ds/symlink/tps2051b.pdf, Figure 5-1 (DBV top view) and
@@ -60,7 +60,7 @@ TPS2051B_DBV = box("TPS2051B_DBV", "TPS2051B 0.5 A USB power switch, active-high
     (2, "GND", "pwr", "L"),
     (1, "OUT", "pas", "R"),
     (3, "nOC", "oc", "R"),
-], footprint="SOT23-5_DBV")
+], footprint="SOT23-5")
 
 # ST USBLC6-2 datasheet (LCSC C7519),
 # https://datasheet.lcsc.com/datasheet/pdf/0d3a2ab954b34651a0695e7ccf534db0.pdf?productCode=C7519
@@ -93,7 +93,7 @@ SDCW2012_CMC = box("SDCW2012-2", "Sunlord SDCW2012-2 wire-wound 2-line common-mo
     (4, "B4", "pas", "L"),
     (2, "A2", "pas", "R"),
     (3, "B3", "pas", "R"),
-], prefix="L", footprint="SDCW2012_0805_4P")
+], prefix="L", footprint="CMC_SUNLORD_SDCW2012")
 
 # LRC LBZX84CxxxLT1G series datasheet Rev.A (LCSC C12746),
 # https://datasheet.lcsc.com/datasheet/pdf/f38bff37f838ce082f42e60b9be47320.pdf?productCode=C12746
