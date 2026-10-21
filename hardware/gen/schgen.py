@@ -202,7 +202,9 @@ class Sheet:
         return ends
 
     def spec(self, lib_path: str) -> str:
-        out = [f"SHEET|{self.path}", f"STYLE|{self.style}"]
+        style = self.effective_style()
+        w, h = self.SHEET_SIZE[style]
+        out = [f"SHEET|{self.path}", f"STYLE|{style}|{w}|{h}"]
         for pl in self.placed:
             pid = pl.part if pl.symbol.part_count > 1 else 0
             out.append(f"PART|{pl.designator}|{lib_path}|{pl.symbol.name}|{pid}|{pl.x}|{pl.y}|0|0")
@@ -269,8 +271,35 @@ class Sheet:
                     problems.append(f"{what} ({net}) touches a wire of {snet} at ({px},{py})")
         return problems
 
-    SHEET_SIZE = {5: (11000, 8500), 6: (17000, 11000), 7: (22000, 17000), 8: (34000, 22000),
-                  9: (44000, 34000)}
+    # Altium's ANSI sheet sizes (smaller than the paper sizes): A 9.5x7.5 in,
+    # B 15x9.5, C 20x15, D 32x20, E 42x32. Verified on AD26: content placed for
+    # 22x17 in came out "not completely within sheet boundaries" on C.
+    SHEET_SIZE = {5: (9500, 7500), 6: (15000, 9500), 7: (20000, 15000), 8: (32000, 20000),
+                  9: (42000, 32000)}
+
+    def extent_boxes(self):
+        """footprint_boxes() plus the notes' text."""
+        boxes = self.footprint_boxes()
+        for x, y, t in self.notes:
+            boxes.append((f"note '{t[:20]}'", x, y - 20, x + (len(t) + 2) * CHAR_W, y + 120))
+        return boxes
+
+    def _fits(self, style, boxes):
+        w, h = self.SHEET_SIZE[style]
+        for _, x1, y1, x2, y2 in boxes:
+            if x1 < 300 or y1 < 300 or x2 > w - 300 or y2 > h - 300:
+                return False
+            if x2 > w - 6500 and y1 < 1700:
+                return False
+        return True
+
+    def effective_style(self):
+        """The requested style, or the smallest larger one the content fits on."""
+        boxes = self.extent_boxes()
+        for style in sorted(self.SHEET_SIZE):
+            if style >= self.style and self._fits(style, boxes):
+                return style
+        return max(self.SHEET_SIZE)
 
     def footprint_boxes(self):
         """Approximate drawn extent of each placed part: body, pins, stubs and
@@ -312,8 +341,9 @@ class Sheet:
             for b in boxes[i + 1:]:
                 if a[1] < b[3] and b[1] < a[3] and a[2] < b[4] and b[2] < a[4]:
                     problems.append(f"{a[0]} overlaps {b[0]}")
-        w, h = self.SHEET_SIZE.get(self.style, (999999, 999999))
-        for lbl, x1, y1, x2, y2 in boxes:
+        style = self.effective_style()
+        w, h = self.SHEET_SIZE[style]
+        for lbl, x1, y1, x2, y2 in self.extent_boxes():
             if x1 < 300 or y1 < 300 or x2 > w - 300 or y2 > h - 300:
                 problems.append(f"{lbl} extends off the sheet ({x1},{y1})-({x2},{y2}) on {w}x{h}")
             if x2 > w - 6500 and y1 < 1700:

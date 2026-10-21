@@ -2,7 +2,12 @@
 
 This folder builds the APE-SBC Altium schematic and libraries from Python. Symbols, footprints and sheets are defined as code (`symbols.py`, `fplib/*.py`, `sheets/*.py`). `build.py` drives a running Altium Designer through the [altium-mcp](https://github.com/coffeenmusic/altium-mcp) server to create the symbol library, the footprint library and the sheets.
 
-**Status: written without Altium access.** Everything below `build.py check` has not run against a live Altium yet. Do the smoke test (step 5) before trusting any generated sheet, and report what breaks.
+**Status: built and compiled on Altium Designer 26.6 (2026-10-20).**
+- `lib` built 65 symbols in 41 s and `footprints` built 65 footprints with 0 primitive errors.
+- `sheets` built all 16 sheets in about 2 minutes, each matching the generator pin for pin.
+- The project compiles with **0 fatal errors and no unexpected ERC violations**. The MCP's `get_erc_violations` also lists the No-ERC-marked pins it should ignore: 7 "floating input" plus 259 "unconnected pin" entries, every one a deliberate no-connect. The other 65 warnings are pin-type notices (passive-only nets, IO and output pins on one net).
+
+Section 8 lists what that run proved and fixed.
 
 **Schematic v0.1:** 16 sheets, 687 designators, 443 nets. `build.py check` passes with no single-node nets, no accidental connections and no overlaps. Open questions are in [`docs/schematic-open-items.md`](../../docs/schematic-open-items.md).
 
@@ -107,12 +112,13 @@ Run these in order the first time.
 
 | Step | Command | Then check in Altium |
 |---|---|---|
-| a. Register files | Close the project in Altium, run `python hardware/gen/build.py project`, reopen the project | The new sheets, `lib\APE-SBC.SchLib` and `lib\APE-SBC.PcbLib` appear in the Projects panel |
-| b. Library | `python hardware/gen/build.py lib` | Open `APE-SBC.SchLib`. Check `TPS65219_RHB`: pins on the left and right edges pointing **outward**, names inside the body. Check `RES` and `CAP`: pins horizontal, ends at ±200 mil. |
+| a. Check Altium | `python hardware/gen/build.py ping` | Prints nothing and exits 0 when Altium runs scripts. If it fails, see section 9. |
+| b. Library | `python hardware/gen/build.py lib` | It creates `lib/APE-SBC.SchLib` if missing, then adds the symbols in six batches (each under the MCP's fixed 120 s limit; the whole library takes about 40 s). Open the library: `TPS65219` has pins pointing outward with names inside the body; `RES`/`CAP` are horizontal. |
 | b2. Footprints | `python hardware/gen/build.py footprints` | Open `APE-SBC.PcbLib`. Delete the empty `PCBCOMPONENT_1` that Altium puts in a new library. Check `SOT23-5`: pad 1 top left, pads 1-3 on the left. Check `OSD62X-PM_BGA500`: 500 round 0.20 mm pads, A1 dot top left. Check `USB-C_HRO_TYPE-C-31-M-12`: slotted shell holes, not round ones. Then run the PCB library's **Reports » Component Rule Check**. |
-| c. Smoke test | `python hardware/gen/build.py smoke` | The command prints `pin map matches the generator`. Open `hardware/gen/out/smoke.SchDoc`: every wire stub touches its pin, net labels sit on wires, GND symbols hang below. |
-| d. Sheets | `python hardware/gen/build.py sheets`, or for one sheet `python hardware/gen/build.py sheet 02_PMIC` | Each sheet prints `pin map matches`. Then **Project » Validate PCB Project** and review the Messages panel. |
-| e. Commit | `git add hardware && git commit && git push` | Altium binary files are committed as-is; `gen/out/` is ignored |
+| c. Smoke test | `python hardware/gen/build.py smoke` | Prints `pin map matches the generator`. Open `hardware/gen/out/smoke.SchDoc`. |
+| d. Sheets | `python hardware/gen/build.py sheets`, or one sheet: `python hardware/gen/build.py sheet 02_PMIC` | Each sheet prints `pin map matches`. |
+| e. Register | `python hardware/gen/build.py register` (project open) or `project` (project closed) | The sheets and libraries appear in the Projects panel. Then **Project » Validate PCB Project** and review the Messages panel. |
+| f. Commit | `git add hardware && git commit && git push` | Altium binary files are committed as-is; `gen/out/` is ignored |
 
 `lib`, `footprints` and `sheets` also save the documents. The MCP tools themselves never save, so if a run stops halfway, save manually (File » Save All).
 
@@ -135,25 +141,37 @@ Open the repository folder in Claude Code and approve the `altium` MCP server wh
 - Designators are numbered by sheet: sheet 02 uses `x2xx` (U200, C200, ...).
 - **Footprints.** A symbol with a fixed package names its footprint (`footprint=` in `box()` / `two_pin()` / `Symbol`), and that footprint must exist in `fplib/` with exactly one pad name per pin number. Generic symbols (`RES`, `CAP`, `FERRITE`, `LED`, `DIODE`, `TVS_BI`, `IND`, `CAP_POL`, `XTAL2`) get a footprint per placed part, in this order: `footprint=` passed to `Sheet.add()` (or in a `column()` params dict); `PART_RULES` in `footprints.py` (MPN or comment, for example `BLM15` → `FB0402`, `SS34` → `DIO_SMA`); the EIA size code in the comment with the symbol's prefix (`10k 1% 0402` → `R0402`, `KT-0805G` → `LED0805`). The sheet builder writes that name into each part's PCB model.
 
-## 8. What has not been verified (check during the smoke test)
+## 8. What the AD26 run proved and fixed
 
-| Assumption | Where | If wrong |
-|---|---|---|
-| A pin's `x,y` in the symbol spec is its **body-end** location and the electrical end is `PinLength` further along its orientation; `eRotate0/90/180/270` = right/up/left/down | `schgen.py` (`DIR`, `ORIENT_NAME`) | The smoke test reports a pin-map mismatch. Fix the mapping in `schgen.py` and rebuild. |
-| `ISch_NetLabel.Justification`, `ISch_Document.SheetStyle`, `eNoERC` and `ISch_Component.CurrentPartID` can be set from a script | `altium/ape_sheet_builder.pas` | The tool output names the last statement that ran. Comment out that feature (labels default to bottom-left; set the sheet size by hand). |
-| `IServerDocument.DoFileSave('')` saves in native format | `altium/ape_save_docs.pas`, builder | Save manually; report the error |
-| `create_symbols_batch` creates `APE-SBC.SchLib` when the file does not exist | `build.py lib` | Create an empty SchLib at `hardware/lib/APE-SBC.SchLib` in Altium, save it, rerun `lib` |
-| Re-running `lib` on an existing library updates symbols rather than duplicating them | `build.py lib` | Delete `APE-SBC.SchLib` and rerun |
-| Opening a missing `.PcbLib` path creates an empty PCB library that `ape_save_docs.pas` can save | `build.py footprints` | Create an empty PcbLib at `hardware/lib/APE-SBC.PcbLib` in Altium, save it, rerun |
-| `create_footprints_batch` field values: pad shape 1 = round/oval, 2 = rectangle, 9 = rounded rectangle; slot holes take hole type 2 with `hole_size` = slot width and `hole_width` = slot length; `String2Layer` accepts `Mechanical 13`, `Mechanical 15`, `Top Paste`, `Top Overlay`, `Multi-Layer` | `footprints.py` (`SHAPES`, `Footprint.spec_lines`) | Draw one pad of each kind by hand, dump it with the MCP tool `get_footprint_primitives`, fix the constants, rerun `footprints --fresh` |
-| Re-running `create_footprints_batch` on an existing library adds a second copy of each footprint (it registers new components and never deletes) | `build.py footprints` refuses to run on an existing library unless you pass `--fresh` (deletes and regenerates) or name only new footprints | Close the PcbLib in Altium before `--fresh` |
+**Verified:**
+- The pin model: a symbol pin's `x,y` is its body end, the electrical end is `PinLength` further along, and `eRotate0/90/180/270` are right/up/left/down.
+- `CurrentPartID`, net-label `Justification`, `SheetStyle`, `eNoERC`, and `DoFileSave('')` after `SetFileName` all work from a script.
+
+**Fixed (each one used to stall the build):**
+
+| Problem | Fix |
+|---|---|
+| The MCP's `run_altium_script` sandbox has only a few scratch variables and no helper functions. Any other identifier (for example `SbxField`) pauses the script in Altium's debugger, and every later script then does nothing. | All builder code lives in its own script project, `altium/ApeScripts.PrjScr`, with declared locals and helpers. `build.py` runs it directly (`run_ape`). |
+| A procedure named `Register` fails to compile with "Program name expected" (it is a reserved word). | Renamed. Avoid Pascal reserved words for procedure names. |
+| Opening a missing `.SchLib`/`.PcbLib` path does **not** create it, and `WorkspaceManager:SaveObject` with `SaveAs` always opens a Save As dialog. | `ApeScripts>NewLib`: `DM_CreateNewDocument`, then `SetFileName`, then `DoFileSave`. |
+| Calling `Client.OpenDocument` on a document that is already open, then saving it, kills the script. | Reuse the open document (`Client.IsDocumentOpen` / `GetDocumentByPath`). |
+| `create_symbols_batch` waits at most 120 s. | `lib` sends batches of about 250 pins. |
+| When a script has a compile error, Altium opens it in its editor and later runs use that in-memory copy. | After editing `ApeScripts.pas`, close it in Altium (or restart Altium) before the next run. |
+| Rebuilding a sheet by deleting its objects in place left the old copies, which gave 529 duplicate designators. | `build_sheet` closes the sheet in Altium (`CloseDocs`) and starts from a fresh copy of `Main.SchDoc`. |
+| Setting `SheetStyle` alone leaves the in-memory sheet at the template's A size, so ERC reported 1000 "off sheet" objects. | The builder also sets a custom size. Each sheet picks the smallest Altium sheet its content fits: Altium's B/C/D/E are 15×9.5, 20×15, 32×20 and 42×32 in, smaller than the paper sizes. |
+| The project compile reuses cached results for sheets it considers unchanged. | After `sheets`, if ERC still shows stale results, save all sheets (File » Save All, or `save_docs`) and compile again. |
+| `WorkspaceManager:SaveObject` with ObjectKind `Project` saves nothing. | `AddToProject` saves the project's own server document. |
+| A script-created No-ERC marker suppresses nothing by default. | The builder sets `IsActive` and `SuppressAll`. The MCP's ERC reader still lists those pins; check against the generator's `NC` nets. |
+| Running an unknown procedure name makes Altium do nothing, with no message. | `run_ape` reports "never started" when no log appears and no dialog is open. |
+
+**Still unverified:** the `create_footprints_batch` field values (see section 10), and whether re-running `lib` on an existing library updates symbols or duplicates them. Until that is known, delete `APE-SBC.SchLib` before a full re-run.
 
 ## 9. Troubleshooting
 
-- **`No response received from Altium (timeout)`.** Altium is not running, is still starting, has a dialog open, or has no license. Fix that and rerun.
-- **Script executor wedged** (calls return instantly and do nothing). Run `python "%USERPROFILE%\mcp-servers\altium-mcp\dev\unwedge.py"`, or press Ctrl+F3 in Altium, or restart Altium.
-- **`Select Item To Run` dialog.** Altium cannot find the script project. Rerun `start_server.py --build` and check `get_server_status`.
-- **Symbol `MISSING` in the builder result.** Run `build.py lib` first. Also check that the `LIBRARY` path in `out/symbols_spec.txt` is the same file the sheet references.
+- **A command times out, or `ping` fails.** Run `python hardware/gen/build.py unwedge`. It closes Altium dialogs, stops a paused script (`X2.EXE -REditScript:Stop`), and pings again. If it still fails, restart Altium.
+- **The result names the dialogs it found.** "Information" or "Error" right after a script starts usually means a compile error. Read it in Altium, fix `ApeScripts.pas`, then close the script in Altium.
+- **Altium shows "Import Drill Data" at startup.** Altium is reopening a drill file left in its workspace. On the development machine it was `gassensor-NPTH.drl` under *Free Documents*. Close that document and the prompt stops. If an `X2.EXE` stays stuck on the dialog, end it in Task Manager.
+- **Symbol `MISSING` in a sheet result.** Run `build.py lib` first.
 
 ## 10. Footprints
 
@@ -244,5 +262,4 @@ The pad sizes of `HDR_2X20_P2.54_THT` and `RJ45_HANRUN_HR911130A` were also chos
 | `fplib/*.py` | Footprints by package family; each module exports `FOOTPRINTS`, with the land-pattern source and page above every footprint |
 | `build.py` | Command-line driver |
 | `mcp_client.py` | Minimal stdio client for the Altium MCP server (no Claude needed) |
-| `altium/ape_sheet_builder.pas` | DelphiScript run through the MCP `run_altium_script` sandbox: builds one sheet from `C:\Users\Public\altium_mcp\ape_sheet_spec.txt` and saves it |
-| `altium/ape_save_docs.pas` | Saves the documents listed in `C:\Users\Public\altium_mcp\ape_save_list.txt` |
+| `altium/ApeScripts.PrjScr`, `altium/ApeScripts.pas` | Altium script project run by `build.py`. Procedures: `Ping`, `SaveDocs`, `NewLib`, `AddToProject`, `BuildSheet`. Input and output files are in `C:\Users\Public\altium_mcp\` (`ape_*.txt`, `ape_log.txt`, `ape_result.json`). |

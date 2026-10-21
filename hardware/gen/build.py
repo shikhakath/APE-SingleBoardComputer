@@ -5,6 +5,7 @@ Run from anywhere (paths are resolved from this file's location):
   python build.py check             offline checks + netlist/BOM reports in gen/out/ (no Altium)
   python build.py project           register sheets + library in the .PrjPcb
                                     (close the project in Altium first)
+  python build.py register          same, through Altium, while the project is open
   python build.py smoke             build gen/out/smoke.SchDoc: proves the toolchain end to end
   python build.py lib               create the symbols in lib/APE-SBC.SchLib and save it
   python build.py footprints [--fresh] [NAME ...]
@@ -207,40 +208,167 @@ def mcp(tool, args, timeout=900):
         return {"raw": raw}
 
 
-def run_pas(name, timeout=600):
-    script = (GEN / "altium" / name).read_text(encoding="utf-8")
-    res = mcp("run_altium_script", {"script": script, "timeout_seconds": timeout}, timeout + 60)
-    ok = res.get("success", False)
-    if not ok:
-        print(json.dumps(res, indent=2)[:4000])
-    return ok, res
+SCRIPT_PRJ = GEN / "altium" / "ApeScripts.PrjScr"
+
+
+def altium_exe() -> str:
+    """X2.EXE from ALTIUM_EXE, else the newest C:\Program Files\Altium\AD*."""
+    import os
+    if os.environ.get("ALTIUM_EXE"):
+        return os.environ["ALTIUM_EXE"]
+    found = sorted(Path("C:/Program Files/Altium").glob("AD*/X2.EXE"))
+    if not found:
+        raise SystemExit("Altium not found - set ALTIUM_EXE to the full path of X2.EXE")
+    return str(found[-1])
+
+
+def altium_dialogs(close=False):
+    """Visible dialog windows owned by X2.EXE (titles); optionally close them."""
+    import ctypes
+    import ctypes.wintypes as wt
+    import subprocess
+    out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq X2.EXE", "/FO", "CSV", "/NH"],
+                         capture_output=True, text=True).stdout
+    pids = {int(l.split(",")[1].strip('"')) for l in out.splitlines() if l.startswith('"X2')}
+    user32 = ctypes.windll.user32
+    found = []
+
+    @ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
+    def cb(h, _):
+        pid = wt.DWORD()
+        user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
+        if pid.value in pids and user32.IsWindowVisible(h):
+            cls = ctypes.create_unicode_buffer(64)
+            user32.GetClassNameW(h, cls, 64)
+            if cls.value in ("#32770", "TMessageForm", "TDrillMillImportDlg"):
+                title = ctypes.create_unicode_buffer(256)
+                user32.GetWindowTextW(h, title, 256)
+                found.append(title.value or cls.value)
+                if close:
+                    user32.PostMessageW(h, 0x0010, 0, 0)  # WM_CLOSE
+        return True
+
+    user32.EnumWindows(cb, 0)
+    return found
+
+
+def run_ape(proc, timeout=300):
+    """Run ApeScripts>proc in the running Altium; returns (ok, result dict)."""
+    import subprocess
+    import time
+    BRIDGE.mkdir(parents=True, exist_ok=True)
+    log, res = BRIDGE / "ape_log.txt", BRIDGE / "ape_result.json"
+    for f in (log, res):
+        if f.exists():
+            f.unlink()
+    cmd = (f'"{altium_exe()}" -RScriptingSystem:RunScript(ProjectName="{SCRIPT_PRJ}"'
+           f'^|ProcName="ApeScripts>{proc}")')
+    subprocess.Popen(cmd, shell=True)
+    start = time.time()
+    while time.time() - start < timeout:
+        if res.exists():
+            time.sleep(0.3)
+            text = res.read_text(encoding="cp1252", errors="replace").strip()
+            try:
+                data = json.loads(text)
+            except ValueError:
+                return False, {"error": "unreadable result", "raw": text}
+            return bool(data.get("success")), data
+        if not log.exists() and time.time() - start > 20:
+            dialogs = altium_dialogs()
+            if dialogs:
+                return False, {"error": "script did not start (compile error or modal dialog)",
+                               "dialogs": dialogs, "hint": "python build.py unwedge"}
+        time.sleep(0.5)
+    last = log.read_text(encoding="cp1252", errors="replace").splitlines()[-1:] if log.exists() else []
+    if not log.exists() and not altium_dialogs():
+        return False, {"error": f"ApeScripts>{proc} never started: Altium runs nothing (and says nothing) "
+                                "for an unknown procedure name - check it exists in ApeScripts.pas"}
+    return False, {"error": f"no result after {timeout} s", "last_log_line": last,
+                   "dialogs": altium_dialogs(), "hint": "python build.py unwedge"}
+
+
+def cmd_unwedge():
+    """Stop a paused script (Altium's debugger) and close Altium dialogs."""
+    import subprocess
+    print("closing dialogs:", altium_dialogs(close=True))
+    subprocess.Popen(f'"{altium_exe()}" -REditScript:Stop', shell=True)
+    import time
+    time.sleep(3)
+    ok, res = run_ape("Ping", timeout=60)
+    print("script executor", "alive" if ok else f"still blocked: {res}")
+    return ok
 
 
 def save_docs(entries):
     BRIDGE.mkdir(parents=True, exist_ok=True)
     (BRIDGE / "ape_save_list.txt").write_text("\n".join(f"{k}|{p}" for k, p in entries) + "\n",
                                               encoding="cp1252", errors="replace")
-    return run_pas("ape_save_docs.pas")[0]
+    ok, res = run_ape("SaveDocs", timeout=120)
+    if not ok:
+        print("  save failed:", json.dumps(res)[:600])
+    return ok
 
 
-def cmd_lib():
+def new_lib(path: Path, kind: str = "SCHLIB") -> bool:
+    """Create an empty SCHLIB or PCBLIB at path and save it (ApeScripts>NewLib)."""
+    BRIDGE.mkdir(parents=True, exist_ok=True)
+    (BRIDGE / "ape_new_lib.txt").write_text(f"{path}\n{kind}\n", encoding="cp1252", errors="replace")
+    ok, res = run_ape("NewLib", timeout=120)
+    if not ok:
+        print("  " + json.dumps(res)[:600])
+    return ok and path.exists()
+
+
+def symbol_batches(max_pins=250):
+    """Split the library into batches: create_symbols_batch has a fixed 120 s
+    bridge timeout, so a whole library (or one 500-pin SiP) must not go at once."""
+    batch, pins = [], 0
+    for sym in all_symbols():
+        n = len(sym.pins)
+        if batch and pins + n > max_pins:
+            yield batch
+            batch, pins = [], 0
+        batch.append(sym)
+        pins += n
+    if batch:
+        yield batch
+
+
+def cmd_lib(names=None):
+    """Create lib/APE-SBC.SchLib if needed, add the symbols in batches, save.
+    `build.py lib NAME ...` limits the run to the named symbols."""
+    import time
     LIB_PATH.parent.mkdir(exist_ok=True)
-    spec = OUT / "symbols_spec.txt"
     OUT.mkdir(exist_ok=True)
-    spec.write_text(symbol_spec(), encoding="cp1252", errors="replace")
     if not LIB_PATH.exists():
-        # create_symbols_batch only opens an EXISTING library. With no library
-        # it adds symbols to whatever document is focused, dies, and wedges
-        # Altium's script executor. Opening a missing path makes Altium create
-        # an empty library, which the save script then writes to disk.
         print(f"creating empty {LIB_PATH.name}")
-        if not save_docs([("SchLib", str(LIB_PATH))]) or not LIB_PATH.exists():
+        if not new_lib(LIB_PATH, "SCHLIB"):
             print("could not create the library - create an empty SchLib at that path in Altium")
             return False
-    print(f"creating {len(all_symbols())} symbols in {LIB_PATH}")
-    res = mcp("create_symbols_batch", {"spec_file": str(spec)})
-    print(json.dumps(res, indent=2)[:2000])
-    return save_docs([("SchLib", str(LIB_PATH))])
+    ok = True
+    for i, batch in enumerate(symbol_batches()):
+        if names:
+            batch = [s for s in batch if s.name in names]
+            if not batch:
+                continue
+        spec = OUT / f"symbols_spec_{i:02d}.txt"
+        lines = [f"LIBRARY|{LIB_PATH}"]
+        for sym in batch:
+            lines += sym.spec_lines()
+        spec.write_text("\n".join(lines) + "\n", encoding="cp1252", errors="replace")
+        t0 = time.time()
+        res = mcp("create_symbols_batch", {"spec_file": str(spec)})
+        took = time.time() - t0
+        created = res.get("created", res.get("created_count", "?")) if isinstance(res, dict) else "?"
+        failed = res.get("failed", []) if isinstance(res, dict) else []
+        print(f"  batch {i:02d}: {len(batch)} symbols, {sum(len(s.pins) for s in batch)} pins, "
+              f"{took:.0f} s, created={created} failed={failed}")
+        if not res.get("success", True) or failed:
+            print("  " + json.dumps(res)[:600])
+            ok = False
+            break
+    return save_docs([("SchLib", str(LIB_PATH))]) and ok
 
 
 def cmd_footprints(args):
@@ -270,11 +398,10 @@ def cmd_footprints(args):
               "the footprints that are new.")
         return False
     if not PCBLIB_PATH.exists():
-        # create_footprints_batch only opens an existing library (FPLIB record);
-        # opening a missing path makes Altium create an empty one, which the
-        # save script writes to disk (same approach as `lib`)
+        # create_footprints_batch only opens an existing library (FPLIB record),
+        # and opening a missing path does NOT create one (verified on AD26)
         print(f"creating empty {PCBLIB_PATH.name}")
-        if not save_docs([("PcbLib", str(PCBLIB_PATH))]) or not PCBLIB_PATH.exists():
+        if not new_lib(PCBLIB_PATH, "PCBLIB"):
             print("could not create the library - create an empty PcbLib at that path in Altium")
             return False
     OUT.mkdir(exist_ok=True)
@@ -301,16 +428,23 @@ def cmd_footprints(args):
 def build_sheet(sh) -> bool:
     path = Path(sh.path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    if not path.exists():
-        shutil.copyfile(TEMPLATE_SHEET, path)
-        print(f"  created {path.name} from {TEMPLATE_SHEET.name}")
+    # Start every build from a fresh template copy: close the sheet in Altium
+    # first (it would otherwise keep its in-memory copy), then overwrite it.
+    if path.exists():
+        BRIDGE.mkdir(parents=True, exist_ok=True)
+        (BRIDGE / "ape_close_list.txt").write_text(str(path) + "\n", encoding="cp1252", errors="replace")
+        ok, res = run_ape("CloseDocs", timeout=60)
+        if not ok:
+            print("  could not close the sheet in Altium:", json.dumps(res)[:300])
+            return False
+    shutil.copyfile(TEMPLATE_SHEET, path)
     BRIDGE.mkdir(parents=True, exist_ok=True)
     (BRIDGE / "ape_sheet_spec.txt").write_text(sh.spec(str(LIB_PATH)), encoding="cp1252", errors="replace")
     pin_map = BRIDGE / "ape_pin_map.txt"
     if pin_map.exists():
         pin_map.unlink()
     print(f"building {path.name} ({len(sh.placed)} parts)")
-    ok, res = run_pas("ape_sheet_builder.pas", timeout=900)
+    ok, res = run_ape("BuildSheet", timeout=600)
     print("  " + str(res.get("result", res))[:500])
     if not ok or not pin_map.exists():
         return False
@@ -330,6 +464,21 @@ def cmd_sheets(names=None):
                 Path(sh.path).stem.startswith(n) for n in names):
             continue
         ok &= build_sheet(sh)
+    return ok
+
+
+def cmd_register():
+    """Add every sheet and the symbol library to the project while it is OPEN
+    in Altium (the `project` command edits the .PrjPcb and needs it closed)."""
+    docs = [str(Path(sh.path)) for sh in load_sheets() if Path(sh.path).exists()]
+    for lib in (LIB_PATH, PCBLIB_PATH):
+        if lib.exists():
+            docs.append(str(lib))
+    BRIDGE.mkdir(parents=True, exist_ok=True)
+    (BRIDGE / "ape_add_list.txt").write_text("\n".join([str(PRJ_PATH)] + docs) + "\n",
+                                             encoding="cp1252", errors="replace")
+    ok, res = run_ape("AddToProject", timeout=120)
+    print("  " + str(res.get("result", res))[:400])
     return ok
 
 
@@ -353,8 +502,11 @@ def main(argv):
     actions = {
         "check": lambda: cmd_check(),
         "project": lambda: cmd_project(),
+        "register": lambda: cmd_register(),
+        "unwedge": lambda: cmd_unwedge(),
+        "ping": lambda: run_ape("Ping", timeout=60)[0],
         "smoke": lambda: cmd_smoke(),
-        "lib": lambda: cmd_lib(),
+        "lib": lambda: cmd_lib(rest),
         "footprints": lambda: cmd_footprints(rest),
         "sheet": lambda: cmd_sheets(rest),
         "sheets": lambda: cmd_sheets(),

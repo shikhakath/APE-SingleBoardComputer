@@ -25,7 +25,7 @@ the CC3351 card (it has an internal slow clock). UART_WAKE#/SDIO_WAKE#/ALERT# ar
 drain, pulled up to VDD_1V8 here.
 """
 from schgen import Sheet
-from symbols import CAP, RES, TESTPOINT
+from symbols import CAP, MOUNTING_HOLE, RES, TESTPOINT
 from symlib.wireless import M2_KEY_E, STANDOFF_M2
 
 C100N = "100nF 16V X7R 0402"
@@ -106,7 +106,11 @@ def build(sch_dir: str) -> Sheet:
         ("C1303", CAP, "VCC_3V3_SYS", "GND", C10U + " (pins 72/74)"),
         ("C1304", CAP, "VCC_3V3_SYS", "GND", C100N + " (pins 72/74)", P_C100N),
     ])
-    sh.add("H1300", STANDOFF_M2, 19800, 12300, {"1": "GND"}, comment="9774015243R M2 SMT standoff 1.5 mm",
+    # Placed with MOUNTING_HOLE: on AD26 the STANDOFF_SMT_M2 symbol lost its only
+    # pin when copied onto the sheet (the library copy has it), which left the
+    # pad without a net. Same one-pin shape, so only the symbol changes.
+    sh.add("H1300", MOUNTING_HOLE, 19800, 12300, {"1": "GND"}, comment="9774015243R M2 SMT standoff 1.5 mm",
+           footprint=STANDOFF_M2.footprint,
            MPN="9774015243R", Manufacturer="Wurth Elektronik", LCSC="C22431324")
     sh.note(13700, 9900, "H1300 sits 30 mm from the socket (2230 card). M2 x 4 screw fitted by hand, not on the BOM tree.")
 
