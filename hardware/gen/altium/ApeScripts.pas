@@ -84,7 +84,7 @@ end;
 procedure Ping;
 begin
     StartRun('Ping');
-    ApeFinish('{"success": true, "version": 4}');
+    ApeFinish('{"success": true, "version": 11}');
 end;
 
 // ------------------------------------------------------------ SaveDocs
@@ -171,6 +171,39 @@ begin
     end;
 end;
 
+// ------------------------------------------------- DropDefaultFootprint
+// ape_new_lib.txt: PcbLib path. A new PcbLib starts with an empty
+// PCBComponent_1; remove it once the library has other footprints, and save.
+procedure DropDefaultFootprint;
+var
+    L : TStringList;
+    Path : String;
+    Lib : IPCB_Library;
+    Comp : IPCB_LibComponent;
+    Doc : IServerDocument;
+    n : Integer;
+begin
+    StartRun('DropDefaultFootprint');
+    L := TStringList.Create;
+    L.LoadFromFile(BRIDGE + 'ape_new_lib.txt');
+    Path := Trim(L[0]);
+    L.Free;
+    Doc := OpenApeDoc('PCBLIB', Path);
+    Client.ShowDocument(Doc);
+    Lib := PCBServer.GetCurrentPCBLibrary;
+    n := 0;
+    Comp := Lib.GetComponentByName('PCBComponent_1');
+    if (Comp <> nil) and (Lib.ComponentCount > 1) then
+    begin
+        Lib.RemoveComponent(Comp);
+        Lib.Navigate_FirstComponent;
+        n := 1;
+    end;
+    Doc.Modified := True;
+    Doc.DoFileSave('');
+    ApeFinish('{"success": true, "removed": ' + IntToStr(n) + ', "footprints": ' + IntToStr(Lib.ComponentCount) + '}');
+end;
+
 // -------------------------------------------------------- AddToProject
 // ape_add_list.txt: project path, then document paths.
 procedure AddToProject;
@@ -217,6 +250,80 @@ begin
         PrjDoc.DoFileSave(PrjDoc.Kind);
         ApeFinish('{"success": true, "added": ' + IntToStr(added) + '}');
     end;
+    L.Free;
+end;
+
+// ----------------------------------------- CloseApeProject / OpenApeProject
+// ape_project.txt: the .PrjPcb path, then a document of the project. Close
+// saves the project's open documents and closes the project with them, so
+// build.py can edit the project file; Open opens the project again.
+function FindApeProject(Path : String) : IProject;
+var
+    i : Integer;
+begin
+    Result := nil;
+    for i := 0 to GetWorkspace.DM_ProjectCount - 1 do
+        if (UpperCase(GetWorkspace.DM_Projects(i).DM_ProjectFullPath) = UpperCase(Path)) then
+            Result := GetWorkspace.DM_Projects(i);
+end;
+
+procedure CloseApeProject;
+var
+    L : TStringList;
+    Prj : IProject;
+    Doc : IServerDocument;
+    j, n : Integer;
+    P : String;
+begin
+    StartRun('CloseApeProject');
+    L := TStringList.Create;
+    L.LoadFromFile(BRIDGE + 'ape_project.txt');
+    Prj := FindApeProject(Trim(L[0]));
+    if (Prj = nil) then
+    begin
+        ApeFinish('{"success": true, "closed": false}');
+        Exit;
+    end;
+    n := 0;
+    for j := 0 to Prj.DM_LogicalDocumentCount - 1 do
+    begin
+        P := Prj.DM_LogicalDocuments(j).DM_FullPath;
+        if Client.IsDocumentOpen(P) then
+        begin
+            Doc := Client.GetDocumentByPath(P);
+            if Doc.Modified then
+            begin
+                ApeLog('saving ' + P);
+                Doc.DoFileSave('');
+                n := n + 1;
+            end;
+        end;
+    end;
+    // focus the project through one of its documents, then close it all
+    Client.ShowDocument(OpenApeDoc('PCB', Trim(L[1])));
+    ApeLog('closing project');
+    ResetParameters;
+    AddStringParameter('ObjectKind', 'FocusedProjectAndDocuments');
+    RunProcess('WorkspaceManager:CloseObject');
+    L.Free;
+    ApeFinish('{"success": true, "closed": true, "saved": ' + IntToStr(n) + '}');
+end;
+
+procedure OpenApeProject;
+var
+    L : TStringList;
+begin
+    StartRun('OpenApeProject');
+    L := TStringList.Create;
+    L.LoadFromFile(BRIDGE + 'ape_project.txt');
+    ResetParameters;
+    AddStringParameter('ObjectKind', 'Project');
+    AddStringParameter('FileName', Trim(L[0]));
+    RunProcess('WorkspaceManager:OpenObject');
+    if (FindApeProject(Trim(L[0])) = nil) then
+        ApeFinish('{"success": false, "error": "project did not open"}')
+    else
+        ApeFinish('{"success": true}');
     L.Free;
 end;
 
@@ -354,11 +461,15 @@ begin
         begin
             if (Comp <> nil) then
             begin
+                // UseComponentLibrary would look for the footprint in the
+                // symbol's own SchLib (ECO: "Footprint Not Found" for every
+                // part, verified on AD26); False searches the project's
+                // libraries, which include lib/APE-SBC.PcbLib.
                 Impl := Comp.AddSchImplementation;
                 Impl.ModelName := PipeField(Rec, 1);
                 Impl.ModelType := 'PCBLIB';
                 Impl.IsCurrent := True;
-                Impl.UseComponentLibrary := True;
+                Impl.UseComponentLibrary := False;
             end;
         end
         else if (Kind = 'PARAM') then
@@ -503,4 +614,725 @@ begin
            ', "pins": ' + IntToStr(PinMap.Count) + ', "missing": "' + Missing + '"}');
     PinMap.Free;
     Spec.Free;
+end;
+
+// ================================================================== PCB
+// Spec files come from gen/pcbsetup.py via build.py `pcb ...`. The first line
+// of each is the full .PcbDoc path; lengths are Altium coords (1 mil = 10000),
+// so no decimal separator is parsed here.
+
+// The PCB at Path, opened if needed and brought to the front.
+function ApeBoard(Path : String) : IPCB_Board;
+begin
+    Client.ShowDocument(OpenApeDoc('PCB', Path));
+    Result := PCBServer.GetPCBBoardByPath(Path);
+end;
+
+function LoadSpec(Name : String) : TStringList;
+begin
+    Result := TStringList.Create;
+    Result.LoadFromFile(BRIDGE + Name);
+end;
+
+procedure SaveBoard(Path : String);
+var
+    Doc : IServerDocument;
+begin
+    Doc := OpenApeDoc('PCB', Path);
+    Doc.Modified := True;
+    Doc.DoFileSave('');
+end;
+
+// First board object of ObjectId whose Name matches (classes also match MemberKind).
+function FindBoardObject(Board : IPCB_Board; ObjectId : Integer; Name : String; MemberKind : Integer) : IDispatch;
+var
+    It : IPCB_BoardIterator;
+    Obj : IDispatch;
+begin
+    Result := nil;
+    It := Board.BoardIterator_Create;
+    It.AddFilter_ObjectSet(MkSet(ObjectId));
+    It.AddFilter_LayerSet(AllLayers);
+    It.AddFilter_Method(eProcessAll);
+    Obj := It.FirstPCBObject;
+    while (Obj <> nil) and (Result = nil) do
+    begin
+        if (UpperCase(Obj.Name) = UpperCase(Name)) then
+            if (ObjectId <> eClassObject) or (Obj.MemberKind = MemberKind) then Result := Obj;
+        Obj := It.NextPCBObject;
+    end;
+    Board.BoardIterator_Destroy(It);
+end;
+
+function CountBoardObjects(Board : IPCB_Board; ObjectId : Integer) : Integer;
+var
+    It : IPCB_BoardIterator;
+    Obj : IDispatch;
+begin
+    Result := 0;
+    It := Board.BoardIterator_Create;
+    It.AddFilter_ObjectSet(MkSet(ObjectId));
+    It.AddFilter_LayerSet(AllLayers);
+    It.AddFilter_Method(eProcessAll);
+    Obj := It.FirstPCBObject;
+    while (Obj <> nil) do
+    begin
+        Result := Result + 1;
+        Obj := It.NextPCBObject;
+    end;
+    Board.BoardIterator_Destroy(It);
+end;
+
+// ---------------------------------------------------------- PcbOutline
+procedure SetOutlineVertex(BO : IPCB_BoardOutline; Index, X, Y : Integer);
+var
+    Seg : TPolySegment;
+begin
+    Seg := TPolySegment;
+    Seg.Kind := ePolySegmentLine;
+    Seg.vx := X;
+    Seg.vy := Y;
+    BO.Segments[Index] := Seg;
+end;
+
+// ape_pcb_outline.txt: OUTLINE|x0|y0|width|height. Rectangular board shape,
+// board origin at its lower-left corner.
+procedure PcbOutline;
+var
+    Spec : TStringList;
+    Board : IPCB_Board;
+    BO : IPCB_BoardOutline;
+    x0, y0, w, h : Integer;
+    R : TCoordRect;
+    Path : String;
+begin
+    StartRun('PcbOutline');
+    Spec := LoadSpec('ape_pcb_outline.txt');
+    Path := Trim(Spec[0]);
+    Board := ApeBoard(Path);
+    x0 := StrToInt(PipeField(Spec[1], 1));
+    y0 := StrToInt(PipeField(Spec[1], 2));
+    w := StrToInt(PipeField(Spec[1], 3));
+    h := StrToInt(PipeField(Spec[1], 4));
+    Spec.Free;
+    BO := Board.BoardOutline;
+    ApeLog('outline');
+    PCBServer.PreProcess;
+    BO.BeginModify;
+    BO.PointCount := 4;
+    SetOutlineVertex(BO, 0, x0, y0);
+    SetOutlineVertex(BO, 1, x0 + w, y0);
+    SetOutlineVertex(BO, 2, x0 + w, y0 + h);
+    SetOutlineVertex(BO, 3, x0, y0 + h);
+    BO.EndModify;
+    BO.Invalidate;
+    BO.Rebuild;
+    BO.Validate;
+    PCBServer.PostProcess;
+    Board.XOrigin := x0;
+    Board.YOrigin := y0;
+    Board.ViewManager_FullUpdate;
+    R := BO.BoundingRectangle;
+    SaveBoard(Path);
+    ApeFinish('{"success": true, "points": ' + IntToStr(BO.PointCount) +
+              ', "left": ' + IntToStr(R.Left) + ', "bottom": ' + IntToStr(R.Bottom) +
+              ', "right": ' + IntToStr(R.Right) + ', "top": ' + IntToStr(R.Top) + '}');
+end;
+
+// ------------------------------------------------------------ PcbStack
+// ape_pcb_stack.txt: V9 master-stack parameters, one KEY=value per line,
+// handed to MasterLayerStack.Import_FromParameters.
+procedure PcbStack;
+var
+    Spec : TStringList;
+    Board : IPCB_Board;
+    Stack, Layer : IDispatch;
+    S, Names, Path : String;
+    i : Integer;
+begin
+    StartRun('PcbStack');
+    Spec := LoadSpec('ape_pcb_stack.txt');
+    Path := Trim(Spec[0]);
+    Board := ApeBoard(Path);
+    S := '';
+    for i := 1 to Spec.Count - 1 do
+        if (Spec[i] <> '') then S := S + Spec[i] + '|';
+    Spec.Free;
+    Stack := Board.MasterLayerStack;
+    ApeLog('import ' + IntToStr(Length(S)) + ' chars');
+    PCBServer.PreProcess;
+    Stack.Import_FromParameters(S);
+    PCBServer.PostProcess;
+    ApeLog('imported');
+    Names := '';
+    Layer := Stack.First(eLayerClass_Physical);
+    while (Layer <> nil) do
+    begin
+        Names := Names + Layer.Name + ', ';
+        Layer := Stack.Next(eLayerClass_Physical, Layer);
+    end;
+    Board.ViewManager_UpdateLayerTabs;
+    Board.ViewManager_FullUpdate;
+    SaveBoard(Path);
+    ApeFinish('{"success": true, "layers": "' + Names + '"}');
+end;
+
+// -------------------------------------------------------- PcbImpedance
+// ape_pcb_imp.txt: IMP|name|ohms|diff 0/1|tolerance %, then its layers as
+// TRACE|layer|width|gap|ref top|ref bottom|mask on trace|mask between
+// (0 = none). Replaces every impedance profile of the board; widths and gaps
+// are locked, so Altium reports the impedance it calculates for them.
+procedure PcbImpedance;
+var
+    Spec : TStringList;
+    Board : IPCB_Board;
+    Stack, Sub, Prof, TI : IDispatch;
+    i, k, L : Integer;
+    Rec, Kind, Res, Path : String;
+begin
+    StartRun('PcbImpedance');
+    Spec := LoadSpec('ape_pcb_imp.txt');
+    Path := Trim(Spec[0]);
+    Board := ApeBoard(Path);
+    Stack := Board.MasterLayerStack;
+    Sub := Stack.Substacks[0];
+    for k := Stack.GetImpedanceProfileCount - 1 downto 0 do
+        Stack.RemoveImpedanceProfile(Stack.GetImpedanceProfileByIndex(k));
+    Prof := nil;
+    for i := 1 to Spec.Count - 1 do
+    begin
+        Rec := Spec[i];
+        Kind := PipeField(Rec, 0);
+        if (Kind = 'IMP') then
+        begin
+            ApeLog('profile ' + PipeField(Rec, 1));
+            Prof := Stack.CreateImpedanceProfile;
+            Prof.Name := PipeField(Rec, 1);
+            Prof.Impedance := StrToInt(PipeField(Rec, 2));
+            Prof.IsDiffPair := (PipeField(Rec, 3) = '1');
+            Prof.ImpedanceTolerance := StrToInt(PipeField(Rec, 4));
+            for k := 0 to Prof.GetTraceImpedanceCount - 1 do
+            begin
+                TI := Prof.GetTraceImpedanceByIndex(k);
+                TI.IsEnabled := False;
+            end;
+        end
+        else if (Kind = 'TRACE') and (Prof <> nil) then
+        begin
+            L := StrToInt(PipeField(Rec, 1));
+            ApeLog('  layer ' + IntToStr(L));
+            TI := Prof.GetTraceImpedanceForLayer(Sub, L);
+            if (TI = nil) then TI := Prof.CreateTraceImpedance(Sub, L);
+            TI.IsEnabled := True;
+            if (StrToInt(PipeField(Rec, 4)) <> 0) then TI.RefTopLayer := StrToInt(PipeField(Rec, 4));
+            if (StrToInt(PipeField(Rec, 5)) <> 0) then TI.RefBottomLayer := StrToInt(PipeField(Rec, 5));
+            TI.TraceWidth := StrToInt(PipeField(Rec, 2));
+            TI.IsTraceWidthLocked := True;
+            if Prof.IsDiffPair then
+            begin
+                TI.DiffPairGap := StrToInt(PipeField(Rec, 3));
+                TI.IsTraceGapLocked := True;
+            end;
+            if (StrToInt(PipeField(Rec, 6)) > 0) then
+            begin
+                TI.UseSolderMask := True;
+                TI.SolderMaskThicknessOnTopOfTraces := StrToInt(PipeField(Rec, 6));
+                TI.SolderMaskThicknessBetweenTraces := StrToInt(PipeField(Rec, 7));
+            end;
+        end;
+    end;
+    Spec.Free;
+    Res := '';
+    for k := 0 to Stack.GetImpedanceProfileCount - 1 do
+    begin
+        Prof := Stack.GetImpedanceProfileByIndex(k);
+        Res := Res + Prof.Name + ':';
+        for i := 0 to Prof.GetTraceImpedanceCount - 1 do
+        begin
+            TI := Prof.GetTraceImpedanceByIndex(i);
+            if TI.IsEnabled then
+                Res := Res + ' ' + IntToStr(TI.Layer) + '=' + IntToStr(TI.TraceWidth) + '/' +
+                       IntToStr(TI.DiffPairGap) + '/' + FloatToStr(TI.CalculatedImpedance);
+        end;
+        Res := Res + '; ';
+    end;
+    SaveBoard(Path);
+    ApeFinish('{"success": true, "profiles": "' + Res + '"}');
+end;
+
+// ----------------------------------------------------------- PcbImport
+// ape_pcb_import.txt: the .PcbDoc path. Runs Design >> Import Changes (the
+// ECO dialog); build.py presses its buttons, and RunProcess returns when the
+// dialog closes.
+procedure PcbImport;
+var
+    Spec : TStringList;
+    Board : IPCB_Board;
+    Path : String;
+begin
+    StartRun('PcbImport');
+    Spec := LoadSpec('ape_pcb_import.txt');
+    Path := Trim(Spec[0]);
+    Spec.Free;
+    Board := ApeBoard(Path);
+    ApeLog('eco');
+    ResetParameters;
+    AddStringParameter('ObjectKind', 'Project');
+    AddStringParameter('Action', 'UpdateMe');
+    RunProcess('WorkspaceManager:Compare');
+    ApeLog('eco closed');
+    Board := PCBServer.GetPCBBoardByPath(Path);
+    SaveBoard(Path);
+    ApeFinish('{"success": true, "components": ' + IntToStr(CountBoardObjects(Board, eComponentObject)) +
+              ', "nets": ' + IntToStr(CountBoardObjects(Board, eNetObject)) + '}');
+end;
+
+// ------------------------------------------------------------ PcbClear
+// ape_pcb_import.txt: the .PcbDoc path. Deletes every component, so the next
+// import brings fresh copies of changed footprints (the ECO compares
+// footprint names only). Nets, classes, rules and the stack stay.
+procedure PcbClear;
+var
+    Spec : TStringList;
+    Board : IPCB_Board;
+    It : IPCB_BoardIterator;
+    DelList : TInterfaceList;
+    Obj : IDispatch;
+    Path : String;
+    i : Integer;
+begin
+    StartRun('PcbClear');
+    Spec := LoadSpec('ape_pcb_import.txt');
+    Path := Trim(Spec[0]);
+    Spec.Free;
+    Board := ApeBoard(Path);
+    DelList := TInterfaceList.Create;
+    It := Board.BoardIterator_Create;
+    It.AddFilter_ObjectSet(MkSet(eComponentObject));
+    It.AddFilter_LayerSet(AllLayers);
+    It.AddFilter_Method(eProcessAll);
+    Obj := It.FirstPCBObject;
+    while (Obj <> nil) do
+    begin
+        DelList.Add(Obj);
+        Obj := It.NextPCBObject;
+    end;
+    Board.BoardIterator_Destroy(It);
+    ApeLog('deleting ' + IntToStr(DelList.Count) + ' components');
+    PCBServer.PreProcess;
+    for i := 0 to DelList.Count - 1 do
+        Board.RemovePCBObject(DelList.Items[i]);
+    PCBServer.PostProcess;
+    Board.ViewManager_FullUpdate;
+    SaveBoard(Path);
+    ApeFinish('{"success": true, "deleted": ' + IntToStr(DelList.Count) + ', "left": ' +
+              IntToStr(CountBoardObjects(Board, eComponentObject)) + '}');
+    DelList.Free;
+end;
+
+// ---------------------------------------------------------- PcbClasses
+// ape_pcb_classes.txt: NETCLASS|name|net..., DIFFPAIR|name|positive|negative,
+// DPCLASS|name|pair... Classes and pairs that exist are refilled.
+procedure PcbClasses;
+var
+    Spec : TStringList;
+    Board : IPCB_Board;
+    C, DP, P, N : IDispatch;
+    i, k, MK, nc, np : Integer;
+    Rec, Kind, Missing, Path : String;
+begin
+    StartRun('PcbClasses');
+    Spec := LoadSpec('ape_pcb_classes.txt');
+    Path := Trim(Spec[0]);
+    Board := ApeBoard(Path);
+    Missing := '';
+    nc := 0;
+    np := 0;
+    PCBServer.PreProcess;
+    for i := 1 to Spec.Count - 1 do
+    begin
+        Rec := Spec[i];
+        Kind := PipeField(Rec, 0);
+        if (Kind = 'NETCLASS') or (Kind = 'DPCLASS') then
+        begin
+            if (Kind = 'NETCLASS') then MK := eClassMemberKind_Net
+            else MK := eClassMemberKind_DifferentialPair;
+            ApeLog('class ' + PipeField(Rec, 1));
+            C := FindBoardObject(Board, eClassObject, PipeField(Rec, 1), MK);
+            if (C = nil) then
+            begin
+                C := PCBServer.PCBClassFactoryByClassMember(MK);
+                C.SuperClass := False;
+                C.Name := PipeField(Rec, 1);
+                Board.AddPCBObject(C);
+            end
+            else
+                C.RemoveAllMembers;
+            k := 2;
+            while (PipeField(Rec, k) <> '') do
+            begin
+                C.AddMemberByName(PipeField(Rec, k));
+                k := k + 1;
+            end;
+            nc := nc + 1;
+        end
+        else if (Kind = 'DIFFPAIR') then
+        begin
+            P := FindBoardObject(Board, eNetObject, PipeField(Rec, 2), 0);
+            N := FindBoardObject(Board, eNetObject, PipeField(Rec, 3), 0);
+            if (P = nil) or (N = nil) then
+                Missing := Missing + PipeField(Rec, 1) + ' '
+            else
+            begin
+                DP := FindBoardObject(Board, eDifferentialPairObject, PipeField(Rec, 1), 0);
+                if (DP = nil) then
+                begin
+                    ApeLog('pair ' + PipeField(Rec, 1));
+                    DP := PCBServer.PCBObjectFactory(eDifferentialPairObject, eNoDimension, eCreate_Default);
+                    DP.Name := PipeField(Rec, 1);
+                    DP.PositiveNet := P;
+                    DP.NegativeNet := N;
+                    Board.AddPCBObject(DP);
+                    PCBServer.SendMessageToRobots(Board.I_ObjectAddress, c_Broadcast,
+                        PCBM_BoardRegisteration, DP.I_ObjectAddress);
+                end
+                else
+                begin
+                    DP.PositiveNet := P;
+                    DP.NegativeNet := N;
+                end;
+                np := np + 1;
+            end;
+        end;
+    end;
+    PCBServer.PostProcess;
+    Spec.Free;
+    SaveBoard(Path);
+    ApeFinish('{"success": true, "classes": ' + IntToStr(nc) + ', "pairs": ' + IntToStr(np) +
+              ', "missing": "' + Missing + '"}');
+end;
+
+// ------------------------------------------------------------ PcbRules
+function RuleKindOf(Kind : String) : Integer;
+begin
+    Result := -1;
+    if (Kind = 'CLEARANCE') then Result := eRule_Clearance
+    else if (Kind = 'WIDTH') then Result := eRule_MaxMinWidth
+    else if (Kind = 'DIFFPAIR') then Result := eRule_DifferentialPairsRouting
+    else if (Kind = 'VIA') then Result := eRule_RoutingViaStyle
+    else if (Kind = 'HOLESIZE') then Result := eRule_MaxMinHoleSize
+    else if (Kind = 'ANNULAR') then Result := eRule_MinimumAnnularRing
+    else if (Kind = 'HOLE2HOLE') then Result := eRule_HoleToHoleClearance
+    else if (Kind = 'MASK') then Result := eRule_SolderMaskExpansion
+    else if (Kind = 'PASTE') then Result := eRule_PasteMaskExpansion
+    else if (Kind = 'SLIVER') then Result := eRule_MinimumSolderMaskSliver
+    else if (Kind = 'SILKMASK') then Result := eRule_SilkToSolderMaskClearance
+    else if (Kind = 'OUTLINE') then Result := eRule_BoardOutlineClearance;
+end;
+
+function ProfileIdOf(Board : IPCB_Board; Name : String) : String;
+var
+    k : Integer;
+    Prof : IDispatch;
+begin
+    Result := '';
+    for k := 0 to Board.MasterLayerStack.GetImpedanceProfileCount - 1 do
+    begin
+        Prof := Board.MasterLayerStack.GetImpedanceProfileByIndex(k);
+        if (UpperCase(Prof.Name) = UpperCase(Name)) then Result := Prof.Id;
+    end;
+end;
+
+// Field Index of a 'a:b:c' item.
+function ColonField(S : String; Index : Integer) : String;
+begin
+    Result := PipeField(StringReplace(S, ':', '|', MkSet(rfReplaceAll)), Index);
+end;
+
+// ape_pcb_rules.txt: ROOM|name|scope|x1|y1|x2|y2, then
+// RULE|kind|name|scope1|scope2|values... (see gen/pcbsetup.py rules()).
+// Every existing rule of a kind named in the file is deleted first. Altium
+// gives each new rule priority 1 (verified on AD26), so the records are added
+// last to first and their order in the file is the priority order per kind.
+procedure PcbRules;
+var
+    Spec, Kinds, Rooms, Lay : TStringList;
+    DelList : TInterfaceList;
+    Board : IPCB_Board;
+    It : IPCB_BoardIterator;
+    Rule : IDispatch;
+    i, k, RK, L : Integer;
+    Rec, Kind, SubId, Prof, Path, Bad : String;
+begin
+    StartRun('PcbRules');
+    Spec := LoadSpec('ape_pcb_rules.txt');
+    Path := Trim(Spec[0]);
+    Board := ApeBoard(Path);
+    SubId := Board.MasterLayerStack.Substacks[0].Id;
+    Kinds := TStringList.Create;
+    Rooms := TStringList.Create;
+    Bad := '';
+    for i := 1 to Spec.Count - 1 do
+        if (PipeField(Spec[i], 0) = 'RULE') then
+        begin
+            RK := RuleKindOf(PipeField(Spec[i], 1));
+            if (RK < 0) then Bad := Bad + PipeField(Spec[i], 1) + ' '
+            else Kinds.Add(IntToStr(RK));
+        end
+        else if (PipeField(Spec[i], 0) = 'ROOM') then
+            Rooms.Add(UpperCase(PipeField(Spec[i], 1)));
+    if (Bad <> '') then
+    begin
+        ApeFinish('{"success": false, "error": "unknown rule kinds: ' + Bad + '"}');
+        Exit;
+    end;
+
+    DelList := TInterfaceList.Create;
+    It := Board.BoardIterator_Create;
+    It.AddFilter_ObjectSet(MkSet(eRuleObject));
+    It.AddFilter_LayerSet(AllLayers);
+    It.AddFilter_Method(eProcessAll);
+    Rule := It.FirstPCBObject;
+    while (Rule <> nil) do
+    begin
+        if (Kinds.IndexOf(IntToStr(Rule.RuleKind)) >= 0) then DelList.Add(Rule)
+        else if (Rule.RuleKind = eRule_ConfinementConstraint) and (Rooms.IndexOf(UpperCase(Rule.Name)) >= 0) then
+            DelList.Add(Rule);
+        Rule := It.NextPCBObject;
+    end;
+    Board.BoardIterator_Destroy(It);
+    ApeLog('deleting ' + IntToStr(DelList.Count) + ' rules');
+    PCBServer.PreProcess;
+    for i := 0 to DelList.Count - 1 do
+        Board.RemovePCBObject(DelList.Items[i]);
+    DelList.Free;
+
+    for i := Spec.Count - 1 downto 1 do
+    begin
+        Rec := Spec[i];
+        Kind := PipeField(Rec, 0);
+        if (Kind = 'ROOM') then
+        begin
+            ApeLog('room ' + PipeField(Rec, 1));
+            Rule := PCBServer.PCBRuleFactory(eRule_ConfinementConstraint);
+            Rule.Name := PipeField(Rec, 1);
+            Rule.Scope1Expression := PipeField(Rec, 2);
+            Rule.Kind := eConfineIn;
+            Rule.ConstraintLayer := eTopLayer;
+            Rule.BoundingRect := RectToCoordRect(Rect(StrToInt(PipeField(Rec, 3)), StrToInt(PipeField(Rec, 6)),
+                                                      StrToInt(PipeField(Rec, 5)), StrToInt(PipeField(Rec, 4))));
+            Rule.Comment := 'SiP fan-out region (gen/pcbsetup.py); move it with U1';
+            Board.AddPCBObject(Rule);
+        end
+        else if (Kind = 'RULE') then
+        begin
+            Kind := PipeField(Rec, 1);
+            ApeLog('rule ' + PipeField(Rec, 2));
+            Rule := PCBServer.PCBRuleFactory(RuleKindOf(Kind));
+            Rule.Name := PipeField(Rec, 2);
+            Rule.Scope1Expression := PipeField(Rec, 3);
+            if (PipeField(Rec, 4) <> '') then Rule.Scope2Expression := PipeField(Rec, 4);
+            Rule.Comment := 'APE-SBC setup (gen/pcbsetup.py)';
+            if (Kind = 'CLEARANCE') or (Kind = 'HOLE2HOLE') then
+                Rule.Gap := StrToInt(PipeField(Rec, 5))
+            else if (Kind = 'OUTLINE') then
+            begin
+                // set the clearance matrix too: every object kind (arc .. hole)
+                // against the outline edge. The rule's Descriptor keeps saying
+                // Gap=0mil on AD26; GetClearance returns the value set here.
+                Rule.Gap := StrToInt(PipeField(Rec, 5));
+                for k := eObjectClearanceID_Arc to eObjectClearanceID_Hole do
+                begin
+                    Rule.SetClearance(k, eObjectClearanceID_OutlineEdge, StrToInt(PipeField(Rec, 5)));
+                    Rule.SetClearance(eObjectClearanceID_OutlineEdge, k, StrToInt(PipeField(Rec, 5)));
+                end;
+            end
+            else if (Kind = 'WIDTH') then
+            begin
+                // min|preferred|max|profile|layer:preferred;...
+                Rule.MinLimit := StrToInt(PipeField(Rec, 5));
+                Rule.MaxLimit := StrToInt(PipeField(Rec, 7));
+                Rule.PreferedWidth := StrToInt(PipeField(Rec, 6));
+                Lay := TStringList.Create;
+                Lay.Delimiter := ';';
+                Lay.StrictDelimiter := True;
+                Lay.DelimitedText := PipeField(Rec, 9);
+                for k := 0 to Lay.Count - 1 do
+                    if (Lay[k] <> '') then
+                    begin
+                        L := StrToInt(ColonField(Lay[k], 0));
+                        Rule.SetState_FavoredWidthAtSubStack(L, SubId, StrToInt(ColonField(Lay[k], 1)));
+                    end;
+                Lay.Free;
+                Prof := PipeField(Rec, 8);
+                if (Prof <> '') then
+                begin
+                    Rule.ImpedanceProfileId := ProfileIdOf(Board, Prof);
+                    Rule.ImpedanceDriven := True;
+                end;
+            end
+            else if (Kind = 'DIFFPAIR') then
+            begin
+                // min w|max w|min gap|max gap|max uncoupled|profile|layer:w:gap;...
+                Rule.MaxUncoupledLength := StrToInt(PipeField(Rec, 9));
+                Lay := TStringList.Create;
+                Lay.Delimiter := ';';
+                Lay.StrictDelimiter := True;
+                Lay.DelimitedText := PipeField(Rec, 11);
+                for k := 0 to Lay.Count - 1 do
+                    if (Lay[k] <> '') then
+                    begin
+                        L := StrToInt(ColonField(Lay[k], 0));
+                        Rule.SetState_MinWidthAtSubStack(L, SubId, StrToInt(PipeField(Rec, 5)));
+                        Rule.SetState_MaxWidthAtSubStack(L, SubId, StrToInt(PipeField(Rec, 6)));
+                        Rule.SetState_PreferedWidthAtSubStack(L, SubId, StrToInt(ColonField(Lay[k], 1)));
+                        Rule.SetState_MinGapAtSubStack(L, SubId, StrToInt(PipeField(Rec, 7)));
+                        Rule.SetState_MaxGapAtSubStack(L, SubId, StrToInt(PipeField(Rec, 8)));
+                        Rule.SetState_PreferedGapAtSubStack(L, SubId, StrToInt(ColonField(Lay[k], 2)));
+                    end;
+                Lay.Free;
+                Prof := PipeField(Rec, 10);
+                if (Prof <> '') then
+                begin
+                    Rule.ImpedanceProfileId := ProfileIdOf(Board, Prof);
+                    Rule.ImpedanceDriven := True;
+                end;
+            end
+            else if (Kind = 'VIA') then
+            begin
+                Rule.MinHoleWidth := StrToInt(PipeField(Rec, 5));
+                Rule.PreferedHoleWidth := StrToInt(PipeField(Rec, 6));
+                Rule.MaxHoleWidth := StrToInt(PipeField(Rec, 7));
+                Rule.MinWidth := StrToInt(PipeField(Rec, 8));
+                Rule.PreferedWidth := StrToInt(PipeField(Rec, 9));
+                Rule.MaxWidth := StrToInt(PipeField(Rec, 10));
+            end
+            else if (Kind = 'HOLESIZE') then
+            begin
+                Rule.AbsoluteValues := True;
+                Rule.MinLimit := StrToInt(PipeField(Rec, 5));
+                Rule.MaxLimit := StrToInt(PipeField(Rec, 6));
+            end
+            else if (Kind = 'ANNULAR') then
+                Rule.Minimum := StrToInt(PipeField(Rec, 5))
+            else if (Kind = 'MASK') or (Kind = 'PASTE') then
+                Rule.Expansion := StrToInt(PipeField(Rec, 5))
+            else if (Kind = 'SLIVER') then
+                Rule.MinSolderMaskSliver := StrToInt(PipeField(Rec, 5))
+            else if (Kind = 'SILKMASK') then
+                Rule.SilkToMaskGap := StrToInt(PipeField(Rec, 5));
+            Board.AddPCBObject(Rule);
+        end;
+    end;
+    PCBServer.PostProcess;
+    Kinds.Free;
+    Rooms.Free;
+    Spec.Free;
+    SaveBoard(Path);
+    ApeFinish('{"success": true}');
+end;
+
+// ----------------------------------------------------------- PcbReport
+// ape_pcb_report.txt: outline, stack, impedance profiles, classes,
+// differential pairs and rules (kind, priority, scopes, descriptor), counts.
+procedure PcbReport;
+var
+    Spec, Rep : TStringList;
+    Board : IPCB_Board;
+    It : IPCB_BoardIterator;
+    GI : IPCB_GroupIterator;
+    Obj, Stack, Layer, Prof, TI, Pad : IDispatch;
+    i, k : Integer;
+    S : String;
+    R : TCoordRect;
+begin
+    StartRun('PcbReport');
+    Spec := LoadSpec('ape_pcb_report_in.txt');
+    Board := ApeBoard(Trim(Spec[0]));
+    Spec.Free;
+    Rep := TStringList.Create;
+    R := Board.BoardOutline.BoundingRectangle;
+    Rep.Add('OUTLINE|' + IntToStr(Board.BoardOutline.PointCount) + '|' + IntToStr(R.Left) + '|' +
+            IntToStr(R.Bottom) + '|' + IntToStr(R.Right) + '|' + IntToStr(R.Top) + '|' +
+            IntToStr(Board.XOrigin) + '|' + IntToStr(Board.YOrigin));
+    Stack := Board.MasterLayerStack;
+    Layer := Stack.First(eLayerClass_Physical);
+    while (Layer <> nil) do
+    begin
+        Rep.Add('LAYER|' + Layer.Name);
+        Layer := Stack.Next(eLayerClass_Physical, Layer);
+    end;
+    for k := 0 to Stack.GetImpedanceProfileCount - 1 do
+    begin
+        Prof := Stack.GetImpedanceProfileByIndex(k);
+        S := 'PROFILE|' + Prof.Name + '|' + Prof.Id;
+        for i := 0 to Prof.GetTraceImpedanceCount - 1 do
+        begin
+            TI := Prof.GetTraceImpedanceByIndex(i);
+            if TI.IsEnabled then
+                S := S + '|' + IntToStr(TI.Layer) + '=' + IntToStr(TI.TraceWidth) + '/' +
+                     IntToStr(TI.DiffPairGap) + '/' + FloatToStr(TI.CalculatedImpedance);
+        end;
+        Rep.Add(S);
+    end;
+    It := Board.BoardIterator_Create;
+    It.AddFilter_ObjectSet(MkSet(eClassObject, eDifferentialPairObject, eRuleObject));
+    It.AddFilter_LayerSet(AllLayers);
+    It.AddFilter_Method(eProcessAll);
+    Obj := It.FirstPCBObject;
+    while (Obj <> nil) do
+    begin
+        if (Obj.ObjectId = eClassObject) then
+        begin
+            S := 'CLASS|' + IntToStr(Obj.MemberKind) + '|' + Obj.Name + '|';
+            k := 0;
+            while (Obj.MemberName[k] <> '') do
+            begin
+                S := S + Obj.MemberName[k] + ' ';
+                k := k + 1;
+            end;
+            Rep.Add(S);
+        end
+        else if (Obj.ObjectId = eDifferentialPairObject) then
+        begin
+            S := 'PAIR|' + Obj.Name + '|';
+            if (Obj.PositiveNet <> nil) then S := S + Obj.PositiveNet.Name;
+            S := S + '|';
+            if (Obj.NegativeNet <> nil) then S := S + Obj.NegativeNet.Name;
+            Rep.Add(S);
+        end
+        else
+            Rep.Add('RULE|' + IntToStr(Obj.RuleKind) + '|' + IntToStr(Obj.Priority) + '|' + Obj.Name + '|' +
+                    Obj.Scope1Expression + '|' + Obj.Scope2Expression + '|' + Obj.Descriptor);
+        Obj := It.NextPCBObject;
+    end;
+    Board.BoardIterator_Destroy(It);
+    // every component's footprint and every pad's net, for build.py's check
+    It := Board.BoardIterator_Create;
+    It.AddFilter_ObjectSet(MkSet(eComponentObject));
+    It.AddFilter_LayerSet(AllLayers);
+    It.AddFilter_Method(eProcessAll);
+    Obj := It.FirstPCBObject;
+    while (Obj <> nil) do
+    begin
+        Rep.Add('COMP|' + Obj.Name.Text + '|' + Obj.Pattern);
+        GI := Obj.GroupIterator_Create;
+        GI.AddFilter_ObjectSet(MkSet(ePadObject));
+        Pad := GI.FirstPCBObject;
+        while (Pad <> nil) do
+        begin
+            S := '';
+            if (Pad.Net <> nil) then S := Pad.Net.Name;
+            Rep.Add('PAD|' + Obj.Name.Text + '|' + Pad.Name + '|' + S);
+            Pad := GI.NextPCBObject;
+        end;
+        Obj.GroupIterator_Destroy(GI);
+        Obj := It.NextPCBObject;
+    end;
+    Board.BoardIterator_Destroy(It);
+    Rep.Add('COUNT|components|' + IntToStr(CountBoardObjects(Board, eComponentObject)));
+    Rep.Add('COUNT|nets|' + IntToStr(CountBoardObjects(Board, eNetObject)));
+    Rep.SaveToFile(BRIDGE + 'ape_pcb_report.txt');
+    ApeFinish('{"success": true, "lines": ' + IntToStr(Rep.Count) + '}');
+    Rep.Free;
 end;

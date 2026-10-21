@@ -54,9 +54,12 @@ CRTYD_W = 0.05
 DOT_R = 0.20           # pin-1 dot radius (filled)
 
 SHAPES = {"round": 1, "rect": 2, "octagon": 3, "roundrect": 9}
-L_TOP, L_MULTI = "Top Layer", "Multi-Layer"
+# Layer names as create_footprints_batch's String2Layer reads them. On AD26
+# "Multi-Layer" and "Mechanical 13" map to no layer (verified): through-hole
+# pads then import with no net, so use "Multi Layer" / "Mechanical Layer 13".
+L_TOP, L_MULTI = "Top Layer", "Multi Layer"
 L_SILK, L_PASTE = "Top Overlay", "Top Paste"
-L_BODY, L_CRTYD = "Mechanical 13", "Mechanical 15"
+L_BODY, L_CRTYD = "Mechanical Layer 13", "Mechanical Layer 15"
 
 
 @dataclass

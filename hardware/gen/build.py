@@ -212,7 +212,7 @@ SCRIPT_PRJ = GEN / "altium" / "ApeScripts.PrjScr"
 
 
 def altium_exe() -> str:
-    """X2.EXE from ALTIUM_EXE, else the newest C:\Program Files\Altium\AD*."""
+    r"""X2.EXE from ALTIUM_EXE, else the newest C:\Program Files\Altium\AD*."""
     import os
     if os.environ.get("ALTIUM_EXE"):
         return os.environ["ALTIUM_EXE"]
@@ -412,6 +412,11 @@ def cmd_footprints(args):
     print(json.dumps(res, indent=2)[:2000])
     if not save_docs([("PcbLib", str(PCBLIB_PATH))]):
         return False
+    if not names:
+        # a new library starts with an empty PCBComponent_1
+        (BRIDGE / "ape_new_lib.txt").write_text(f"{PCBLIB_PATH}\n", encoding="cp1252", errors="replace")
+        ok, drop = run_ape("DropDefaultFootprint", timeout=120)
+        print("  DropDefaultFootprint: " + json.dumps(drop))
     assumed = [fp for fp in fps if fp.assumed]
     if assumed:
         print("pad numbering assumed (check against the part before layout):")
@@ -482,6 +487,292 @@ def cmd_register():
     return ok
 
 
+# -------------------------------------------------------------------- pcb
+
+PCB_PATH = HW / "PCB.PcbDoc"
+PCB_STEPS = ["eco-options", "outline", "stack", "impedance", "import", "classes", "rules", "report"]
+# `clear` deletes every component (before placement only): the ECO compares
+# footprint names, so changed footprints need `pcb clear import`.
+PCB_EXTRA = ["clear"]
+
+
+def pcb_nets() -> list[str]:
+    nets = set()
+    for sh in load_sheets():
+        nets.update(sh.netlist())
+    return sorted(nets)
+
+
+def pcb_run(proc, spec_name, text, timeout=300):
+    """Write one spec to the bridge folder and run ApeScripts>proc on it."""
+    BRIDGE.mkdir(parents=True, exist_ok=True)
+    (BRIDGE / spec_name).write_text(text, encoding="cp1252", errors="replace")
+    ok, res = run_ape(proc, timeout=timeout)
+    print(f"  {proc}: " + json.dumps(res)[:1500])
+    return ok
+
+
+def x2_windows(title):
+    """Visible top-level X2.EXE windows whose title contains title."""
+    import ctypes
+    import ctypes.wintypes as wt
+    import subprocess
+    out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq X2.EXE", "/FO", "CSV", "/NH"],
+                         capture_output=True, text=True).stdout
+    pids = {int(l.split(",")[1].strip('"')) for l in out.splitlines() if l.startswith('"X2')}
+    user32 = ctypes.windll.user32
+    found = []
+
+    @ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
+    def cb(h, _):
+        pid = wt.DWORD()
+        user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
+        if pid.value in pids and user32.IsWindowVisible(h):
+            buf = ctypes.create_unicode_buffer(256)
+            user32.GetWindowTextW(h, buf, 256)
+            if title.lower() in buf.value.lower():
+                found.append(h)
+        return True
+
+    user32.EnumWindows(cb, 0)
+    return found
+
+
+def dialog_buttons(dlg):
+    """{caption without '&': hwnd} of the visible child controls of dlg."""
+    import ctypes
+    import ctypes.wintypes as wt
+    user32 = ctypes.windll.user32
+    found = {}
+
+    @ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
+    def cb(h, _):
+        buf = ctypes.create_unicode_buffer(256)
+        user32.GetWindowTextW(h, buf, 256)
+        if buf.value:
+            found[buf.value.replace("&", "")] = h
+        return True
+
+    user32.EnumChildWindows(dlg, cb, 0)
+    return found
+
+
+def press(button, dlg, settle=2.0, timeout=600):
+    """Click a VCL button in a dialog that is not the active window, then wait
+    until the dialog answers messages again. BM_CLICK is ignored by inactive
+    dialogs (verified on AD26), so send the parent the button's BN_CLICKED."""
+    import ctypes
+    import time
+    user32 = ctypes.windll.user32
+    user32.PostMessageW(user32.GetParent(button), 0x0111, user32.GetDlgCtrlID(button) & 0xFFFF, button)
+    time.sleep(settle)
+    res = ctypes.c_size_t()
+    start = time.time()
+    while time.time() - start < timeout:
+        if user32.SendMessageTimeoutW(dlg, 0, 0, 0, 0x0002, 5000, ctypes.byref(res)):   # WM_NULL
+            return True
+        time.sleep(1)
+    return False
+
+
+def window_png(hwnd, path):
+    """Save one window as PNG with PrintWindow (it may be covered); needs Pillow."""
+    try:
+        import ctypes
+        import ctypes.wintypes as wt
+        from PIL import Image
+    except ImportError:
+        return False
+    user32, gdi32 = ctypes.windll.user32, ctypes.windll.gdi32
+    r = wt.RECT()
+    user32.GetWindowRect(hwnd, ctypes.byref(r))
+    w, h = r.right - r.left, r.bottom - r.top
+    hdc = user32.GetWindowDC(hwnd)
+    mdc = gdi32.CreateCompatibleDC(hdc)
+    bmp = gdi32.CreateCompatibleBitmap(hdc, w, h)
+    gdi32.SelectObject(mdc, bmp)
+    user32.PrintWindow(hwnd, mdc, 2)
+    header = (ctypes.c_int32 * 10)(40, w, -h, 1 | (32 << 16), 0, 0, 0, 0, 0, 0)
+    buf = ctypes.create_string_buffer(w * h * 4)
+    gdi32.GetDIBits(mdc, bmp, 0, h, buf, header, 0)
+    Image.frombuffer("RGBA", (w, h), buf, "raw", "BGRA", 0, 1).convert("RGB").save(path)
+    gdi32.DeleteObject(bmp)
+    gdi32.DeleteDC(mdc)
+    user32.ReleaseDC(hwnd, hdc)
+    return True
+
+
+def pcb_import(path):
+    """Design >> Import Changes into the PCB: ApeScripts>PcbImport opens the
+    ECO dialog, this presses Validate, Execute and Close, and saves PNGs of the
+    dialog to gen/out/eco_*.png. The result is checked by `pcb report`."""
+    import subprocess
+    import time
+    BRIDGE.mkdir(parents=True, exist_ok=True)
+    OUT.mkdir(exist_ok=True)
+    (BRIDGE / "ape_pcb_import.txt").write_text(f"{path}\n", encoding="cp1252", errors="replace")
+    for f in (BRIDGE / "ape_log.txt", BRIDGE / "ape_result.json"):
+        if f.exists():
+            f.unlink()
+    subprocess.Popen(f'"{altium_exe()}" -RScriptingSystem:RunScript(ProjectName="{SCRIPT_PRJ}"'
+                     f'^|ProcName="ApeScripts>PcbImport")', shell=True)
+    start, dlg, info = time.time(), None, None
+    while time.time() - start < 180 and not dlg and not info:
+        time.sleep(2)
+        found = x2_windows("Engineering Change Order")
+        dlg = found[0] if found else None
+        # in sync: "Differences detected but no ECO generated" (the PCB-only
+        # classes, pairs and room, whose removal the project options turn off)
+        found = x2_windows("Information")
+        info = found[0] if found and not dlg else None
+    if info:
+        print("  nothing to import (Altium: differences detected but no ECO generated)")
+        press(dialog_buttons(info)["OK"], info, timeout=30)
+    elif not dlg:
+        print("  no ECO dialog after 180 s; dialogs open:", altium_dialogs())
+        return False
+    else:
+        buttons = dialog_buttons(dlg)
+        for step in ("Validate Changes", "Execute Changes"):
+            print(f"  {step}")
+            if not press(buttons[step], dlg):
+                print(f"  the ECO dialog stopped answering after {step}")
+                return False
+            window_png(dlg, OUT / f"eco_{step.split()[0].lower()}.png")
+        press(buttons["Close"], dlg, timeout=30)
+    while time.time() - start < 600:
+        res = BRIDGE / "ape_result.json"
+        if res.exists():
+            time.sleep(0.3)
+            data = json.loads(res.read_text(encoding="cp1252", errors="replace"))
+            print("  PcbImport: " + json.dumps(data))
+            print(f"  ECO dialog images: {OUT}\\eco_*.png")
+            return bool(data.get("success"))
+        time.sleep(1)
+    print("  no result from PcbImport")
+    return False
+
+
+def pcb_check(report: Path) -> bool:
+    """Compare PcbReport's components, footprints and pad nets with the generator."""
+    want_fp, want_net = {}, {}
+    for sh in load_sheets():
+        for pl in sh.placed:
+            want_fp[pl.designator] = pl.footprint
+            for num, net in pl.nets.items():
+                want_net[(pl.designator, num)] = "" if net == "NC" else net
+    have_fp, have_net = {}, {}
+    for line in report.read_text(encoding="cp1252", errors="replace").splitlines():
+        f = line.split("|")
+        if f[0] == "COMP":
+            have_fp[f[1]] = f[2]
+        elif f[0] == "PAD" and f[2]:
+            have_net.setdefault((f[1], f[2]), set()).add(f[3])
+    problems = [f"{d} missing from the PCB" for d in sorted(set(want_fp) - set(have_fp))]
+    problems += [f"{d} on the PCB but not in the schematic" for d in sorted(set(have_fp) - set(want_fp))]
+    problems += [f"{d}: footprint {have_fp[d]}, expected {want_fp[d]}"
+                 for d in sorted(set(want_fp) & set(have_fp)) if have_fp[d] != want_fp[d]]
+    for key, net in sorted(want_net.items()):
+        if key[0] in have_fp and have_net.get(key, {net}) != {net}:
+            problems.append(f"{key[0]} pad {key[1]}: net {sorted(have_net[key])}, expected {net or 'none'}")
+        elif key[0] in have_fp and key not in have_net:
+            problems.append(f"{key[0]} pin {key[1]} has no pad")
+    nets = {n for v in have_net.values() for n in v if n}
+    print(f"  {len(have_fp)} components, {len(nets)} nets, {len(have_net)} named pads on the PCB; "
+          f"schematic: {len(want_fp)} designators, {len({n for n in want_net.values() if n})} nets")
+    print("\n".join("  " + p for p in problems[:60]) if problems else "  pads match the schematic netlist")
+    return not problems
+
+
+def dismiss_server_prompt(stop):
+    """Close Altium's "Save <project> to Server" window whenever it appears,
+    until stop is set. Closing a project opens it (Altium's own VCS commit and
+    push for hardware/.git); closing it uploads nothing."""
+    import ctypes
+    import time
+    while not stop.is_set():
+        for h in x2_windows("to Server"):
+            print("  dismissing Altium's Save to Server prompt (nothing uploaded)")
+            ctypes.windll.user32.PostMessageW(h, 0x0010, 0, 0)       # WM_CLOSE
+        time.sleep(1)
+
+
+def pcb_project_edit(edit) -> bool:
+    """Apply edit(text) to the .PrjPcb: close the project in Altium, rewrite
+    the file, open it again (Altium rewrites the file when it closes it)."""
+    import threading
+    text = PRJ_PATH.read_bytes().decode("utf-8-sig").replace("\r\n", "\n")
+    if edit(text) == text:
+        print("  project options already set")
+        return True
+    BRIDGE.mkdir(parents=True, exist_ok=True)
+    (BRIDGE / "ape_project.txt").write_text(f"{PRJ_PATH}\n{PCB_PATH}\n", encoding="cp1252", errors="replace")
+    stop = threading.Event()
+    watcher = threading.Thread(target=dismiss_server_prompt, args=(stop,), daemon=True)
+    watcher.start()
+    ok, res = run_ape("CloseApeProject", timeout=180)
+    stop.set()
+    print("  CloseApeProject: " + json.dumps(res))
+    if not ok:
+        return False
+    raw = PRJ_PATH.read_bytes()             # as Altium saved it on closing
+    bom = raw.startswith(b"\xef\xbb\xbf")
+    new = edit(raw.decode("utf-8-sig").replace("\r\n", "\n"))
+    PRJ_PATH.write_bytes((b"\xef\xbb\xbf" if bom else b"") + new.replace("\n", "\r\n").encode("utf-8"))
+    print(f"  updated {PRJ_PATH.name}")
+    ok, res = run_ape("OpenApeProject", timeout=120)
+    print("  OpenApeProject: " + json.dumps(res))
+    return ok
+
+
+def cmd_pcb(args):
+    """Set up hardware/PCB.PcbDoc from gen/pcbsetup.py (README section 11).
+    `build.py pcb` runs every step in order; `build.py pcb rules report` runs some."""
+    import pcbsetup
+    steps = args or PCB_STEPS
+    unknown = [s for s in steps if s not in PCB_STEPS + PCB_EXTRA]
+    if unknown:
+        print("unknown pcb steps: " + " ".join(unknown) + "; steps are " + " ".join(PCB_STEPS + PCB_EXTRA))
+        return False
+    if "impedance" in steps and "rules" not in steps:
+        # new profiles get new ids; the impedance-driven rules must point at them
+        steps = steps + ["rules"]
+    path = PCB_PATH
+    for step in steps:
+        print(f"pcb {step}")
+        if step == "clear":
+            ok = pcb_run("PcbClear", "ape_pcb_import.txt", f"{path}\n")
+        elif step == "eco-options":
+            ok = pcb_project_edit(pcbsetup.set_eco_levels)
+        elif step == "outline":
+            ok = pcb_run("PcbOutline", "ape_pcb_outline.txt", pcbsetup.outline_spec(path))
+        elif step == "stack":
+            ok = pcb_run("PcbStack", "ape_pcb_stack.txt", pcbsetup.stack_spec(path))
+        elif step == "impedance":
+            ok = pcb_run("PcbImpedance", "ape_pcb_imp.txt", pcbsetup.impedance_spec(path))
+        elif step == "import":
+            ok = pcb_import(path)
+        elif step == "classes":
+            nets = pcb_nets()
+            missing = pcbsetup.check_nets(nets)
+            if missing:
+                print("  nets named in pcbsetup.py but not in the schematic: " + " ".join(missing))
+                return False
+            ok = pcb_run("PcbClasses", "ape_pcb_classes.txt", pcbsetup.classes_spec(path, nets))
+        elif step == "rules":
+            ok = pcb_run("PcbRules", "ape_pcb_rules.txt", pcbsetup.rules_spec(path))
+        elif step == "report":
+            ok = pcb_run("PcbReport", "ape_pcb_report_in.txt", f"{path}\n")
+            if ok:
+                OUT.mkdir(exist_ok=True)
+                shutil.copyfile(BRIDGE / "ape_pcb_report.txt", OUT / "pcb_report.txt")
+                print(f"  report in {OUT / 'pcb_report.txt'}")
+                ok = pcb_check(OUT / "pcb_report.txt")
+        if not ok:
+            return False
+    return True
+
+
 def cmd_smoke():
     """Two resistors, a capacitor and the PMIC on a scratch sheet."""
     sh = schgen.Sheet(str(OUT / "smoke.SchDoc"), "Smoke test", style=6)
@@ -510,6 +801,7 @@ def main(argv):
         "footprints": lambda: cmd_footprints(rest),
         "sheet": lambda: cmd_sheets(rest),
         "sheets": lambda: cmd_sheets(),
+        "pcb": lambda: cmd_pcb(rest),
     }
     if cmd not in actions:
         print(__doc__)

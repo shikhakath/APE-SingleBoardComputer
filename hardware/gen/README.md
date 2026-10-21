@@ -9,6 +9,8 @@ This folder builds the APE-SBC Altium schematic and libraries from Python. Symbo
 
 Section 8 lists what that run proved and fixed.
 
+**PCB set up (2026-10-20), [section 11](#11-pcb-setup):** `build.py pcb` gives `PCB.PcbDoc` the 100 × 70 mm outline, the JLC06161H-3313 6-layer stack, three impedance profiles, net and differential-pair classes, the SiP room and the design rules, and imports the schematic. All 687 parts (629 fitted, 58 DNP) arrive with their footprints, 443 nets, and every pad's net matches the generator. Placement has not started.
+
 **Schematic v0.1:** 16 sheets, 687 designators, 443 nets. `build.py check` passes with no single-node nets, no accidental connections and no overlaps. Open questions are in [`docs/schematic-open-items.md`](../../docs/schematic-open-items.md).
 
 | Sheet | Content |
@@ -114,11 +116,12 @@ Run these in order the first time.
 |---|---|---|
 | a. Check Altium | `python hardware/gen/build.py ping` | Prints nothing and exits 0 when Altium runs scripts. If it fails, see section 9. |
 | b. Library | `python hardware/gen/build.py lib` | It creates `lib/APE-SBC.SchLib` if missing, then adds the symbols in six batches (each under the MCP's fixed 120 s limit; the whole library takes about 40 s). Open the library: `TPS65219` has pins pointing outward with names inside the body; `RES`/`CAP` are horizontal. |
-| b2. Footprints | `python hardware/gen/build.py footprints` | Open `APE-SBC.PcbLib`. Delete the empty `PCBCOMPONENT_1` that Altium puts in a new library. Check `SOT23-5`: pad 1 top left, pads 1-3 on the left. Check `OSD62X-PM_BGA500`: 500 round 0.20 mm pads, A1 dot top left. Check `USB-C_HRO_TYPE-C-31-M-12`: slotted shell holes, not round ones. Then run the PCB library's **Reports » Component Rule Check**. |
+| b2. Footprints | `python hardware/gen/build.py footprints` | Open `APE-SBC.PcbLib` (the empty `PCBComponent_1` Altium puts in a new library is removed automatically). Check `SOT23-5`: pad 1 top left, pads 1-3 on the left. Check `OSD62X-PM_BGA500`: 500 round 0.20 mm pads, A1 dot top left. Check `USB-C_HRO_TYPE-C-31-M-12`: slotted shell holes, not round ones. Then run the PCB library's **Reports » Component Rule Check**. |
 | c. Smoke test | `python hardware/gen/build.py smoke` | Prints `pin map matches the generator`. Open `hardware/gen/out/smoke.SchDoc`. |
 | d. Sheets | `python hardware/gen/build.py sheets`, or one sheet: `python hardware/gen/build.py sheet 02_PMIC` | Each sheet prints `pin map matches`. |
 | e. Register | `python hardware/gen/build.py register` (project open) or `project` (project closed) | The sheets and libraries appear in the Projects panel. Then **Project » Validate PCB Project** and review the Messages panel. |
-| f. Commit | `git add hardware && git commit && git push` | Altium binary files are committed as-is; `gen/out/` is ignored |
+| f. PCB | `python hardware/gen/build.py pcb` | Prints `pads match the schematic netlist`. See section 11. |
+| g. Commit | `git add hardware && git commit && git push` (from the repository root, see section 9) | Altium binary files are committed as-is; `gen/out/` is ignored |
 
 `lib`, `footprints` and `sheets` also save the documents. The MCP tools themselves never save, so if a run stops halfway, save manually (File » Save All).
 
@@ -163,8 +166,10 @@ Open the repository folder in Claude Code and approve the `altium` MCP server wh
 | `WorkspaceManager:SaveObject` with ObjectKind `Project` saves nothing. | `AddToProject` saves the project's own server document. |
 | A script-created No-ERC marker suppresses nothing by default. | The builder sets `IsActive` and `SuppressAll`. The MCP's ERC reader still lists those pins; check against the generator's `NC` nets. |
 | Running an unknown procedure name makes Altium do nothing, with no message. | `run_ape` reports "never started" when no log appears and no dialog is open. |
+| The first PCB import reported "Footprint Not Found" for every part: the sheets set `UseComponentLibrary`, so Altium looked for footprints in the symbol's `.SchLib`. | `BuildSheet` sets it to False ("Any" library); the project's `APE-SBC.PcbLib` is found. |
+| Every through-hole pad imported without a net, and body and courtyard lines sat on no layer: `create_footprints_batch` maps layer names with `String2Layer`, which on AD26 returns no layer for `Multi-Layer` and `Mechanical 13`. | `footprints.py` writes `Multi Layer`, `Mechanical Layer 13` and `Mechanical Layer 15`. |
 
-**Still unverified:** the `create_footprints_batch` field values (see section 10), and whether re-running `lib` on an existing library updates symbols or duplicates them. Until that is known, delete `APE-SBC.SchLib` before a full re-run.
+`create_footprints_batch` field values are now verified: `build.py pcb report` checks every pad's net against the generator, and the pads, body and courtyard land on Multi-Layer, Mechanical 13 and Mechanical 15. **Still unverified:** whether re-running `lib` on an existing library updates symbols or duplicates them. Until that is known, delete `APE-SBC.SchLib` before a full re-run.
 
 ## 9. Troubleshooting
 
@@ -172,6 +177,8 @@ Open the repository folder in Claude Code and approve the `altium` MCP server wh
 - **The result names the dialogs it found.** "Information" or "Error" right after a script starts usually means a compile error. Read it in Altium, fix `ApeScripts.pas`, then close the script in Altium.
 - **Altium shows "Import Drill Data" at startup.** Altium is reopening a drill file left in its workspace. On the development machine it was `gassensor-NPTH.drl` under *Free Documents*. Close that document and the prompt stops. If an `X2.EXE` stays stuck on the dialog, end it in Task Manager.
 - **Symbol `MISSING` in a sheet result.** Run `build.py lib` first.
+- **`git status` inside `hardware/` shows `gen/`, `lib/` and `sch/` as untracked.** `hardware/.git` is Altium's own version-control repository for the project, nested in this one. Run git from the repository root.
+- **Altium opens "Save APE - Single Board Computer to Server" when the project closes.** That is Altium 365 committing and pushing `hardware/.git`. Press Cancel; `build.py pcb eco-options` closes it by itself and uploads nothing.
 
 ## 10. Footprints
 
@@ -200,7 +207,7 @@ The conventions are at the top of `footprints.py`:
 
 ### Board rules the footprints rely on
 
-`create_footprints_batch` has no per-pad mask or paste fields, so the footprints carry copper only. The PCB needs these rules (values from `docs/research/bom/jlcpcb-stackup-and-cost.md` section 5):
+`create_footprints_batch` has no per-pad mask or paste fields, so the footprints carry copper only. The PCB needs these rules (values from `docs/research/bom/jlcpcb-stackup-and-cost.md` section 5); `build.py pcb rules` creates them (section 11):
 
 | Rule | Scope | Value |
 |---|---|---|
@@ -247,6 +254,74 @@ The pad sizes of `HDR_2X20_P2.54_THT` and `RJ45_HANRUN_HR911130A` were also chos
 3. Run `python hardware/gen/build.py check`.
 4. In Altium, run `build.py footprints NAME` for a new footprint, or `build.py footprints --fresh` after a change (close the library first).
 
+## 11. PCB setup
+
+`python hardware/gen/build.py pcb` sets up `hardware/PCB.PcbDoc` with the project open in Altium. It runs the steps below in order; name some to run only those (`build.py pcb rules report`). All values are in `pcbsetup.py`, from `docs/research/bom/jlcpcb-stackup-and-cost.md` (sections 2.2, 3.1, 4, 5) and the Octavo layout notes in `docs/research/osd62x-pm-sip.md` section 1.10. Every step is safe to re-run.
+
+| Step | What it does |
+|---|---|
+| `eco-options` | Stops Design » Import Changes from deleting the PCB-only objects below. It turns off the change orders Remove Net Classes, Remove Net Class Members, Remove Differential Pairs, Remove Differential Pair Classes and their members, and Remove Rooms. It closes the project, edits `[Modification Levels]` in the `.PrjPcb`, and opens the project again. It does nothing if they are already off. |
+| `outline` | 100 × 70 mm rectangle with square corners, lower-left corner at (1000, 1000) mil. The board origin is that corner. |
+| `stack` | JLC06161H-3313, see the table below. |
+| `impedance` | Profiles SE50, DIFF90 and DIFF100 with JLCPCB's widths and gaps, locked, ±10 %. It is always followed by `rules`, because the rules refer to the profiles by id. |
+| `import` | Design » Import Changes. It presses Validate, Execute and Close in the ECO dialog and saves `out/eco_validate.png` and `out/eco_execute.png`. When nothing has changed, Altium says "Differences detected but no ECO generated" (the PCB-only objects); the step accepts that. |
+| `classes` | Net classes, differential pairs and differential-pair classes, see below. |
+| `rules` | The `U1_SiP` room and the design rules, see below. |
+| `report` | Writes `out/pcb_report.txt` and checks every component, footprint and pad net against the generator. |
+| `clear` | Not in the default run. Deletes every component, so `build.py pcb clear import classes report` brings in changed footprints (the ECO compares footprint names only). Use it before placement only. |
+
+**Layer stack** (TOP / GND / SIG / GND / PWR / BOT; section 5 asks for the calculator's model: Dk 4.3 for 3313 and the cores, 4.2 for 2116, outer copper 1.6 mil plated):
+
+| Layer | Thickness | Dk | Note |
+|---|---|---|---|
+| Top Solder | 1.0 mil | 3.8 | |
+| L1_TOP | 1.6 mil (1 oz) | | Components, microstrip referenced to L2 |
+| PP 3313 L1-L2 | 3.9134 mil (0.0994 mm) | 4.3 | Prepreg |
+| L2_GND | 0.6 mil (0.5 oz) | | |
+| Core L2-L3 | 21.6535 mil (0.55 mm) | 4.3 | |
+| L3_SIG | 0.6 mil | | Stripline, L4 at 4.88 mil, L2 at 21.65 mil |
+| PP 2116 L3-L4 | 4.2835 mil (0.1088 mm) | 4.2 | Prepreg |
+| L4_GND | 0.6 mil | | |
+| Core L4-L5 | 21.6535 mil | 4.3 | |
+| L5_PWR | 0.6 mil | | |
+| PP 3313 L5-L6 | 3.9134 mil | 4.3 | Prepreg |
+| L6_BOT | 1.6 mil | | Referenced to L5 PWR |
+| Bottom Solder | 1.0 mil | 3.8 | |
+
+All six copper layers are signal layers, so L2, L4 and L5 take positive pours (section 5). With 1.6 mil outer copper the stack adds up to 1.55 mm; JLCPCB quotes 1.54 mm finished.
+
+**Impedance profiles** (drawn width / gap in mil on L1, L3, L6): SE50 5.94, 5.59, 5.94; DIFF90 5.34/6, 5.03/6, 5.34/6; DIFF100 4.69/8, 4.33/8, 4.69/8. Altium computes its own impedance for these when the Layer Stack Manager's Impedance tab is opened; that has not been compared with JLCPCB's numbers yet.
+
+**Classes:**
+- Net classes: `PWR` (all 43 rails), split into `PWR_IN`, `PWR_CORE`, `PWR_DDR`, `PWR_1V8`, `PWR_3V3`, `PWR_OTHER`; `PWR_HI` (the 1 A rails and the switch nodes); `SE50` (RGMII, eMMC, SD, SDIO, DPI, reference clocks).
+- Differential-pair classes: `USB0` (USB0, USBC1), `USB1` (USB1, HUB_P1, HUB_P2, USBA1, USBA2), `USB_DBG` (DBG_USB), `ETH_MDI` (MDI0–3), `HDMI_TMDS` (TX0–2, TXC), `CSI` (CLK, D0, D1). 19 pairs in all.
+
+**Rules**, highest priority first within each kind:
+
+| Kind | Rules |
+|---|---|
+| Clearance | `Clr_InnerPour_Hole` pours on L2/L4/L5 to vias and pads 0.20 mm; `Clr_SiP` 0.09 mm in the room; `Clr_SMD_SMD` 0.15 mm; `Clr_Default` 0.10 mm |
+| Width | `W_SiP` 0.09 / 0.09 / 0.15 mm in the room; `W_SE50` from profile SE50; `W_PWR_HI` 0.20 / 1.00 / 3.0; `W_PWR` 0.15 / 0.40 / 3.0; `W_Default` 0.10 / 0.15 / 3.0 |
+| Differential pairs | `DP_90R_USB` (USB0, USB1, USB_DBG) from DIFF90; `DP_100R` (ETH_MDI, HDMI_TMDS, CSI) from DIFF100. Width and gap down to 0.09 mm for the SiP neck-down, 5 mm maximum uncoupled length |
+| Routing via | `Via_SiP` 0.15 / 0.25 mm in the room; `Via_PWR` (PWR and GND) 0.30 / 0.50 preferred; `Via_Default` 0.20 / 0.40 preferred, holes up to 0.50 mm for POFV |
+| Holes | Hole size 0.15–6.3 mm; annular ring 0.05 mm on vias and 0.15 mm on pads; hole to hole 0.45 mm between pads, 0.20 mm otherwise |
+| Masks | Solder mask 0 on U1 (1:1 on the NSMD lands), 0.05 mm elsewhere; paste −2.5 mm on the windowed exposed pads (the query `build.py footprints` prints) and on `TC2070-NL`, 0 elsewhere; mask sliver 0.10 mm; silk to mask 0.15 mm |
+| Board outline | 0.30 mm |
+
+The template's polygon-connect rules (relief, four 10 mil spokes, 10 mil gap; vias direct) already match section 5 and are kept. The SiP region rules use `WithinRoom('U1_SiP')`: the room is the 9 × 14 mm body plus 1 mm, placed at the board centre for now. Move the room onto U1 when placing it; a room carries its components.
+
+**What `build.py pcb` verified on AD26:** 687 components (629 fitted, 58 DNP) with their footprints, 443 nets, every pad's net equal to the generator's; rule priorities as listed; the impedance-driven rules point at the current profiles; a further Import Changes generates no change orders.
+
+**Notes from the AD26 run:**
+- Altium gives every new rule priority 1, so `PcbRules` adds the rules last to first.
+- The descriptors of some rules show stale values. The board-outline rule says `Gap=0mil` while `GetClearance` returns 0.30 mm, and the width and differential-pair rules show the template's widths while the per-layer values come from the profiles. `pcb report` lists the descriptors as Altium prints them.
+- AD26 has no `IsSMDPad` query keyword; an unknown keyword stops the script with an "Undeclared identifier" dialog. Use `IsSMTPin`.
+- `[Modification Levels]` in the `.PrjPcb` holds Type1–Type161 for Altium's `eModification_*` values 0–160, so value N is TypeN+1.
+- The ECO dialog's buttons ignore `BM_CLICK` while the dialog is not the active window. `build.py` sends the button's `BN_CLICKED` to its parent instead.
+- The MCP's `get_pcb_layer_stackup` omits the cores and prints wrong µm values (mil ÷ 254). Use the Layer Stack Manager or `pcb report`.
+
+**Not done yet (layout):** placement and the connector edges, mounting-hole positions, fiducials (3 global, 2 local at U1; they are not in the schematic), the pours on L2, L4 and L5, via templates with tenting and removal of unused `VIA_BGA` pads on L2–L5, and the footprint-related layout items listed in section 10.
+
 ## Files
 
 | File | Purpose |
@@ -262,4 +337,5 @@ The pad sizes of `HDR_2X20_P2.54_THT` and `RJ45_HANRUN_HR911130A` were also chos
 | `fplib/*.py` | Footprints by package family; each module exports `FOOTPRINTS`, with the land-pattern source and page above every footprint |
 | `build.py` | Command-line driver |
 | `mcp_client.py` | Minimal stdio client for the Altium MCP server (no Claude needed) |
-| `altium/ApeScripts.PrjScr`, `altium/ApeScripts.pas` | Altium script project run by `build.py`. Procedures: `Ping`, `SaveDocs`, `NewLib`, `AddToProject`, `BuildSheet`. Input and output files are in `C:\Users\Public\altium_mcp\` (`ape_*.txt`, `ape_log.txt`, `ape_result.json`). |
+| `pcbsetup.py` | PCB setup as data: outline, layer stack, impedance profiles, net and differential-pair classes, SiP room, design rules, ECO options |
+| `altium/ApeScripts.PrjScr`, `altium/ApeScripts.pas` | Altium script project run by `build.py`. Procedures: `Ping`, `SaveDocs`, `CloseDocs`, `NewLib`, `DropDefaultFootprint`, `AddToProject`, `CloseApeProject`, `OpenApeProject`, `BuildSheet`, and for the PCB `PcbOutline`, `PcbStack`, `PcbImpedance`, `PcbImport`, `PcbClear`, `PcbClasses`, `PcbRules`, `PcbReport`. Input and output files are in `C:\Users\Public\altium_mcp\` (`ape_*.txt`, `ape_log.txt`, `ape_result.json`). |
