@@ -93,7 +93,7 @@ def build(sch_dir: str) -> Sheet:
         "8": "DBG_USB_DP", "7": "DBG_USB_DM", "6": "FT_REF", "14": "FT_RESET_N", "13": "GND",
         "2": "FT_OSCI", "3": "FT_OSCO",
         "63": "FT_EECS", "62": "FT_EECLK", "61": "FT_EEDATA",
-        "60": "DBG_BUF_OE_N", "36": "NC",
+        "60": "FT_PWREN_N", "36": "NC",
         "10": "GND", "1": "GND", "5": "GND", "11": "GND", "15": "GND", "25": "GND",
         "35": "GND", "47": "GND", "51": "GND",
     }
@@ -105,7 +105,8 @@ def build(sch_dir: str) -> Sheet:
     sh.add("U1500", FT4232HL, 16000, 20500, ft, comment="FT4232HL-REEL",
            MPN="FT4232HL-REEL", Manufacturer="FTDI")
     sh.column(13300, 20400, [
-        ("C1506", CAP, "VDD_1V8_DBG", "GND", C4U7 + " (VREGOUT, >= 3.3uF)"),
+        # FTDI: VREGOUT needs >= 3.3 uF; a 4.7 uF 0402 X5R keeps ~3 uF at 1.8 V bias, so 10 uF 0603.
+        ("C1506", CAP, "VDD_1V8_DBG", "GND", "10uF 10V X5R 0603 (VREGOUT, >= 3.3uF effective)"),
         ("C1507", CAP, "VDD_1V8_DBG", "GND", C100N + " (VCORE 12)"),
         ("C1508", CAP, "VDD_1V8_DBG", "GND", C100N + " (VCORE 37)"),
         ("C1509", CAP, "VDD_1V8_DBG", "GND", C100N + " (VCORE 64)"),
@@ -123,7 +124,10 @@ def build(sch_dir: str) -> Sheet:
         ("R1503", RES, "FT_REF", "GND", "12k 1% 0402 (REF)"),
         ("R1504", RES, "VCC_3V3_DBG", "FT_RESET_N", "1k 1% 0402 (RESET# pull-up)"),
         ("R1505", RES, "VCC_3V3_DBG", "DBG_BUF_OE_N", "10k 1% 0402 (OE# pull-up)"),
-        ("R1506", RES, "DBG_BUF_OE_N", "GND", "0R 0402 DNP (OE# always on)",
+        # PWREN# is a driven output (high until configured / in suspend): the always-on
+        # option must open R1530 first, or R1506 would short PWREN# high to GND.
+        ("R1530", RES, "FT_PWREN_N", "DBG_BUF_OE_N", "0R 0402 (PWREN# to OE#; remove for always-on)"),
+        ("R1506", RES, "DBG_BUF_OE_N", "GND", "0R 0402 DNP (OE# always on; only with R1530 removed)",
          {"DNP": "1"}),
         ("C1519", CAP, "FT_OSCI", "GND", "33pF 50V C0G 0402 (CL 20pF crystal)"),
         ("C1520", CAP, "FT_OSCO", "GND", "33pF 50V C0G 0402 (CL 20pF crystal)"),
@@ -181,7 +185,7 @@ def build(sch_dir: str) -> Sheet:
     sh.note(20000, 15400, "so a powered debug cable never drives an unpowered SoC pad and vice versa. "
                           "OE# = FT4232 PWREN#: high (Hi-Z) until the host configures the FT4232,")
     sh.note(20000, 15200, "and pulled up to VCCA by R1505 during cable plug-in. B outputs swing to VCCB = "
-                          "VCC_3V3_SYS, the same rail as the SoC pads. Fit R1506 for always-on.")
+                          "VCC_3V3_SYS, the same rail as the SoC pads. Always-on: remove R1530, fit R1506.")
 
     # ---- JTAG: Tag-Connect TC2070 (TI 14-pin) ------------------------------
     sh.add("J1501", TC2070, 22500, 11500, {

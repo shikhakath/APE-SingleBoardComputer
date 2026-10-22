@@ -49,6 +49,9 @@ def _r(x, y):
 # at the left seen from the front; with the opening at -y the viewer's left
 # is -x, which is where pin 1 and LEDs 11/12 land. Pads: ø0.89 -> 1.5,
 # ø1.02 -> 1.6, ø1.63 -> 2.3 (drawing gives holes only).
+# The drawing's LED holes are not drawn to their dimensions (as drawn: 12.66 outer,
+# 7.58 inner; bottom view: 13.5 / 9.0); the dimensions 13.25 and 2.54 are used, as in
+# the LCSC EasyEDA footprint for C54408 (which agrees with every pad here to 0.07 mm).
 _HR_PINS = [tht(n, *_r(5.715 - (n - 1) * 1.27, -8.89 if n % 2 else -6.35), 1.5, hole=0.89)
             for n in range(1, 11)]
 _HR_LED = [tht(n, *_r(x, 4.90), 1.6, hole=1.02)
@@ -90,7 +93,10 @@ RJ45_HANRUN_HR911130A = Footprint(
 #   EasyEDA footprint USB-A-TH_BX-TYPE-A-MWC44 (VCC at the same -x for both
 #   rows, its own 1-4 in the rear row) and TI SK-AM62A J7 (Wurth 629104151021,
 #   reference/2_PROC142A IPC-D-356: VBUS pad at the left seen from the board
-#   edge).
+#   edge), KiCad USB_A_Wuerth_61400826021_Horizontal_Stacked and
+#   USB_A_Molex_67643_Horizontal (pad 1 at the left with the mating face down).
+#   The EasyEDA footprint puts the contact rows 2.62 apart; the Bossie drawing
+#   (dimension and geometry) gives 2.71, used here.
 #   9-12 = shell pegs: 9 front left, 10 front right, 11 rear left, 12 rear right.
 # Pads: ø0.90 -> 1.5, ø2.30 -> 3.0.
 USBA_2X_BX_TYPE_A_MWC44 = Footprint(
@@ -129,8 +135,9 @@ USBA_2X_BX_TYPE_A_MWC44 = Footprint(
 # netlist): the 2230 card standoff hole lies beyond the even row.
 # Numbering from the drawing (sheet 1/4 and 3/4 callouts PIN 1/2/22/23/32/33/
 # 74/75); the tabs are unnumbered: 76 = left, 77 = right (symbol, docs B9).
-# The EasyEDA cross-check file for C841649 in the scratchpad is a 403 error
-# page, so there was nothing to compare against.
+# Cross-check: the LCSC EasyEDA footprint for C841649 has every contact, both
+# holes and the tabs at the same places, also numbering the tabs 76 (left) and 77,
+# but draws the tabs 3.30 long; the drawing gives 2.75.
 _M2_ODD = list(range(1, 24, 2)) + list(range(33, 76, 2))
 _M2_EVEN = list(range(2, 23, 2)) + list(range(32, 75, 2))
 M2_KEYE_APCI0085 = Footprint(

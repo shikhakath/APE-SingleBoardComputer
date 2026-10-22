@@ -464,11 +464,21 @@ def build_sheet(sh) -> bool:
 
 def cmd_sheets(names=None):
     ok = True
+    built = []
     for sh in load_sheets(include_frozen=bool(names)):
         if names and Path(sh.path).stem not in names and not any(
                 Path(sh.path).stem.startswith(n) for n in names):
             continue
         ok &= build_sheet(sh)
+        built.append(str(Path(sh.path)))
+    # A sheet keeps the template's working size in memory after BuildSheet sets
+    # a custom size (verified on AD26: ERC then flags every object as off-sheet,
+    # and still does with the sheet closed). Close the sheets, then reopen them
+    # from disk (SaveDocs opens each one) so the compile sees the real size.
+    if built:
+        (BRIDGE / "ape_close_list.txt").write_text("\n".join(built) + "\n", encoding="cp1252", errors="replace")
+        ok &= run_ape("CloseDocs", timeout=120)[0]
+        ok &= save_docs([("SCH", p) for p in built])
     return ok
 
 

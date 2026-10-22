@@ -15,7 +15,7 @@ the SoC ball G26 (AUDIO_EXT_REFCLK1), which software must configure as an INPUT
 while Y1100 is fitted. Option: Y1100 DNP and the SoC drives AUD_MCLK instead.
 """
 from schgen import Sheet
-from symbols import CAP, FB, RES
+from symbols import CAP, FB, RES, TVS_BI
 from symlib.av import AIC3104, JACK_TRRS, OSC_3225
 
 C100N = "100nF 16V X7R 0402"
@@ -77,6 +77,14 @@ def build(sch_dir: str) -> Sheet:
         "1": "AUD_MIC",      # sleeve = mic
         "5": "GND",          # mechanical "dummy" tab
     }, comment="PJ-320DB-5A", MPN="PJ-320DB-5A", Manufacturer="Korean Hroparts Elec")
+    # ESD at the jack (Octavo OSD62x checklist 62_ALL_7: ESD on every off-board connector).
+    # Bidirectional: the HP lines swing around 0 V after the coupling caps; MIC sits at ~2.5 V.
+    esd = {"MPN": "TPD1E10B06DPYR", "Manufacturer": "Texas Instruments"}
+    sh.column(17300, 13600, [
+        ("D1100", TVS_BI, "AUD_HP_L", "GND", "TPD1E10B06DPYR (tip, at J1100)", esd),
+        ("D1101", TVS_BI, "AUD_HP_R", "GND", "TPD1E10B06DPYR (ring 1, at J1100)", esd),
+        ("D1102", TVS_BI, "AUD_MIC", "GND", "TPD1E10B06DPYR (sleeve, at J1100)", esd),
+    ], pitch=300)
 
     # ---- I2C1 pull-ups, codec I2C series, reset and I2S pulls ----------------------
     sh.column(12600, 13300, [
@@ -111,7 +119,7 @@ def build(sch_dir: str) -> Sheet:
         "A-port needs a LOW below 0.065*VCCA = 0.21 V to pass it to the HDMI side, and 47R x 1.8 mA in front of it would use most of that margin.",
         "Headphone: AC coupled (TRRS sleeve/ring2 shared with mic, no capless HPCOM). 47 uF -> 211 Hz corner at 16R / 106 Hz at 32R; 100-220 uF per TI Fig 11-1/11-4 if bass matters.",
         "Mic: MICBIAS 2.2k to the sleeve, AC coupled to MIC2R; MIC2L/MICDET on the mic line for headset detect (TI Fig 10-19, AC-coupled HP variant).",
-        "Jack PJ-320DB-5A (CTIA): pin 2 tip = L, 3 ring1 = R, 4 ring2 = GND, 1 sleeve = MIC, 5 dummy tab = GND. No detect switch. Verify contact roles on a sample.",
+        "Jack PJ-320DB-5A (CTIA): pin 2 tip = L, 3 ring1 = R, 4 ring2 = GND, 1 sleeve = MIC, 5 dummy tab = GND. No detect switch. Verify contact roles on a sample. ESD D1100-D1102 at the jack pins.",
         "Supplies: AVDD/DRVDD = VDDA_3V3_AUD (bead from VCC_3V3_SYS), IOVDD = VCC_3V3_SYS, DVDD = VDD_1V8. VDD_1V8 ramps before 3.3 V (TI asks AVDD >= DVDD);",
         "same as SK (AIC3106 from VCC_1V8/VCC_3V3_SYS); RESET is held low by R1108 until all rails are up. Codec thermal pad (33) to GND under the part.",
     ]

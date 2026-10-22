@@ -43,6 +43,27 @@ def is_rail(net: str) -> bool:
     return bool(RAIL_RE.match(net))
 
 
+PASSIVE_PREFIXES = ("R", "C", "L", "FB", "D", "LED", "Y")
+LABEL_CHAR_W = 56     # net-label character width (measured on AD26: ~55 mil/char at the default font)
+NOTE_CHAR_W = 50      # mixed-case note text (measured on AD26: ~47 mil/char)
+MAX_BUS_GAP = 500     # adjacent supply/ground pins further apart than this get separate ports
+
+
+def label_stub(net: str) -> int:
+    """Wire length that runs under the whole net label (label starts 50 mil out)."""
+    return -(-(len(net) * LABEL_CHAR_W + 100) // GRID) * GRID
+
+
+def display_comment(pl) -> tuple[str, str]:
+    """(comment shown on the sheet, full text for a hidden Spec parameter).
+    Passives show only their value so long text does not run across bus wires."""
+    c = pl.comment or ""
+    if pl.symbol.designator_prefix in PASSIVE_PREFIXES and c:
+        shown = c.split(" (")[0].split()[0]
+        return shown, (c if c != shown else "")
+    return c, ""
+
+
 def overbar(name: str) -> str:
     """'nRESET' -> Altium overbar syntax for the active-low part."""
     if name.startswith("n") and len(name) > 1 and name[1].isupper():
@@ -173,10 +194,12 @@ class Sheet:
             raise KeyError(f"{designator}: unknown pins {missing}")
         self.placed.append(Placed(designator, symbol, part, x, y, dict(nets), comment, params,
                                   footprint))
+        self._dy = None
         return self
 
     def note(self, x, y, text):
         self.notes.append((x, y, text))
+        self._dy = None
 
     def column(self, x, y, entries, pitch=400):
         """Stack two-terminal parts vertically at x, starting at y.
@@ -198,8 +221,23 @@ class Sheet:
                 if pl.symbol.part_count > 1 and p.part != pl.part:
                     continue
                 ex, ey = p.end()
-                ends[(pl.designator, pl.part, p.number)] = (pl.x + ex, pl.y + ey, p.orient)
+                ends[(pl.designator, pl.part, p.number)] = (pl.x + ex, pl.y + ey + self.dy, p.orient)
         return ends
+
+    @property
+    def dy(self) -> int:
+        """Vertical shift that puts the top of the content 700 mil below the
+        top border: up on a sheet larger than the layout was drawn for, down
+        when the layout was drawn taller than the real sheet."""
+        if getattr(self, "_dy", None) is None:
+            self._dy = self._shift(self.effective_style(), self.extent_boxes())
+        return self._dy
+
+    def _shift(self, style, boxes) -> int:
+        if not boxes:
+            return 0
+        _, h = self.SHEET_SIZE[style]
+        return ((h - 700) - max(b[4] for b in boxes)) // GRID * GRID
 
     def spec(self, lib_path: str) -> str:
         style = self.effective_style()
@@ -207,69 +245,219 @@ class Sheet:
         out = [f"SHEET|{self.path}", f"STYLE|{style}|{w}|{h}"]
         for pl in self.placed:
             pid = pl.part if pl.symbol.part_count > 1 else 0
-            out.append(f"PART|{pl.designator}|{lib_path}|{pl.symbol.name}|{pid}|{pl.x}|{pl.y}|0|0")
-            if pl.comment:
-                out.append(f"COMMENT|{pl.comment}")
+            out.append(f"PART|{pl.designator}|{lib_path}|{pl.symbol.name}|{pid}|{pl.x}|{pl.y + self.dy}|0|0")
+            shown, spec_text = display_comment(pl)
+            if shown:
+                out.append(f"COMMENT|{shown}")
             if pl.footprint or pl.symbol.footprint:
                 out.append(f"FOOTPRINT|{pl.footprint or pl.symbol.footprint}")
             for k, v in pl.params.items():
                 out.append(f"PARAM|{k}|{v}")
-        for (desig, part, num), (x, y, o) in self.pin_ends().items():
-            pl = next(p for p in self.placed if p.designator == desig and p.part == part)
-            net = pl.nets.get(num)
-            out += self._terminate(x, y, o, net, pl.symbol)
+            if spec_text:
+                out.append(f"PARAM|Spec|{spec_text}")
+        out += self.drawing()[0]
         for x, y, t in self.notes:
-            out.append(f"NOTE|{x}|{y}|* {t}")
+            out.append(f"NOTE|{x}|{y + self.dy}|* {t}")
         out += self.extra
         return "\n".join(out) + "\n"
 
-    @staticmethod
-    def _terminate(x, y, orient, net, symbol):
-        if net is None:
-            return []
-        if net == "NC":
-            return [f"NOERC|{x}|{y}"]
-        dx, dy = DIR[orient]
-        stub = 100 if symbol.designator_prefix in ("R", "C", "L", "FB", "D", "LED", "Y") else 200
-        sx, sy = x + dx * stub, y + dy * stub
-        lines = [f"WIRE|{x}|{y}|{sx}|{sy}"]
-        if net in GROUND_NETS:
-            # Ground symbol points along the stub. Turning the stub down would
-            # land on the next pin row's stub end (100 mil pitch) and short it.
-            lines.append(f"POWER|{sx}|{sy}|{orient}|5|GND|0")
-        elif is_rail(net):
-            lines.append(f"POWER|{sx}|{sy}|{orient}|2|{net}|1")
-        else:
-            just = 2 if orient == 2 else 0
-            lx = x + dx * 20 if orient in (0, 2) else x
-            lines.append(f"NETLABEL|{lx}|{y}|0|{just}|{net}")
-        return lines
+    # drawing ------------------------------------------------------------
+    def _placed(self, desig, part):
+        return next(p for p in self.placed if p.designator == desig and p.part == part)
+
+    def body_boxes(self):
+        """Drawn body of every placed part (no pins, no text): (desig, x1, y1, x2, y2)."""
+        boxes = []
+        for pl in self.placed:
+            xs, ys = [], []
+            for p in pl.symbol.pins:
+                if pl.symbol.part_count == 1 or p.part == pl.part:
+                    xs.append(p.x)
+                    ys.append(p.y)
+            for g in pl.symbol.graphics:
+                f = g.split("|")
+                nums = [int(v) for v in f[2:] if v.lstrip("-").isdigit()]
+                if f[0] == "rectangle" and (pl.symbol.part_count == 1 or int(f[1]) == pl.part):
+                    xs += [nums[2], nums[4]]
+                    ys += [nums[3], nums[5]]
+            if pl.symbol.designator_prefix in PASSIVE_PREFIXES:
+                ys += [-60, 60]
+            if xs:
+                boxes.append((pl.designator, pl.x + min(xs), pl.y + self.dy + min(ys),
+                              pl.x + max(xs), pl.y + self.dy + max(ys)))
+        return boxes
+
+    def side_key(self, pl, pin):
+        """Pins whose wires share one length: one side of a part, or one side
+        of a column of two-terminal parts (same x)."""
+        dx = DIR[pin.orient][0]
+        if pl.symbol.designator_prefix in PASSIVE_PREFIXES and len(pl.symbol.pins) <= 2:
+            return ("column", pl.x, dx)
+        return (pl.designator, pl.part, dx)
+
+    def side_lengths(self):
+        """Wire length per side: the longest any label on that side needs, so
+        every wire on a side ends on the same line."""
+        lengths = {}
+        for pl in self.placed:
+            base = 100 if pl.symbol.designator_prefix in PASSIVE_PREFIXES else 200
+            for p in pl.symbol.pins:
+                if pl.symbol.part_count > 1 and p.part != pl.part:
+                    continue
+                net = pl.nets.get(p.number)
+                if net in (None, "NC"):
+                    continue
+                need = base if net in GROUND_NETS else max(base, label_stub(net))
+                key = self.side_key(pl, p)
+                lengths[key] = max(lengths.get(key, 0), need)
+        return lengths
+
+    def drawing(self):
+        """Records for every pin termination, plus [(net, x1, y1, x2, y2)] wire segments.
+
+        Conventions:
+          * signal nets: a stub as long as the net label, label sitting on it;
+          * ground and supply pins that are vertically adjacent on the same
+            line (one side of a part, or a column of passives) share one bus
+            wire and a single port - ground at the bottom pointing down, a
+            supply at the top pointing up - with junctions where 3 wires meet;
+          * a lone ground/supply pin gets its own port (down/up when there is room).
+        """
+        rec, segs = [], []
+
+        def wire(net, x1, y1, x2, y2):
+            if (x1, y1) != (x2, y2):
+                rec.append(f"WIRE|{x1}|{y1}|{x2}|{y2}")
+                segs.append((net, x1, y1, x2, y2))
+
+        lengths = self.side_lengths()
+        pins = []
+        for (desig, part, num), (x, y, o) in self.pin_ends().items():
+            pl = self._placed(desig, part)
+            net = pl.nets.get(num)
+            if net is None:
+                continue
+            if net == "NC":
+                rec.append(f"NOERC|{x}|{y}")
+                continue
+            if o not in (0, 2):
+                raise ValueError(f"{desig}.{num}: vertical pins are not supported by the drawing")
+            length = lengths[self.side_key(pl, pl.symbol.pin(num))]
+            pins.append({"net": net, "x": x, "y": y, "dx": DIR[o][0], "o": o, "base": length})
+
+        # occupancy for the bus checks: every horizontal stub, every body
+        spans = []
+        port_pins = []
+        for p in pins:
+            if p["net"] in GROUND_NETS or is_rail(p["net"]):
+                p["sx"] = p["x"] + p["dx"] * p["base"]
+                port_pins.append(p)
+                spans.append((p["y"], min(p["x"], p["sx"]), max(p["x"], p["sx"]), p["net"]))
+            else:
+                ex = p["x"] + p["dx"] * p["base"]
+                wire(p["net"], p["x"], p["y"], ex, p["y"])
+                just = 0 if p["dx"] > 0 else 2
+                rec.append(f"NETLABEL|{p['x'] + p['dx'] * 50}|{p['y']}|0|{just}|{p['net']}")
+                spans.append((p["y"], min(p["x"], ex), max(p["x"], ex), p["net"]))
+        bodies = self.body_boxes()
+
+        def clear(x, ylo, yhi, net):
+            """No other net's stub and no body on the vertical line x, ylo < y < yhi."""
+            for y, x1, x2, n in spans:
+                if n != net and ylo < y < yhi and x1 <= x <= x2:
+                    return False
+            for _, bx1, by1, bx2, by2 in bodies:
+                if bx1 <= x <= bx2 and by1 < yhi and ylo < by2:
+                    return False
+            return True
+
+        pin_pts = [(x, y, self._placed(d, pt).nets.get(n)) for (d, pt, n), (x, y, _) in self.pin_ends().items()]
+
+        def clear_row(y, xa, xb, net):
+            """No other net's stub, pin end or body on the horizontal line y, xa..xb."""
+            lo, hi = min(xa, xb), max(xa, xb)
+            for yy, x1, x2, n in spans:
+                if n != net and yy == y and x1 <= hi and lo <= x2:
+                    return False
+            for px, py, n in pin_pts:
+                if n != net and py == y and lo <= px <= hi:
+                    return False
+            for _, bx1, by1, bx2, by2 in bodies:
+                if by1 <= y <= by2 and bx1 <= hi and lo <= bx2:
+                    return False
+            return True
+
+        groups = {}
+        for p in port_pins:
+            groups.setdefault((p["net"], p["o"], p["sx"]), []).append(p)
+        for (net, o, sx), members in groups.items():
+            members.sort(key=lambda p: -p["y"])
+            runs = [[members[0]]]
+            for p in members[1:]:
+                prev = runs[-1][-1]
+                if prev["y"] - p["y"] <= MAX_BUS_GAP and clear(sx, p["y"], prev["y"], net):
+                    runs[-1].append(p)
+                else:
+                    runs.append([p])
+            ground = net in GROUND_NETS
+            for run in runs:
+                if not ground and len(run) == 1:
+                    # a lone supply pin: a label on its stub, like a signal
+                    p = run[0]
+                    wire(net, p["x"], p["y"], sx, p["y"])
+                    rec.append(f"NETLABEL|{p['x'] + p['dx'] * 50}|{p['y']}|0|{0 if p['dx'] > 0 else 2}|{net}")
+                    continue
+                for p in run:
+                    wire(net, p["x"], p["y"], sx, p["y"])
+                for a, b in zip(run, run[1:]):
+                    wire(net, sx, a["y"], sx, b["y"])
+                end = run[-1] if ground else run[0]
+                if ground:
+                    room = clear(sx, end["y"] - 300, end["y"], net)
+                    if room:
+                        wire(net, sx, end["y"], sx, end["y"] - 100)
+                        rec.append(f"POWER|{sx}|{end['y'] - 100}|3|5|GND|0")
+                    else:
+                        rec.append(f"POWER|{sx}|{end['y']}|{o}|5|GND|0")
+                elif clear(sx, end["y"], end["y"] + 500, net):
+                    wire(net, sx, end["y"], sx, end["y"] + 100)
+                    rec.append(f"POWER|{sx}|{end['y'] + 100}|1|2|{net}|1")
+                else:
+                    # no room above the run: label the top member's own stub
+                    rec.append(f"NETLABEL|{end['x'] + end['dx'] * 50}|{end['y']}|0|{0 if end['dx'] > 0 else 2}|{net}")
+
+        # junction wherever three or more wire ends meet
+        ends = {}
+        for _, x1, y1, x2, y2 in segs:
+            for pt in ((x1, y1), (x2, y2)):
+                ends[pt] = ends.get(pt, 0) + 1
+        for (x, y), n in sorted(ends.items()):
+            if n >= 3:
+                rec.append(f"JUNCTION|{x}|{y}")
+        return rec, segs
 
     def check_geometry(self) -> list[str]:
-        """Find accidental connections: a stub end or pin end of one net lying
-        on a wire of another net, or two parts' pins at the same point."""
-        segs = []        # (net, x1, y1, x2, y2)
-        points = []      # (net, x, y, what)
-        for (desig, part, num), (x, y, o) in self.pin_ends().items():
-            pl = next(p for p in self.placed if p.designator == desig and p.part == part)
-            net = pl.nets.get(num)
-            points.append((net or f"<unconnected {desig}.{num}>", x, y, f"{desig}.{num}"))
-            for line in self._terminate(x, y, o, net, pl.symbol):
-                f = line.split("|")
-                if f[0] == "WIRE":
-                    c = list(map(int, f[1:]))
-                    for i in range(0, len(c) - 2, 2):
-                        segs.append((net, c[i], c[i + 1], c[i + 2], c[i + 3]))
-                    points.append((net, c[-2], c[-1], f"{desig}.{num} stub end"))
+        """Accidental connections and crossings in the drawing: a wire end or
+        pin end of one net touching a wire of another net, or two wires of
+        different nets crossing."""
+        _, segs = self.drawing()
+        points = [(n, x1, y1) for n, x1, y1, _, _ in segs] + [(n, x2, y2) for n, _, _, x2, y2 in segs]
+        for (desig, part, num), (x, y, _) in self.pin_ends().items():
+            net = self._placed(desig, part).nets.get(num)
+            points.append((net if net not in (None, "NC") else f"<{desig}.{num}>", x, y))
         problems = []
-        for net, px, py, what in points:
+        for net, px, py in points:
             for snet, x1, y1, x2, y2 in segs:
-                if snet == net:
-                    continue
-                if min(x1, x2) <= px <= max(x1, x2) and min(y1, y2) <= py <= max(y1, y2) and \
-                        (x1 == x2 == px or y1 == y2 == py):
-                    problems.append(f"{what} ({net}) touches a wire of {snet} at ({px},{py})")
-        return problems
+                if snet != net and min(x1, x2) <= px <= max(x1, x2) and min(y1, y2) <= py <= max(y1, y2) \
+                        and (x1 == x2 == px or y1 == y2 == py):
+                    problems.append(f"{net} at ({px},{py}) touches a wire of {snet}")
+        hor = [s for s in segs if s[2] == s[4]]
+        ver = [s for s in segs if s[1] == s[3]]
+        for hn, hx1, hy, hx2, _ in hor:
+            for vn, vx, vy1, _, vy2 in ver:
+                if hn != vn and min(hx1, hx2) < vx < max(hx1, hx2) and min(vy1, vy2) < hy < max(vy1, vy2):
+                    problems.append(f"wire of {hn} crosses wire of {vn} at ({vx},{hy})")
+        return sorted(set(problems))
 
     # Altium's ANSI sheet sizes (smaller than the paper sizes): A 9.5x7.5 in,
     # B 15x9.5, C 20x15, D 32x20, E 42x32. Verified on AD26: content placed for
@@ -281,7 +469,7 @@ class Sheet:
         """footprint_boxes() plus the notes' text."""
         boxes = self.footprint_boxes()
         for x, y, t in self.notes:
-            boxes.append((f"note '{t[:20]}'", x, y - 20, x + (len(t) + 2) * CHAR_W, y + 120))
+            boxes.append((f"note '{t[:20]}'", x, y - 20, x + (len(t) + 2) * NOTE_CHAR_W, y + 120))
         return boxes
 
     def _fits(self, style, boxes):
@@ -294,16 +482,21 @@ class Sheet:
         return True
 
     def effective_style(self):
-        """The requested style, or the smallest larger one the content fits on."""
+        """The requested style, or the smallest larger one the content fits on
+        once it is shifted to the top of the sheet."""
         boxes = self.extent_boxes()
         for style in sorted(self.SHEET_SIZE):
-            if style >= self.style and self._fits(style, boxes):
+            if style < self.style:
+                continue
+            s = self._shift(style, boxes)
+            if self._fits(style, [(n, x1, y1 + s, x2, y2 + s) for n, x1, y1, x2, y2 in boxes]):
                 return style
         return max(self.SHEET_SIZE)
 
     def footprint_boxes(self):
         """Approximate drawn extent of each placed part: body, pins, stubs and
         label/port text (CHAR_W per character). Returns (label, x1, y1, x2, y2)."""
+        lengths = self.side_lengths()
         boxes = []
         for pl in self.placed:
             pins = [p for p in pl.symbol.pins
@@ -315,8 +508,8 @@ class Sheet:
                 ys += [p.y, ey]
                 net = pl.nets.get(p.number)
                 if net and net != "NC":
-                    stub = 100 if pl.symbol.designator_prefix in ("R", "C", "L", "FB", "D", "LED", "Y") else 200
-                    reach = stub + (0 if net in GROUND_NETS else len(net) * CHAR_W + 150)
+                    stub = lengths[self.side_key(pl, p)]
+                    reach = stub + 50
                     if net in GROUND_NETS:
                         reach += 150
                     dx, dy = DIR[p.orient]
@@ -344,6 +537,7 @@ class Sheet:
         style = self.effective_style()
         w, h = self.SHEET_SIZE[style]
         for lbl, x1, y1, x2, y2 in self.extent_boxes():
+            y1, y2 = y1 + self.dy, y2 + self.dy
             if x1 < 300 or y1 < 300 or x2 > w - 300 or y2 > h - 300:
                 problems.append(f"{lbl} extends off the sheet ({x1},{y1})-({x2},{y2}) on {w}x{h}")
             if x2 > w - 6500 and y1 < 1700:

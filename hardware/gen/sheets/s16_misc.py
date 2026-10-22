@@ -30,21 +30,21 @@ def build(sch_dir: str) -> Sheet:
     # ---- board-ID EEPROM, I2C0 address 0x51 (1010 A2 A1 A0 = 1010 001) -------
     sh.add("U1600", AT24C512C, 2000, 15800, {
         "8": "VCC_3V3_SYS", "1": "EEPROM_A0", "2": "GND", "3": "GND", "7": "EEPROM_WP",
-        "4": "GND", "5": "I2C0_SDA", "6": "I2C0_SCL",
+        "4": "GND", "5": "I2C0_SDA_BUS", "6": "I2C0_SCL_BUS",
     }, comment="AT24C512C-SSHD-T", MPN="AT24C512C-SSHD-T", Manufacturer="Microchip")
     sh.column(6200, 15700, [
         ("C1600", CAP, "VCC_3V3_SYS", "GND", "100nF 16V X7R 0402 (U1600 VCC)"),
         ("R1600", RES, "VCC_3V3_SYS", "EEPROM_A0", R10K + " (A0 = 1 -> 0x51)"),
         ("R1601", RES, "EEPROM_A0", "GND", R10K + " DNP (fit instead of R1600 for 0x50)", DNP),
         ("R1602", RES, "EEPROM_WP", "GND", R10K + " (WP low = writable, as SK)"),
-        ("R1603", RES, "VCC_3V3_SYS", "EEPROM_WP", R10K + " DNP (write-protect after programming)", DNP),
+        ("R1603", RES, "VCC_3V3_SYS", "EEPROM_WP", R10K + " DNP (write-protect: fit instead of R1602)", DNP),
     ])
     sh.note(1000, 16500, "Board ID EEPROM at 0x51 (TI SK board-detect address; Octavo BRK uses 0x50 - R1600/R1601 option).")
 
     # ---- TMP102 at 0x48, close to the SiP --------------------------------------
     sh.add("U1601", TMP102, 2000, 12300, {
         "5": "VCC_3V3_SYS", "4": "GND", "2": "GND",
-        "6": "I2C0_SDA", "1": "I2C0_SCL", "3": "TMP102_ALERT_N",
+        "6": "I2C0_SDA_BUS", "1": "I2C0_SCL_BUS", "3": "TMP102_ALERT_N",
     }, comment="TMP102AIDRLR", MPN="TMP102AIDRLR", Manufacturer="Texas Instruments")
     sh.column(6200, 12200, [
         ("C1601", CAP, "VCC_3V3_SYS", "GND", "10nF 50V X7R 0402 (U1601 V+, DS 7.3)"),
@@ -55,13 +55,15 @@ def build(sch_dir: str) -> Sheet:
 
     # ---- I2C0 pull-ups (one set for the whole bus) -----------------------------
     sh.column(12500, 15700, [
-        ("R1605", RES, "VCC_3V3_SYS", "I2C0_SCL", "2.2k 1% 0402 (I2C0 SCL pull-up)"),
-        ("R1606", RES, "VCC_3V3_SYS", "I2C0_SDA", "2.2k 1% 0402 (I2C0 SDA pull-up)"),
+        ("R1605", RES, "VCC_3V3_SYS", "I2C0_SCL_BUS", "2.2k 1% 0402 (I2C0 SCL pull-up)"),
+        ("R1606", RES, "VCC_3V3_SYS", "I2C0_SDA_BUS", "2.2k 1% 0402 (I2C0 SDA pull-up)"),
+        ("R1620", RES, "I2C0_SCL", "I2C0_SCL_BUS", "47R 1% 0402 (series at the SoC ball, SK p.44)"),
+        ("R1621", RES, "I2C0_SDA", "I2C0_SDA_BUS", "47R 1% 0402 (series at the SoC ball, SK p.44)"),
     ])
-    sh.add("TP1601", TESTPOINT, 15800, 15600, {"1": "I2C0_SCL"}, comment="I2C0_SCL")
-    sh.add("TP1602", TESTPOINT, 15800, 15200, {"1": "I2C0_SDA"}, comment="I2C0_SDA")
+    sh.add("TP1601", TESTPOINT, 15800, 15600, {"1": "I2C0_SCL_BUS"}, comment="I2C0_SCL")
+    sh.add("TP1602", TESTPOINT, 15800, 15200, {"1": "I2C0_SDA_BUS"}, comment="I2C0_SDA")
     sh.note(11000, 16500, "I2C0 pull-ups: the only ones on this bus (PMIC 0x30, PD 0x20/21, TMP102 0x48, EEPROM 0x51).")
-    sh.note(11000, 16300, "SK 47R series at the SoC ball is NOT placed: the contract names both ends I2C0_SCL/SDA (open item).")
+    sh.note(11000, 16300, "R1620/R1621 47R sit at the SoC ball: AM62x I2C0 is an emulated open-drain LVCMOS pad whose fall time is faster than the I2C spec (AM625 DS p.166, SK p.44).")
 
     # ---- LEDs: active-high GPIOs source the current through the resistor ------
     sh.column(12500, 12600, [
@@ -82,6 +84,7 @@ def build(sch_dir: str) -> Sheet:
     # ---- mounting holes ---------------------------------------------------------
     for i in range(4):
         sh.add(f"H{1600 + i}", MOUNTING_HOLE, 2500 + i * 1500, 6500, {"1": "GND"},
-               comment="Plated mounting hole, M2.5 (RPi pattern - confirm)")
-    sh.note(1000, 7200, "Mounting holes plated, tied to GND. Fiducials (3, copper only) need no symbol.")
+               comment="M2.5 plated")
+    sh.note(1000, 7200, "Mounting holes M2.5, plated, tied to GND, on the Raspberry Pi pattern (confirm in layout). "
+                        "Fiducials (3, copper only) need no symbol.")
     return sh

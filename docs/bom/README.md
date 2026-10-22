@@ -99,6 +99,25 @@ The generated schematic (16 sheets, `hardware/gen`) has **687 designators: 629 f
 
 **Net effect: about +$0.8 per board.** The estimate becomes ≈ $233.4 per board at qty 10. The five reset AND gates priced under Clock+Reset+Boot can go: the sheets hold peripheral resets with resistors instead. That saves $0.22.
 
+### After the 2026-10-21 review (729 placed parts)
+
+The review added the following:
+- 3 × TPD1E10B06DPYR audio-jack ESD diodes;
+- one BLM18KG601SN1D bead (FB310, VDDS_OSC0);
+- 12 more fitted 0402 resistors: I2C0 series, PMIC mode pull-ups, pull-ups and links on the UART, SDIO and SD clock;
+- 5 DNP de-skew straps;
+- 13 bare test pads.
+
+Cost: well under +$0.5 per board (estimate; not re-priced). Two capacitor values changed: C100 becomes 4.7 µF 25 V 0805 (CL21A475KAQNNNE) and C1506 becomes 10 µF 0603.
+
+The CSV still has these known differences from the schematic. The schematic is right in each case:
+- Beads are BLM18KG601SN1D 0603, not "600R 0805".
+- The HDMI 10 µF caps are 0603, not 0402.
+- No 1206 0R links (R1–R4) are used.
+- Only 2 KT-0805G green LEDs are used, not 4.
+- No SN74LVC1G08 gates are used.
+- The 2.2 µF 0402 caps are rated 10 V, not 6.3 V.
+
 ## Line items (140 placed lines)
 
 Plug-in modules and PCB/assembly fees are included as lines. Prices are USD per unit at the 10-board break.

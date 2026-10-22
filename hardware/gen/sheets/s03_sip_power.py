@@ -12,12 +12,18 @@ Rail decisions:
   * VDDR_CORE is fed from VDD_CORE through a 0 Ohm link (same source, ramps
     together, as required at 0.85 V); the link lets it be measured or split.
   * Each 1.8 V analog supply gets its own 120 Ohm bead from VDDA_1V8 (LDO3).
-  * VDDS_OSC0 (also the MCU_PORz input domain) is on VDD_1V8 as on the SK.
+    VDDA_MCU and VDDA_PLL0/1/2 take 1 uF + 0.1 uF (Octavo Table 4-3 size columns, SK p.17):
+    with 4.7 uF there, LDO3 would carry 32 uF, over its 30 uF slow-ramp limit
+    (TPS65219 DS Table 8-3, LDO3_SLOW_PU_RAMP = 1 in SLVUCL1A).
+  * VDDS_OSC0 (also the MCU_PORz and MCU_ERRORn IO domain) is on VDD_1V8 (Buck2),
+    together with the 25 MHz oscillator and the MCU_PORz gate on sheet 06 (Octavo
+    62_CLOCK_2: same rail). The SK puts VDDS_OSC0 on VDDA_1V8 (p.15); see the review
+    open item about a filtered branch.
   * VPP (eFuse) goes to VPP_EFUSE_1V8 - normally off (LDO on sheet 02 is DNP).
   * OLDI0 is unused but VDDA_1P8_OLDI0 must still be powered (pinmux notes).
 """
 from schgen import Sheet
-from symbols import CAP, FB, OSD6254, RES
+from symbols import CAP, FB, OSD6254, RES, TESTPOINT
 
 C100N = "100nF 16V X7R 0402"
 C1U = "1uF 10V X5R 0402"
@@ -35,7 +41,7 @@ RAILS = {
     "VDDA_CORE_CSIRX0": "VDDA_CORE_CSI_0V85",
     "VDDS_DDR": "VDDS_DDR_1V2",
     "DDR_VPP": "DDR4_VPP_2V5_SIP",
-    "VDDS_OSC0": "VDD_1V8",
+    "VDDS_OSC0": "VDDS_OSC0_1V8",
     "VDDA_MCU": "VDDA_1V8_MCU",
     "VDDA_PLL0": "VDDA_1V8_PLL0",
     "VDDA_PLL1": "VDDA_1V8_PLL1",
@@ -86,14 +92,21 @@ def build(sch_dir: str) -> Sheet:
         ("FB307", FB, "VDDA_1V8", "VDDA_1V8_CSI", BEAD_A),
         ("FB308", FB, "VDDA_1V8", "VDDA_1V8_OLDI", BEAD_A),
         ("FB309", FB, "VDDA_1V8", "VDDA_1V8_USB", BEAD_A),
+        ("FB310", FB, "VDDA_1V8", "VDDS_OSC0_1V8", BEAD_A + " (VDDS_OSC0, 25 MHz osc, PORz gate)"),
     ])
 
     # ---- VMON_VSYS: 5 V divider, 0.45 V threshold -> trips at ~4.54 V ----
-    sh.column(3000, 10600, [
+    sh.column(3000, 9800, [
         ("R301", RES, "VCC_5V0", "VMON_VSYS", "10k 1% 0402"),
         ("R302", RES, "VMON_VSYS", "GND", "1.1k 1% 0402"),
         ("C300", CAP, "VMON_VSYS", "GND", "22pF 50V C0G 0402"),
     ])
+
+    # ---- rail test points (Octavo checklist 62_ALL_2) -------------------------
+    for i, rail in enumerate(("VSYS_PD", "VCC_5V0", "VCC_3V3_MAIN", "VCC_3V3_SYS", "VDD_CORE_0V85",
+                              "VDDR_CORE_0V85", "VDDS_DDR_1V2", "DDR4_VPP_2V5_SIP", "VDD_1V8",
+                              "VDDA_1V8", "VDDS_OSC0_1V8", "VDDSHV5_SD", "VDD_1V0_PHY")):
+        sh.add(f"TP{300 + i}", TESTPOINT, 3000, 7800 - i * 400, {"1": rail}, comment=rail)
 
     # ---- decoupling, Octavo Table 4-3 (+ IO rails per TI/SK practice) ----
     core = [("VDD_CORE_0V85", C10U)] + [("VDD_CORE_0V85", C100N)] * 6
@@ -103,12 +116,13 @@ def build(sch_dir: str) -> Sheet:
     core += [("VDDR_CORE_0V85", C100N)] * 4
     core += [("VDDS_DDR_1V2", C100N)] * 3 + [("DDR4_VPP_2V5_SIP", C100N)]
     analog = []
-    for net in ("VDDA_1V8_MCU", "VDDA_1V8_PLL0", "VDDA_1V8_PLL1", "VDDA_1V8_PLL2",
-                "VDDA_1V8_CSI", "VDDA_1V8_USB"):
+    for net in ("VDDA_1V8_MCU", "VDDA_1V8_PLL0", "VDDA_1V8_PLL1", "VDDA_1V8_PLL2"):
+        analog += [(net, C1U), (net, C100N)]
+    for net in ("VDDA_1V8_CSI", "VDDA_1V8_USB"):
         analog += [(net, C4U7), (net, C100N)]
     analog += [("VDDA_1V8_OLDI", C1U), ("VDDA_1V8_OLDI", C100N),
                ("VDDA_1V8", C100N + " (VDDA_TEMP ball)"),
-               ("VDD_1V8", C1U + " (VDDS_OSC0)"), ("VDD_1V8", C100N + " (VDDS_OSC0)"),
+               ("VDDS_OSC0_1V8", C1U + " (VDDS_OSC0)"), ("VDDS_OSC0_1V8", C100N + " (VDDS_OSC0)"),
                ("VCC_3V3_SYS", C100N + " (VDDA_3P3_USB)")]
     io = []
     for rail, note in (("VCC_3V3_SYS", "VDDSHV0"), ("VDD_1V8", "VDDSHV1"), ("VCC_3V3_SYS", "VDDSHV2"),

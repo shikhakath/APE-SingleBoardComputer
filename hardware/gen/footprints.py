@@ -48,7 +48,7 @@ from pathlib import Path
 MIL_PER_MM = 1 / 0.0254
 
 SILK_W = 0.15          # legend line width (JLCPCB min 0.15)
-SILK_CLEAR = 0.15      # legend to pad (JLCPCB min 0.15)
+SILK_CLEAR = 0.20      # legend to pad: mask opens 0.05 past copper and the board rule Silk_To_Mask is 0.15
 BODY_W = 0.10
 CRTYD_W = 0.05
 DOT_R = 0.20           # pin-1 dot radius (filled)

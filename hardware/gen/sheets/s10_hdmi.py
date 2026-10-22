@@ -35,7 +35,9 @@ def build(sch_dir: str) -> Sheet:
         "57": "TFP_IDCK", "56": "GND",                  # single-ended clock: IDCK- to GND
         "2": "DPI_DE", "4": "DPI_HSYNC", "5": "DPI_VSYNC",
         "13": "TFP_ISEL", "15": "TFP_BSEL", "14": "TFP_DSEL", "9": "TFP_EDGE", "35": "TFP_DKEN",
-        "6": "GND", "7": "GND", "8": "GND",             # DK3 unused, CTL2/CTL1 low
+        # DK3/DK2/DK1 (CTL2/CTL1 while DKEN = 0): internal weak pull-downs hold them low
+        # (Table 4-1); DNP pull-ups R1014-R1016 select a de-skew step at bring-up.
+        "6": "TFP_DK3", "7": "TFP_DK2", "8": "TFP_DK1",
         "3": DVDD,                                      # VREF = DVDD: 3.3 V high-swing input
         "10": "HDMI_PD_N", "11": "TP_HDMI_MSEN",
         "34": "GND",                                    # RESERVED: tie to GND
@@ -66,6 +68,20 @@ def build(sch_dir: str) -> Sheet:
         ("R1007", RES, "VCC_3V3_SYS", "TP_HDMI_MSEN", "5.1k 0402 (MSEN open-drain pull-up, DS: 5k)"),
     ], pitch=300)
     sh.add("TP1000", TESTPOINT, 7400, 13500, {"1": "TP_HDMI_MSEN"}, comment="MSEN (receiver sense)")
+
+    # ---- timing options (DNP): EDGE and de-skew --------------------------------
+    # AM62x SPRSP58C Table 6-46: PCLK high/low >= 0.475P - 0.3 ns, data valid <= 1.78 ns
+    # after the launch edge. Falling-edge capture at 148.5 MHz leaves 2.90 - 1.78 =
+    # 1.12 ns setup, against tsu = 1.2 ns (TFP410 SLDS145D 5.6). DKEN = 1 with
+    # DK[3:1] = 101 latches 1 x 350 ps later: 1.47 ns setup, 1.87 ns hold (th 1.3 ns).
+    DNP = {"DNP": "1"}
+    sh.column(22500, 16200, [
+        ("R1012", RES, "VCC_3V3_SYS", "TFP_EDGE", "10k 0402 DNP (EDGE=1 option; remove R1004)", DNP),
+        ("R1013", RES, "VCC_3V3_SYS", "TFP_DKEN", "10k 0402 DNP (DKEN=1 option; remove R1005)", DNP),
+        ("R1014", RES, "VCC_3V3_SYS", "TFP_DK3", "10k 0402 DNP (DK3=1)", DNP),
+        ("R1015", RES, "VCC_3V3_SYS", "TFP_DK2", "10k 0402 DNP (DK2=1)", DNP),
+        ("R1016", RES, "VCC_3V3_SYS", "TFP_DK1", "10k 0402 DNP (DK1=1)", DNP),
+    ], pitch=300)
 
     # ---- supply beads (Figure 7-3: one bead per supply) ---------------------
     sh.column(5700, 12500, [
@@ -131,7 +147,8 @@ def build(sch_dir: str) -> Sheet:
     notes = [
         "TFP410 strap mode (ISEL=0): BSEL=1 24-bit single-edge | DSEL=0 (X at VREF=DVDD) | EDGE=0 latch on IDCK falling edge | DKEN=0 | VREF=DVDD (3.3 V swing)",
         "EDGE=0 matches the ti-tfp410 driver default (no pclk-sample in DT = sample on negedge): tidss then drives data on the rising edge (IPC=0).",
-        "IDCK- tied to GND (single-ended clock). DK3 unused, CTL2/CTL1 tied low. RESERVED to GND. NC pin 49 open. PD# = HDMI_PD_N (10k pull-down).",
+        "IDCK- tied to GND (single-ended clock). DK3..1 on internal pull-downs (CTL2/CTL1 low). RESERVED to GND. NC pin 49 open. PD# = HDMI_PD_N (10k pull-down).",
+        "Timing: falling-edge capture has 1.12 ns setup at 148.5 MHz vs tsu 1.2 ns (AM62x D2/D4 worst case). If 1080p is marginal, fit R1013 + R1014 + R1016, remove R1005 (DKEN=1, DK=101, +350 ps).",
         "DT: tidss VP2 (DPI, RGB888) -> ti,tfp410 (powerdown-gpios = HDMI_PD_N) -> hdmi-connector type a (ddc-i2c-bus = main_i2c1, hpd-gpios = HDMI_HPD).",
         "TPD12S016: CT_HPD and LS_OE are separate SoC GPIOs with 10k pull-downs. Set CT_HPD first (5 V + HPD), LS_OE before EDID reads.",
         "DDC A-side = I2C1 (pull-ups 2.2k on sheet 11; TPD A-side adds 10k internal). Port A only passes a LOW below VILC = 0.065*VCCA (0.21 V): no series R here.",

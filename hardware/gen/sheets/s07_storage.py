@@ -125,7 +125,9 @@ def build(sch_dir: str) -> Sheet:
         "5": "SD_SOCK_CLK", "9": "SD_SOCK_CD_N",
         "4": "VDD_SD_3V3", "6": "GND", "10": "GND", "11": "GND", "12": "GND", "13": "GND",
     }, comment="TF-01A", MPN="TF-01A", Manufacturer="Korean Hroparts Elec", LCSC="C91145")
-    # MMC1 pull-ups to the SWITCHED IO rail; CLK pull-up DNP (SK).
+    # MMC1 pull-ups to the SWITCHED IO rail; CLK pull-up DNP (SK). CLK pull-down
+    # R732 per the Octavo OSD62x-PM checklist 62_SD_10 (holds CLK low while the
+    # MMC1 pads are off after reset, as R712 does for MMC0).
     sh.column(11000, 8600, [
         ("R723", RES, "VDDSHV5_SD", "SD_CMD", "47k 0402"),
         ("R724", RES, "VDDSHV5_SD", "SD_D0", "47k 0402"),
@@ -133,6 +135,7 @@ def build(sch_dir: str) -> Sheet:
         ("R726", RES, "VDDSHV5_SD", "SD_D2", "47k 0402"),
         ("R727", RES, "VDDSHV5_SD", "SD_D3", "47k 0402"),
         ("R728", RES, "VDDSHV5_SD", "SD_SOCK_CLK", "47k 0402 (DNP)", DNP),
+        ("R732", RES, "SD_SOCK_CLK", "GND", "10k 0402 (CLK pull-down, Octavo 62_SD_10)"),
         ("R729", RES, "SD_CLK", "SD_SOCK_CLK", "0R 0402 (at SoC; 22R option)"),
         ("R730", RES, "SD_SOCK_CD_N", "SD_CD_N", "100R 0402 (SDCD series)"),
         ("R731", RES, "VCC_3V3_SYS", "SD_SOCK_CD_N", "47k 0402 (SDCD pull-up)"),
@@ -161,6 +164,7 @@ def build(sch_dir: str) -> Sheet:
         "SD_CD_N: 100R series + 47k to VCC_3V3_SYS (VDDSHV0 pad); card present = LOW.",
         "  Verify on a TF-01A sample that the Cd spring closes to the shell on insertion.",
         "ESD U701/U702 at the socket; NC pins 6/7/9/10 left open (flow-through pads).",
+        "SD CLK: R729 0R at the SoC, R732 10k pull-down (Octavo 62_SD_10), R728 pull-up DNP (SK).",
     ]):
         sh.note(nx, ny - i * 200, t)
     return sh

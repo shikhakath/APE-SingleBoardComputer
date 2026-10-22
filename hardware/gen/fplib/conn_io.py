@@ -105,6 +105,9 @@ HDMI_A = Footprint(
 #     vector drawing).
 #   * body = shell outline in the layout, 14.80 x 14.50 (top view): x -9.59..5.20,
 #     y -14.85 (front, right side; the left side stops at 13.79) .. -0.35 (rear).
+# Cross-check: the LCSC EasyEDA footprint for C91145 has the same pad order but
+# puts every tab and post 0.10 mm further left of the contacts (Cd to rear-left tab
+# 1.20). The drawing's "1.10" runs to the tab centre, so the drawing values stay.
 TF_01A = Footprint(
     "MICROSD_HRO_TF-01A",
     "HRO TF-01A push-push microSD socket with card detect, SMD",
@@ -156,7 +159,9 @@ JACK_PJ320DB = Footprint(
 #   * each circuit has two tails (one per row), pads 0.60 wide ("0.60 TYP"):
 #     row 1 from y +0.95 to -0.90 (1.85 long, centre 0.025); row 2 from -2.90 to
 #     -2.90 - 1.65 = -4.55 (centre -3.725). Same as SK J19 (nA 0.61 x 1.85, nB
-#     0.61 x 1.65, 3.75 apart). Both pads of circuit n are pad "n".
+#     0.61 x 1.65, 3.75 apart). Both pads of circuit n are pad "n": the side view
+#     shows each contact with a tail on both sides (1.25 / 1.45 TYP). The LCSC
+#     EasyEDA footprint for C2922285 has the rows 3.37 apart; the drawing gives 3.75.
 #   * body = "CONNECTOR LOCATION" outline: 4.20 beyond the outer circuits
 #     (7.0 + 4.2 = 11.2 = 22.4 / 2, the actuator length 20.6 + 2 x 0.90), 4.50 deep
 #     (3.40 at the ends, the narrow centre part 4.50; scaled from the vector drawing).
@@ -195,6 +200,13 @@ FPC15 = Footprint(
 # the ROCK64 (J7101) and ROCK 3A (J5) symbols (1..17 down one side, 34..18 down the
 # other). Here: 1..17 bottom row left to right, 18..34 top row right to left.
 # The 30-pin plug (all contacts GND) is numbered the same way by analogy.
+# Confirmed by the Radxa eMMC module's own board export (PADS job
+# EMMC_V1.1_20190402.pcb, 2D DXF): its GB042-34 and GB042-30 socket decals run
+# 1..k along one row and back along the other (last pin opposite 1), clockwise seen
+# from the socket face, and have no hold-down pads. The plug meets the socket face
+# to face, so seen from the host top it is the mirror image: counter-clockwise, as
+# here. On the module the 30-pin socket centre is 13.0 mm from the 34-pin one, on
+# the 34-pin socket's 1..17 row side, centres in line, both turned the same way.
 
 
 def _gb042_plug(n, body_len):

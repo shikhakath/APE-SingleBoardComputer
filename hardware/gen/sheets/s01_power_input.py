@@ -79,7 +79,7 @@ def build(sch_dir: str) -> Sheet:
     sh.column(4900, 16100, [
         ("D103", DIODE, "GND", "VBUS_USBC", "SS34 40V 3A Schottky (TPS25730 DS 8.5)",
          {"MPN": "SS34", "Manufacturer": "MDD"}),
-        ("C100", CAP, "VBUS_USBC", "GND", C10U_25 + " (CVBUS)", P_C10U_25),
+        ("C100", CAP, "VBUS_USBC", "GND", "4.7uF 25V X5R 0805 (CVBUS; total VBUS C must stay <= 10 uF)", {"MPN": "CL21A475KAQNNNE", "Manufacturer": "Samsung"}),
         ("C101", CAP, "VBUS_USBC", "GND", C100N_50 + " (VBUS HF)", P_C100N_50),
         ("D101", TVS_BI, "USBC1_CC1", "GND", "PESD24VL1BA CC1 ESD (11pF)",
          {"MPN": "PESD24VL1BA,115", "Manufacturer": "Nexperia"}),
@@ -103,7 +103,7 @@ def build(sch_dir: str) -> Sheet:
         "20": "VSYS_PD", "21": "VSYS_PD", "22": "VSYS_PD",
         "15": "PD_DRAIN", "30": "PD_DRAIN", "40": "PD_DRAIN",
         "28": "USBC1_CC1", "29": "USBC1_CC2",
-        "9": "I2C0_SCL", "8": "I2C0_SDA",
+        "9": "I2C0_SCL_BUS", "8": "I2C0_SDA_BUS",
         "18": "PD_FAULT_IN_N", "19": "TP_PD_SINK_EN_N", "6": "PD_INT_N",
         "37": "TP_PD_PLUG_EVT", "13": "TP_PD_PLUG_FLIP", "10": "TP_PD_DBG_ACC",
     }, comment="TPS25730DREFR", MPN="TPS25730DREFR", Manufacturer="Texas Instruments")
@@ -194,7 +194,7 @@ def build(sch_dir: str) -> Sheet:
         "7": "VCC_5V0", "8": "VCC_5V0",
         "5": "BB_FB", "6": "GND", "2": "TP_5V0_PG",
     }, comment="TPS63070RNMR", MPN="TPS63070RNMR", Manufacturer="Texas Instruments")
-    sh.column(17000, 10800, [
+    sh.column(17500, 10800, [
         ("C121", CAP, "VSYS_PD", "GND", C10U_25 + " (CIN)", P_C10U_25),
         ("C122", CAP, "VSYS_PD", "GND", C10U_25 + " (CIN)", P_C10U_25),
         ("C123", CAP, "VSYS_PD", "GND", C100N_50 + " (VIN HF, at pins)", P_C100N_50),
@@ -204,7 +204,7 @@ def build(sch_dir: str) -> Sheet:
         ("L101", IND, "BB_L1", "BB_L2", "1.5uH MWSA0402S-1R5MT (Isat 5.5A)",
          {"MPN": "MWSA0402S-1R5MT", "Manufacturer": "Sunlord"}),
     ])
-    sh.column(19700, 10800, [
+    sh.column(20300, 10800, [
         ("R123", RES, "VCC_5V0", "BB_FB", "680k 1% 0402 (R1)"),
         ("R124", RES, "BB_FB", "GND", "130k 1% 0402 (R2: 4.985V)"),
         ("R125", RES, "VCC_5V0", "TP_5V0_PG", "100k 1% 0402 (PG pull-up)"),

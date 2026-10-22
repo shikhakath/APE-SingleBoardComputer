@@ -112,6 +112,7 @@ def build(sch_dir: str) -> Sheet:
     sh.column(18000, 8800, [
         ("C1404", CAP, "VCC_3V3_SYS", "GND", "100nF 16V X7R 0402 (EEPROM, DNP)", {"DNP": "1"}),
         ("R1432", RES, "VCC_3V3_SYS", "HAT_ID_WP", "1k 1% 0402 (WP pull-up, DNP)", {"DNP": "1"}),
+        ("R1433", RES, "VCC_3V3_SYS", "HDR10_UART_RXD", "47k 1% 0402 (UART5 RX idle high, Octavo 62_UART_2)"),
     ])
     sh.add("TP1400", TESTPOINT, 17000, 7700, {"1": "HAT_ID_WP"}, comment="HAT_ID_WP: short to GND to write")
     sh.note(13300, 9800, "HAT-ID EEPROM, I2C 0x50 (A2..A0 = 0). DNP by default: on a Raspberry Pi the ID EEPROM "

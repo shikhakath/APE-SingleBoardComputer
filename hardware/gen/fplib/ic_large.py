@@ -54,10 +54,14 @@ def _span_len(z, g):
 #     lead span 11.80-12.20 SQ, b 0.17-0.27, L 0.45-0.75, e 0.50.
 #   PDF p.42 "THERMAL PAD MECHANICAL DATA" 4206326-3/P 05/14: exposed thermal pad
 #     4.30-5.00 square (tie-strap stubs 0.23 at the corners may not be present).
-#   PDF p.43 "LAND PATTERN DATA" 4208775-4/C 03/16, Example Board Layout: lands
+#   PDF p.43 "LAND PATTERN DATA" 4208775-4/G 03/16, Example Board Layout: lands
 #     64 x 1.5 x 0.3 at 0.5 pitch; 11.4 = pad-centre span (the extension lines sit
 #     on the pad centre lines), so pad centres at +-5.70, lands 4.95..6.45 from the
 #     centre. The drawing already shows pin 1 at the top of the left column.
+#     (This old-style page is not to scale for the span: its vectors measure 11.2
+#     at the 8.0 / 5.0 / 0.5 scale. TI's current PAP0064G layout, ads1278.pdf
+#     SBAS367 p.50, same lead frame, gives 64X (1.5) x (0.3) and (11.4) between pad
+#     centres, so 11.4 stands.)
 #     Thermal land: 8.0 x 8.0 copper covered by solder mask except a 5.0 x 5.0
 #     solder-mask-defined opening, 36 x d0.2 vias on a 6 x 6 grid at 1.3 pitch.
 #   Stencil (same page, "Stencil Openings ... 0.125 mm"): leads 1.5 x 0.3 (= land);
@@ -158,8 +162,11 @@ LQFP64 = Footprint(
 #   G = 3.473 - 0 - 0.351 = 3.122 -> 3.10
 #   X = 0.15 - 0.08 + 0.115 = 0.185 -> 0.20
 #   -> lands 0.825 x 0.20 at a 3.925 pad-centre span (0.20 mm between lands).
-# Thermal land = nominal exposed pad 2.7 x 2.7 (0.20 mm to the lead lands). No
-# stencil given: paste comes from the board rule (100 % of pad 29).
+# Thermal land = nominal exposed pad 2.7 x 2.7 (0.20 mm to the lead lands).
+# Paste: WCH gives no stencil. 100 % paste on a 2.7 mm pad next to 0.4 mm-pitch
+# leads risks float and bridging, so pad 29 is printed through 4X 1.17 square
+# windows on a 1.37 pitch (0.20 webs, 0.08 inset), 75 % coverage, as TI does for
+# the same-size RSM0032B (4X 1.23 on a 2.8 pad, 77 %) and RHB0032E (75 %). Leads 1:1.
 # The EasyEDA/LCSC footprint for C5137013 could not be used as a cross-check
 # (the API returned HTTP 403).
 _QF_Z, _QF_G, _QF_X = _ipc7351b(3.9, 4.1, 0.25, 0.45, 0.15, 0.25, 0.30, 0.0, -0.04)
@@ -169,6 +176,7 @@ QFN28_4X4 = Footprint(
     "QFN-28 4x4 mm, 0.4 mm pitch, 2.7 mm exposed pad, IPC-7351B nominal lands (WCH CH335F)",
     quad(7, 7, 0.4, _QF_SPAN, _QF_SPAN, _QF_LEN, _QF_X)
     + [smd("29", 0, 0, 2.7, 2.7, "rect")],
-    body=(4.0, 4.0))
+    body=(4.0, 4.0),
+    paste=window_grid(0, 0, 1.17, 1.17, 1.37, 1.37, 2, 2))
 
 FOOTPRINTS = [HTQFP64_PAP, VQFN32_RHB, VQFN48_RGZ, LQFP64, QFN28_4X4]

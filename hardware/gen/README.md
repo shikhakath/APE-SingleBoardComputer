@@ -135,6 +135,12 @@ Open the repository folder in Claude Code and approve the `altium` MCP server wh
 
 - **Rebuilding a sheet erases it.** The builder clears every component, wire, net label, power port, junction and No-ERC marker on the target sheet, plus notes that start with `* `. Once you hand-edit a sheet in Altium, add its module name (for example `s02_pmic`) to `FROZEN_SHEETS` in `build.py`. `build.py sheets` then skips it; naming it explicitly with `build.py sheet` still rebuilds it.
 - Sheets are found automatically (`sheets/sNN_*.py`), and so are symbols (`symbols.py` plus `SYMBOLS` in every `symlib/*.py`). Who owns which file, the fixed rail names and the SoC net names are in [`SHEET_CONTRACT.md`](SHEET_CONTRACT.md).
+- **Drawing conventions** (all applied by `Sheet.drawing()` in `schgen.py`; no sheet code needed):
+  - Every net label sits on a wire that runs under the whole label.
+  - Vertically adjacent pins on the same supply or ground share one bus wire, with junction dots where three wires meet, and a single port. This covers one side of a part, or a column of passives. Ground hangs below the run; a supply sits on top, if there is 500 mil of room.
+  - A lone supply pin gets a net label. A sideways port is used only when the label would run into something.
+  - Passives show only their value (`4.7uF`). The full text goes in a hidden `Spec` parameter.
+  - `build.py check` rejects a wire end touching another net and any crossing of two different nets.
 - Connectivity is **by net name**. Every pin gets a short stub with a net label or a power/ground port. The project uses *Automatic* net scope and has no ports or sheet entries, so Altium treats net labels as global. Do not add ports or sheet entries unless you switch the whole project to hierarchical.
 - Net-name conventions:
   - Power rails are `<RAIL>_<VOLTAGE>`, for example `VCC_3V3_SYS`, `VDDS_DDR_1V2`, `DDR4_VPP_2V5`.
@@ -161,7 +167,7 @@ Open the repository folder in Claude Code and approve the `altium` MCP server wh
 | `create_symbols_batch` waits at most 120 s. | `lib` sends batches of about 250 pins. |
 | When a script has a compile error, Altium opens it in its editor and later runs use that in-memory copy. | After editing `ApeScripts.pas`, close it in Altium (or restart Altium) before the next run. |
 | Rebuilding a sheet by deleting its objects in place left the old copies, which gave 529 duplicate designators. | `build_sheet` closes the sheet in Altium (`CloseDocs`) and starts from a fresh copy of `Main.SchDoc`. |
-| Setting `SheetStyle` alone leaves the in-memory sheet at the template's A size, so ERC reported 1000 "off sheet" objects. | The builder also sets a custom size. Each sheet picks the smallest Altium sheet its content fits: Altium's B/C/D/E are 15×9.5, 20×15, 32×20 and 42×32 in, smaller than the paper sizes. |
+| Setting `SheetStyle` alone leaves the in-memory sheet at the template's A size, so ERC reported 1000 "off sheet" objects. | The builder also sets a custom size. Each sheet picks the smallest Altium sheet its content fits once shifted to the top border: Altium's B/C/D/E are 15×9.5, 20×15, 32×20 and 42×32 in, smaller than the paper sizes. Even then, the open sheet keeps the old size until it is reloaded, so `build.py sheets` closes the sheets it built. |
 | The project compile reuses cached results for sheets it considers unchanged. | After `sheets`, if ERC still shows stale results, save all sheets (File » Save All, or `save_docs`) and compile again. |
 | `WorkspaceManager:SaveObject` with ObjectKind `Project` saves nothing. | `AddToProject` saves the project's own server document. |
 | A script-created No-ERC marker suppresses nothing by default. | The builder sets `IsActive` and `SuppressAll`. The MCP's ERC reader still lists those pins; check against the generator's `NC` nets. |
@@ -177,6 +183,7 @@ Open the repository folder in Claude Code and approve the `altium` MCP server wh
 - **The result names the dialogs it found.** "Information" or "Error" right after a script starts usually means a compile error. Read it in Altium, fix `ApeScripts.pas`, then close the script in Altium.
 - **Altium shows "Import Drill Data" at startup.** Altium is reopening a drill file left in its workspace. On the development machine it was `gassensor-NPTH.drl` under *Free Documents*. Close that document and the prompt stops. If an `X2.EXE` stays stuck on the dialog, end it in Task Manager.
 - **Symbol `MISSING` in a sheet result.** Run `build.py lib` first.
+- **Every pin of one part is "not in pin map".** Altium sometimes saves a library symbol whose placed copies have no pins, even though the symbol shows its pins in the SchLib. It hit `93LC46B_OT` once and hits `STANDOFF_SMT_M2` every time; that symbol is unused, and H1300 is placed as `MOUNTING_HOLE` instead. Close the SchLib in Altium, delete `hardware/lib/APE-SBC.SchLib`, run `build.py lib`, then rebuild the sheet.
 - **`git status` inside `hardware/` shows `gen/`, `lib/` and `sch/` as untracked.** `hardware/.git` is Altium's own version-control repository for the project, nested in this one. Run git from the repository root.
 - **Altium opens "Save APE - Single Board Computer to Server" when the project closes.** That is Altium 365 committing and pushing `hardware/.git`. Press Cancel; `build.py pcb eco-options` closes it by itself and uploads nothing.
 
@@ -253,6 +260,9 @@ The pad sizes of `HDR_2X20_P2.54_THT` and `RJ45_HANRUN_HR911130A` were also chos
 2. Run `python hardware/gen/footprints.py <module>` until it reports no problems. Render it with `--png` and compare it with the drawing.
 3. Run `python hardware/gen/build.py check`.
 4. In Altium, run `build.py footprints NAME` for a new footprint, or `build.py footprints --fresh` after a change (close the library first).
+
+
+**Layout notes from the footprint check (2026-10-21):** keep vias and copper out from between the pads of the PMIC inductors L200–L202 (Murata DFE252012F: no copper under the coil). Route no tracks between the pads of the 32.768 kHz crystal Y600 (Epson FC-135). Check D101–D103, D902 and LED1600–LED1603 in JLCPCB's placement preview: pad 1 is the anode, matching the symbols, not IPC's cathode-on-pin-1.
 
 ## 11. PCB setup
 

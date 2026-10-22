@@ -35,7 +35,8 @@ Every schematic sheet is a Python module. Several people or agents write sheets 
 | `VCC_5V0` | 01: TPS63070 | USB-A switches (09), HDMI 5 V (10), header PTC (14), VMON (03) |
 | `VCC_3V3_SYS` | 02: TPS22965, sequenced by PMIC GPO2 | **All** SoC-side 3.3 V peripherals and pull-ups |
 | `VDD_1V8` | 02: PMIC Buck2 | 1.8 V IO peripherals: eMMC VCCQ, M.2 1.8 V, codec 1.8 V, oscillator |
-| `VDDA_1V8` | 02: PMIC LDO3 | SoC analog only. Do not load. |
+| `VDDA_1V8` | 02: PMIC LDO3 | SoC analog, plus the `VDDS_OSC0_1V8` branch. Do not load otherwise. |
+| `VDDS_OSC0_1V8` | 03: FB310 from `VDDA_1V8` | SiP VDDS_OSC0, the 25 MHz oscillator U600 and the MCU_PORz gate U601 (as on the SK and Octavo BRK) |
 | `DDR4_VPP_2V5` | 02: PMIC LDO4 | PHY 2.5 V through its own bead on 08 (`VDDA_2V5_PHY`) |
 | `VDD_1V0_PHY` | 02: TLV757 | PHY core |
 | `VDD_SDIO_LDO1` | 02: PMIC LDO1, 3.3/1.8 V | Input of the SD IO switch on 07 only |
@@ -53,7 +54,8 @@ Only rails that are **on when the SoC is on** may pull up or drive SoC pins (`VC
 | `USBC1_DP`, `USBC1_DM` | 01 connector → 09 | 09 puts the CMC + ESD122 between these and `USB0_DP/DM` |
 | `PMIC_PGOOD` | 02 → 06 | PMIC nRSTOUT, 10 k pull-up already on 02. Feeds the MCU_PORz AND gate. |
 | `PMIC_NINT` | 02 ↔ SoC | Already closed |
-| `I2C0_SCL/SDA` | SoC ↔ 01 (TPS25730 0x20/0x21), 02 (PMIC 0x30), 16 (board ID 0x51, TMP102 0x48) | **Pull-ups on 16** (2.2 k to `VCC_3V3_SYS`, 47 Ω series per SK) |
+| `I2C0_SCL/SDA` | SoC ball → R1620/R1621 47 Ω on 16 | Series resistors at the SoC (AM625 DS p.166, SK p.44) |
+| `I2C0_SCL_BUS/SDA_BUS` | 01 (TPS25730 0x20), 02 (PMIC 0x30), 16 (board ID 0x51, TMP102 0x48) | **All I2C0 devices connect here.** Pull-ups 2.2 k to `VCC_3V3_SYS` on 16. |
 | `I2C1_SCL/SDA` | SoC ↔ 10 (DDC via TPD12S016), 11 (codec 0x18) | **Pull-ups on 11** |
 | `JTAG_SRST_N` | 15 → 06 | Optional system reset from the debugger, ANDed into MCU_PORz (SK: JTAG_EMU_RSTn) |
 

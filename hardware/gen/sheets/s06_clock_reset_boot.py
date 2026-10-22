@@ -63,13 +63,13 @@ def build(sch_dir: str) -> Sheet:
 
     # ---- 25 MHz LVCMOS oscillator on MCU_OSC0_XI (VDDS_OSC0 = VDD_1V8) -----
     sh.add("U600", ECS2520MV, 1800, 16300, {
-        "4": "VDD_1V8", "1": "OSC25M_OE", "2": "GND", "3": "OSC25M_SRC",
+        "4": "VDDS_OSC0_1V8", "1": "OSC25M_OE", "2": "GND", "3": "OSC25M_SRC",
     }, comment="ECS-2520MV-250-CN-TR", MPN="ECS-2520MV-250-CN-TR", Manufacturer="ECS Inc")
     sh.column(5600, 16200, [
         ("R600", RES, "OSC25M_SRC", "OSC_25M", "22R 1% 0402 (series term. at the oscillator)"),
-        ("R601", RES, "VDD_1V8", "OSC25M_OE", R10K + " (OE pull-up, SK R370)"),
-        ("C600", CAP, "VDD_1V8", "GND", "10nF 50V X7R 0402 (osc VDD)"),
-        ("C601", CAP, "VDD_1V8", "GND", "1uF 10V X5R 0402 (osc VDD)"),
+        ("R601", RES, "VDDS_OSC0_1V8", "OSC25M_OE", R10K + " (OE pull-up, SK R370)"),
+        ("C600", CAP, "VDDS_OSC0_1V8", "GND", "10nF 50V X7R 0402 (osc VDD)"),
+        ("C601", CAP, "VDDS_OSC0_1V8", "GND", "1uF 10V X5R 0402 (osc VDD)"),
     ])
     sh.note(800, 16700, "25 MHz: MCU_OSC0_XO is tied to GND on sheet 05. Osc + R600 within a few mm of ball G1, point-to-point, GND guard.")
     sh.note(800, 14500, "OSC: ECS spec is tR/F <= 7 ns @15 pF; AM62x needs <= 4 ns at XI (light load) - confirm with ECS or scope; LMK6CE02500 is TI's alt.")
@@ -89,12 +89,12 @@ def build(sch_dir: str) -> Sheet:
     # ---- MCU_PORz: AND3 in the 1.8 V VDDS_OSC0 domain (SK U72) --------------
     sh.add("U601", SN74LVC1G11, 1800, 12600, {
         "1": "PMIC_PGOOD", "3": "JTAG_SRST_N", "6": "PORZ_MAN_N", "2": "GND",
-        "5": "VDD_1V8", "4": "MCU_PORZ",
+        "5": "VDDS_OSC0_1V8", "4": "MCU_PORZ",
     }, comment="SN74LVC1G11DCKR", MPN="SN74LVC1G11DCKR", Manufacturer="Texas Instruments")
     sh.column(5600, 12600, [
-        ("C604", CAP, "VDD_1V8", "GND", C100N + " (U601 VCC)"),
+        ("C604", CAP, "VDDS_OSC0_1V8", "GND", C100N + " (U601 VCC)"),
         ("R604", RES, "VCC_3V3_SYS", "JTAG_SRST_N", R10K + " (gate enabled with no debugger)"),
-        ("R605", RES, "VDD_1V8", "PORZ_MAN_N", R10K + " (spare input high)"),
+        ("R605", RES, "VDDS_OSC0_1V8", "PORZ_MAN_N", R10K + " (spare input high)"),
         ("C605", CAP, "MCU_PORZ", "GND", C22P + " (glitch filter at ball D6)"),
         ("R606", RES, "MCU_PORZ", "GND", "4.7k 1% 0402 (SK R201; holds PORz low when U601 is unpowered)"),
     ])
@@ -102,7 +102,7 @@ def build(sch_dir: str) -> Sheet:
     sh.add("TP601", TESTPOINT, 9300, 12100, {"1": "MCU_PORZ"}, comment="MCU_PORz")
     sh.note(800, 13300, "MCU_PORz = AND(PMIC nRSTOUT, JTAG nSRST, manual). Fast push-pull edge per SK D-note; 9.5 ms delay comes from the PMIC.")
     sh.note(800, 13100, "Inputs are 5.5 V tolerant at VCC = 1.8 V, so PMIC_PGOOD (3.3 V pull-up on 02) and JTAG_SRST_N (3.3 V) are fine.")
-    sh.note(800, 10600, "Input edge limit 20 ns/V at 1.8 V: PMIC_PGOOD rises through a 10k pull-up (~70 ns/V). Consider 2.2k on sheet 02 (SK: 100-200 ns).")
+    sh.note(800, 10600, "Input edge limit 20 ns/V at 1.8 V: PMIC_PGOOD rises through R201 2.2k (sheet 02): ~12-19 ns/V for <= 20 pF. Keep the trace short (SK: 100-200 ns).")
 
     # ---- warm reset and user buttons through a Schmitt buffer (SK U82) ------
     sh.add("U602", SN74LVC2G17, 4200, 8800, {
@@ -135,7 +135,7 @@ def build(sch_dir: str) -> Sheet:
     # ---- reset status / error pins ------------------------------------------
     sh.column(5600, 3600, [
         ("R610", RES, "VCC_3V3_SYS", "MCU_RESETZ", R10K + " (VDDSHV_MCU)"),
-        ("R611", RES, "RESETSTATZ", "GND", R10K + " (holds peripherals in reset)"),
+        ("R611", RES, "RESETSTATZ", "GND", "1k 1% 0402 (holds PHY/SD in reset against the PHY 9k pull-up; SoC load 3.3 mA)"),
         ("R612", RES, "PORZ_OUT", "GND", R10K + " (holds peripherals in reset)"),
         ("R613", RES, "MCU_ERRORN", "GND", R10K + " (DS Table 5-74: pull-down)"),
     ])
@@ -196,8 +196,8 @@ def build(sch_dir: str) -> Sheet:
         "  SD card (MMCSD port 1, FAT) [default]: all OFF                -> B6..B3 = 1000",
         "  eMMC boot partition:                   pos1 ON                -> 1001",
         "  UART0 (XMODEM, 115200 8N1):            pos1+2+3+4 ON          -> 0111",
-        "  Ethernet RGMII (BOOTP/TFTP):           pos3+4 ON              -> 0100 (B9=1: ROM drives 25 MHz on CLKOUT0 = header pin 12)",
-        "  No-boot / dev boot (JTAG):             pos1+2+3 ON            -> 1111",
+        "  Ethernet RGMII (BOOTP/TFTP):           pos3+4 ON              -> 0100 (B9=1: ROM drives 25 MHz on CLKOUT0 = ball D16 = header pin 7)",
+        "  Dev boot (JTAG load; B7 = 0 fixed):    pos1+2+3 ON            -> 1111 (true No-boot needs B7 = 1)",
         "  DO NOT select USB primary (1010 = pos2 ON): B9 is fixed 1, which USB",
         "  primary reads as 'core = 0.75 V'; this board runs 0.85 V. Use the USB DFU backup instead.",
         "  eMMC UDA via MMCSD is not available (needs B9 = 0); use the eMMC boot partition mode.",

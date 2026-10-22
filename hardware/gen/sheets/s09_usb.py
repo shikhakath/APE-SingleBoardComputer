@@ -128,7 +128,7 @@ def build(sch_dir: str) -> Sheet:
         ("R910", RES, "VCC_5V0", "USB1_VBUS_CLAMP", "3.48k 1% 0402"),
         ("R911", RES, "USB1_VBUS_CLAMP", "USB1_VBUS_DIV", "16.5k 1% 0402"),
         ("R912", RES, "USB1_VBUS_DIV", "GND", "10k 1% 0402"),
-        ("R913", RES, "USB1_DRVVBUS", "GND", "100k 0402 DNP (SK R650: DNI for deep-sleep wake)", DNP),
+        ("R913", RES, "USB1_DRVVBUS", "GND", "100k 0402 (keeps USB-A power off while the SoC IO is unpowered; DNP only for USB1 deep-sleep wake)"),
     ])
     sh.add("D903", BZX84_SOT23, 9900, 7500, {"3": "USB1_VBUS_CLAMP", "1": "GND", "2": "NC"},
            comment="LBZX84C6V8LT1G 6.8V", **P_ZENER)

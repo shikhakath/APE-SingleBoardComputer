@@ -340,6 +340,9 @@ def rules() -> list[list]:
         ["MASK", "Mask_Default", "All", "", mm(0.05)],
         ["PASTE", "Paste_Windowed", paste_query, "", -mm(2.5)],
         ["PASTE", "Paste_TagConnect", "HasFootprint('TC2070-NL')", "", -mm(2.5)],
+        # 0.20 mm lands give 0.20 mm apertures: area ratio 0.50 on a 0.10 mm stencil, under
+        # IPC-7525's 0.66. +0.03 mm -> 0.26 mm apertures (ratio 0.65).
+        ["PASTE", "Paste_SiP", "InComponent('U1')", "", mm(0.03)],
         ["PASTE", "Paste_Default", "All", "", 0],
         ["SLIVER", "Mask_Sliver", "All", "All", mm(0.10)],
         ["SILKMASK", "Silk_To_Mask", "All", "All", mm(0.15)],

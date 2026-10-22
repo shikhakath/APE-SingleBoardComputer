@@ -37,7 +37,11 @@ def _quad4(cx, cy, w, h):
 # (ex-TOKO, PDF of 2016-06-05), p.1 "Recommended patterns":
 #   https://www.murata.com/-/media/webrenewal/products/inductor/chip/tokoproducts/wirewoundmetalalloychiptype/m_dfe252012f.ashx
 # outer 2.8, gap 1.2, land height 2.0 -> land length (2.8 - 1.2) / 2 = 0.8,
-# centres at +-(0.6 + 0.4) = +-1.0.
+# centres at +-(0.6 + 0.4) = +-1.0. The older Murata sheet J(E)TE243A-0017B-01
+# (LCSC C703140 file) p.5/9 "Recommended PCB pattern" gives the same 2.8 / 1.2
+# / 2.0. Its p.7/9 "Precautions" 2a (low-insulation core): no through holes and
+# no copper under the coil except the pattern to the electrodes, so keep vias,
+# tracks and pour out of the gap between the pads on the top layer.
 IND_MURATA_DFE252012F = Footprint(
     "IND_MURATA_DFE252012F", "Murata DFE252012F metal-alloy power inductor 2.5x2.0 mm, Murata recommended land",
     chip(0.8, 2.0, 1.2), body=(2.5, 2.0), marker="none")
