@@ -1,6 +1,6 @@
 # Schematic v0.1: open items for review
 
-The schematic is generated from `hardware/gen` (16 sheets, 714 placed parts, 448 nets, 65 footprints). `build.py check` passes: no single-node nets, no accidental connections, no overlapping parts. All 16 sheets are built in Altium AD26, and every pin lands on its wire (pin-map check). The PCB import matches the netlist: 705 footprints, 448 nets. 47 parts are DNP, and the `Production` project variant marks them Not Fitted. Use that variant for every BOM and pick-and-place output: `[No Variations]` still counts them as fitted.
+The schematic is generated from `hardware/gen` (16 sheets, 716 placed parts, 449 nets, 65 footprints). `build.py check` passes: no single-node nets, no accidental connections, no overlapping parts. All 16 sheets are built in Altium AD26, and every pin lands on its wire (pin-map check). The PCB import matches the netlist: 707 footprints, 449 nets. 47 parts are DNP, and the `Production` project variant marks them Not Fitted. Use that variant for every BOM and pick-and-place output: `[No Variations]` still counts them as fitted.
 
 ERC has 0 fatal errors, 7 errors and 332 warnings, all expected:
 - The 7 errors are floating inputs, and the 262 "unconnected" warnings are on pins deliberately left NC with a No-ERC marker. The 7 inputs are the unused DP83867 JTAG pins and codec MIC1 inputs. All 262 pins were checked against the generator's NC list.
@@ -70,7 +70,6 @@ The footprints are in `hardware/gen/fplib/`. Section 10 of `hardware/gen/README.
 | C1 | 08 | PHY RESET_N low level with its ~9 k internal pull-up and R611: measure. |
 | C2 | 15 | The FT4232 consoles go Hi-Z while the USB host suspends the bridge (PWREN# drives the buffers' OE# through R1530). For always-on consoles, remove R1530 and fit R1506. |
 | C3 | 14 | The 5 V header pins stay live while the SoC is off. Only the 33 Ω resistors limit back-drive from a HAT into SoC pads. |
-| C4 | 07 | eMMC reset is a GPIO with a pull-up only, so a warm reset does not reset the module (checklist 62_EMMC_9 allows it). The SK ANDs RESETSTATz with the GPIO. |
 | C5 | 02 | Optional upgrades: a Buck1 inductor rated ≥ 7.4 A (TI recommendation; DFE252012F-R47M is 6.7 A, the SK uses 4.5 A), and a VMON divider of 40.2 k / 4.87 k (trip 3.97–4.47 V instead of 4.33–4.79 V). |
 | C6 | 02/06 | nRSTOUT rises through 2.2 k (R201) into U601, which is slow for its input. Fit 1 k if the gate output chatters. |
 
@@ -102,6 +101,7 @@ Closed in this review: **A7** (TI SLVUCL1A confirms the TPS6521904 rail map, seq
 |---|---|---|
 | All | `Production` variant marks all 47 DNP parts Not Fitted (`build.py variant`) | DNP was only a hidden parameter, which BOM and pick-and-place outputs ignore |
 | 06 | R603 is now 10 MΩ | Its value read "0402". TI recommends the Rbias footprint on pre-production boards but gives no value. 10 MΩ is the usual bias for a 32 kHz crystal and is harmless if fitted. |
+| 07 | U703 (SN74LVC1G08 on VDD_1V8) drives the module's RST_n from RESETSTATz ANDed with the GPIO. R710 moved to the GPIO side. | Checklist 62_EMMC_9: the GPIO alone left the module un-reset on a warm reset. |
 | 08 | R824–R837 removed; U800 pins 39, 40 and 45 are NC | Fitted, they gave PHY address 5, RX skew 0.5 ns and TX skew 3.5 ns. The wanted setting is mode 1 (open), so no fitted value can be correct. Skews can still be changed in software. This also removes stubs from RGMII RX. |
 | 08 | R816 removed | Fitted beside R815, it lifted RESET_N to about 0.8 V during reset. The fallback only needs R815 removed (see A10). |
 
@@ -112,4 +112,5 @@ Closed in this review: **A7** (TI SLVUCL1A confirms the TPS6521904 rail map, seq
 - The TFP410 runs in strap mode, with PD# on `HDMI_PD_N` (10).
 - CC3351 over SDIO (MMC2) + UART6 for Bluetooth. The card's reset is on WLAN_EN (W_DISABLE1#).
 - PMIC at 0x30, TPS25730 at 0x20, TMP102 at 0x48 and the board-ID EEPROM at 0x51, all on I2C0.
+- eMMC: RST_n only acts once EXT_CSD[162] (RST_n_FUNCTION) is enabled on the module. This setting is one-time programmable.
 - SD card: give MMC1 a `vmmc-supply` on the SD power-enable GPIO, so a reboot power-cycles the card (A13).

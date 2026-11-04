@@ -392,8 +392,25 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=OPPVXCNM
 
+[Document21]
+DocumentPath=APE - Single Board Computer.BomDoc
+AnnotationEnabled=1
+AnnotateStartValue=1
+AnnotationIndexControlEnabled=0
+AnnotateSuffix=
+AnnotateScope=All
+AnnotateOrder=-1
+DoLibraryUpdate=1
+DoDatabaseUpdate=1
+ClassGenCCAutoEnabled=1
+ClassGenCCAutoRoomEnabled=0
+ClassGenNCAutoScope=None
+DItemRevisionGUID=
+GenerateClassCluster=0
+DocumentUniqueId=
+
 [ProjectVariant1]
-UniqueID=HUAVNKHP
+UniqueId=HUAVNKHP
 Description=Production
 AllowFabrication=0
 ParameterCount=0
@@ -445,6 +462,7 @@ Variation44=Designator=R916|UniqueId=\EOUGJHUO|Kind=1|AlternatePart=
 Variation45=Designator=R917|UniqueId=\FVQJLGOJ|Kind=1|AlternatePart=
 Variation46=Designator=U1400|UniqueId=\UUAHPWNU|Kind=1|AlternatePart=
 Variation47=Designator=U202|UniqueId=\VGGGGNGR|Kind=1|AlternatePart=
+ParamVariationCount=0
 
 [Configuration1]
 Name=Sources

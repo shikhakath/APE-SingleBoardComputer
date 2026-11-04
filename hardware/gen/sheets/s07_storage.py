@@ -12,8 +12,8 @@ Decisions:
   * eMMC module VCC (3.3 V) and VCCQ (1.8 V) come straight from VCC_3V3_SYS and
     VDD_1V8 (no load switch). Both are PMIC-sequenced, so the module is power-cycled
     on every PMIC off/on and cold reset; it keeps the BOM to in-stock basics and
-    avoids back-powering the module through the 1.8 V pull-ups. Warm-reset recovery
-    relies on the ROM's CMD0 re-init plus RST_n where the module wires it (see notes).
+    avoids back-powering the module through the 1.8 V pull-ups. U703 drives RST_n from
+    AND(RESETSTATz, GPIO), which acts where the module wires RST_n and enables it.
   * SD card VDD and the SoC VDDSHV5 IO rail switch together in a TPS22996 (SK rev B).
     The enable SD_PWR_EN is pulled to RESETSTATZ instead of to GND: the card is
     unpowered while the SoC is in reset (contract intent), but powered as soon as
@@ -22,7 +22,7 @@ Decisions:
     driving SD_PWR_EN low. This is the SK's AND(RESETSTATz, GPIO) without the gate.
 """
 from schgen import Sheet
-from symbols import CAP, RES, TPD4E05U06
+from symbols import CAP, RES, SN74LVC1G08, TPD4E05U06
 from symlib.storage import GB042_30P, GB042_34P, TF_01A, TPS22996
 
 C100N = "100nF 16V X7R 0402"
@@ -65,13 +65,13 @@ def build(sch_dir: str) -> Sheet:
     ])
     # CLK series resistor at the SoC end; CLK and data-strobe pull-downs at the
     # connector (SK p.20 R398/R393: defined low while the clock is stopped and
-    # for the unused HS400 strobe); module reset pull-up and GPIO link.
+    # for the unused HS400 strobe); GPIO pull-up and module reset link.
     sh.column(11000, 15900, [
         ("R700", RES, "EMMC_CLK", "EMMC_MOD_CLK", "22R 0402 (at SoC; 0R option)"),
         ("R712", RES, "EMMC_MOD_CLK", "GND", "10k 0402 (CLK pull-down, at pin 8)"),
         ("R713", RES, "EMMC_MOD_DS", "GND", "10k 0402 (strobe pull-down)"),
-        ("R710", RES, "VDD_1V8", "EMMC_MOD_RST_N", "10k 0402"),
-        ("R711", RES, "EMMC_RST_N", "EMMC_MOD_RST_N", "1k 0402 (RST_n link, see note)"),
+        ("R710", RES, "VDD_1V8", "EMMC_RST_N", "10k 0402 (GPIO pull-up: reset follows RESETSTATz by default)"),
+        ("R711", RES, "EMMC_GATED_RST_N", "EMMC_MOD_RST_N", "1k 0402 (RST_n link, see note)"),
     ])
     # Connector decoupling: VCC 3.3 V pins 22/23, VCCQ 1.8 V pins 20/21.
     sh.column(11000, 13700, [
@@ -81,6 +81,12 @@ def build(sch_dir: str) -> Sheet:
         ("C703", CAP, "VDD_1V8", "GND", C100N + " (VCCQ pin 20)"),
         ("C704", CAP, "VDD_1V8", "GND", C100N + " (VCCQ pin 21)"),
     ])
+    # eMMC reset (Octavo 62_EMMC_9, SK p.20 U58): AND of RESETSTATz and the pulled-up
+    # GPIO. Powered from VCCQ, so its 5.5 V tolerant inputs also shift RESETSTATz to 1.8 V.
+    sh.add("U703", SN74LVC1G08, 15000, 12600, {
+        "1": "EMMC_RST_N", "2": "RESETSTATZ", "3": "GND", "4": "EMMC_GATED_RST_N", "5": "VDD_1V8",
+    }, comment="SN74LVC1G08DBVR", MPN="SN74LVC1G08DBVR", Manufacturer="Texas Instruments", LCSC="C7666")
+    sh.column(18200, 12500, [("C705", CAP, "VDD_1V8", "GND", C100N + " (U703 VCC)")])
     nx, ny = 14200, 16200
     for i, t in enumerate([
         "eMMC module (GB042 Odroid/Radxa/PINE64 standard). Do not hot-plug.",
@@ -90,7 +96,8 @@ def build(sch_dir: str) -> Sheet:
         "  Module routing is unknown - drop to HS/DDR52 in DT if a module is marginal.",
         "R700 22R at the SoC ball (0R option); pulls at the connector pins, no stubs.",
         "Pin 12: RST_n on Hardkernel/PINE64 modules, 1.8 V supply on Radxa modules.",
-        "  R711 1k limits the GPIO to 1.8 mA if it is a supply; RST_n only acts when",
+        "U703: RST_n = RESETSTATz AND GPIO, so a warm reset also resets the module.",
+        "  R711 1k limits U703 to 1.8 mA if pin 12 is a supply; RST_n only acts when",
         "  EXT_CSD[162] RST_n_ENABLE = 1. Remove R711 if a module misbehaves.",
         "Pin 13 (CDN) is GND on all modules; pin 15 strobe unused (no HS400), 10k down (SK).",
         "J701 30-pin retention plug: footprint only (DNP); all contacts to GND.",

@@ -115,12 +115,12 @@ The CSV still has these known differences from the schematic. The schematic is r
 - The HDMI 10 µF caps are 0603, not 0402.
 - No 1206 0R links (R1–R4) are used.
 - Only 2 KT-0805G green LEDs are used, not 4.
-- No SN74LVC1G08 gates are used.
+- Only 1 SN74LVC1G08 is used (U703), not 5.
 - The 2.2 µF 0402 caps are rated 10 V, not 6.3 V.
 
-### After the 2026-11-03 update (714 placed parts)
+### After the 2026-11-03 update (716 placed parts)
 
-47 parts are DNP, and the `Production` project variant marks them Not Fitted. Generate BOM and pick-and-place outputs from that variant. R816 and R824–R837 (15 DNP resistors on the Ethernet sheet) no longer exist, and R603 is 10 MΩ. None of these were priced, so cost is unchanged.
+47 parts are DNP, and the `Production` project variant marks them Not Fitted. Generate BOM and pick-and-place outputs from that variant. R816 and R824–R837 (15 DNP resistors on the Ethernet sheet) no longer exist, and R603 is 10 MΩ. None of these were priced, so cost is unchanged. The eMMC reset gate U703 uses one of the five SN74LVC1G08 already priced, and its 100 nF capacitor C705 adds under $0.01.
 
 ## Line items (140 placed lines)
 

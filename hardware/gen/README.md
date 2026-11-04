@@ -9,9 +9,9 @@ This folder builds the APE-SBC Altium schematic and libraries from Python. Symbo
 
 Section 8 lists what that run proved and fixed.
 
-**PCB set up (2026-10-20), [section 11](#11-pcb-setup):** `build.py pcb` gives `PCB.PcbDoc` the 100 × 70 mm outline, the JLC06161H-3313 6-layer stack, three impedance profiles, net and differential-pair classes, the SiP room and the design rules, and imports the schematic. All 705 parts (658 fitted, 47 DNP) arrive with their footprints, 448 nets, and every pad's net matches the generator. Placement has not started.
+**PCB set up (2026-10-20), [section 11](#11-pcb-setup):** `build.py pcb` gives `PCB.PcbDoc` the 100 × 70 mm outline, the JLC06161H-3313 6-layer stack, three impedance profiles, net and differential-pair classes, the SiP room and the design rules, and imports the schematic. All 707 parts (660 fitted, 47 DNP) arrive with their footprints, 449 nets, and every pad's net matches the generator. Placement has not started.
 
-**Schematic v0.1:** 16 sheets, 705 designators, 448 nets. `build.py check` passes with no single-node nets, no accidental connections and no overlaps. Open questions are in [`docs/schematic-open-items.md`](../../docs/schematic-open-items.md).
+**Schematic v0.1:** 16 sheets, 707 designators, 449 nets. `build.py check` passes with no single-node nets, no accidental connections and no overlaps. Open questions are in [`docs/schematic-open-items.md`](../../docs/schematic-open-items.md).
 
 | Sheet | Content |
 |---|---|
@@ -323,7 +323,7 @@ All six copper layers are signal layers, so L2, L4 and L5 take positive pours (s
 
 The template's polygon-connect rules (relief, four 10 mil spokes, 10 mil gap; vias direct) already match section 5 and are kept. The SiP region rules use `WithinRoom('U1_SiP')`: the room is the 9 × 14 mm body plus 1 mm, placed at the board centre for now. Move the room onto U1 when placing it; a room carries its components.
 
-**What `build.py pcb` verified on AD26:** 705 components (658 fitted, 47 DNP) with their footprints, 448 nets, every pad's net equal to the generator's; rule priorities as listed; the impedance-driven rules point at the current profiles; a further Import Changes generates no change orders.
+**What `build.py pcb` verified on AD26:** 707 components (660 fitted, 47 DNP) with their footprints, 449 nets, every pad's net equal to the generator's; rule priorities as listed; the impedance-driven rules point at the current profiles; a further Import Changes generates no change orders.
 
 **Notes from the AD26 run:**
 - Altium gives every new rule priority 1, so `PcbRules` adds the rules last to first.
