@@ -1,9 +1,9 @@
 # Schematic v0.1: open items for review
 
-The schematic is generated from `hardware/gen` (16 sheets, 729 placed parts, 451 nets, 65 footprints). `build.py check` passes: no single-node nets, no accidental connections, no overlapping parts. All 16 sheets are built in Altium AD26, and every pin lands on its wire (pin-map check). The PCB import matches the netlist: 720 footprints, 451 nets.
+The schematic is generated from `hardware/gen` (16 sheets, 714 placed parts, 448 nets, 65 footprints). `build.py check` passes: no single-node nets, no accidental connections, no overlapping parts. All 16 sheets are built in Altium AD26, and every pin lands on its wire (pin-map check). The PCB import matches the netlist: 705 footprints, 448 nets. 47 parts are DNP, and the `Production` project variant marks them Not Fitted. Use that variant for every BOM and pick-and-place output: `[No Variations]` still counts them as fitted.
 
-ERC has 0 fatal errors, 7 errors and 329 warnings, all expected:
-- The 7 errors are floating inputs, and the 259 "unconnected" warnings are on pins deliberately left NC with a No-ERC marker. The 7 inputs are the unused DP83867 JTAG pins and codec MIC1 inputs. All 259 pins were checked against the generator's NC list.
+ERC has 0 fatal errors, 7 errors and 332 warnings, all expected:
+- The 7 errors are floating inputs, and the 262 "unconnected" warnings are on pins deliberately left NC with a No-ERC marker. The 7 inputs are the unused DP83867 JTAG pins and codec MIC1 inputs. All 262 pins were checked against the generator's NC list.
 - 66 nets have only passive or input pins, so they have no driver.
 - 4 nets join an IO pin with an output or power pin: SoC pads driven by a peripheral, and MCU_OSC0_XO tied to GND for the LVCMOS oscillator.
 
@@ -60,7 +60,7 @@ The footprints are in `hardware/gen/fplib/`. Section 10 of `hardware/gen/README.
 |---|---|---|
 | A8 | 01 | TPS25730 strap decoding is "firmware controlled": verify 5–9 V and 1.5/3 A on the EVM or the first boards. Its I2C address 0x20 collides with TCA64xx defaults (none on this board). |
 | A9 | 06 | Ethernet boot puts 25 MHz on header **pin 7** (ball D16, CLKOUT0), because BOOTMODE bit 9 is fixed at 1. Booting from the eMMC UDA through MMCSD is unreachable; use the eMMC boot partition. |
-| A10 | 07/08 | SD power-enable and PHY reset follow RESETSTATZ through resistors so the ROM can boot SD and Ethernet. R611 is now 1 kΩ to GND, which holds the net low against the PHY's 9 k internal pull-up while the pad is Hi-Z. Fallback: R816 DNP. |
+| A10 | 07/08 | SD power-enable and PHY reset follow RESETSTATZ through resistors so the ROM can boot SD and Ethernet. R611 is now 1 kΩ to GND, which holds the net low against the PHY's 9 k internal pull-up while the pad is Hi-Z. Fallback: remove R815; the PHY's internal pull-up then holds RESET_N high. |
 | B13 | 06 | 25 MHz oscillator rise time: ≤ 7 ns at 15 pF specified, against ≤ 4 ns required at the SoC input. Confirm with ECS or measure. Alternative: TI LMK6CE025000. |
 | B14 | 10 | TFP410 latches on the falling edge (ti-tfp410 default). Setup at 1080p60 is 1.12 ns against the TFP410's 1.2 ns. DNP straps R1012–R1016 can add 350 ps of de-skew (fit R1013, R1014, R1016; remove R1005), giving 1.47 ns setup and 1.87 ns hold. Decide at bring-up from a 1080p60 margin test. |
 | B16 | 11 | AUDIO_EXT_REFCLK1 (G26) must be configured as an **input** to McASP1, because the 12.288 MHz oscillator drives it. Confirm in the TRM. |
@@ -95,6 +95,15 @@ Closed in this review: **A7** (TI SLVUCL1A confirms the TPS6521904 rail map, seq
 | 14 | R1433 47 k UART5 RX pull-up | 62_UART_2 |
 | 15 | R1530 links PWREN# to OE#; C1506 10 µF | PWREN# is a driven output (R1506 alone would short it); VREGOUT needs ≥ 3.3 µF effective |
 | Footprints | QFN28 (CH335F) paste windows; silk clearance 0.20 mm; SiP paste rule | IPC-7525, JLC silk-to-mask rule |
+
+## Fixed in the 2026-11-03 update
+
+| Sheet | Change | Reason |
+|---|---|---|
+| All | `Production` variant marks all 47 DNP parts Not Fitted (`build.py variant`) | DNP was only a hidden parameter, which BOM and pick-and-place outputs ignore |
+| 06 | R603 is now 10 MΩ | Its value read "0402". TI recommends the Rbias footprint on pre-production boards but gives no value. 10 MΩ is the usual bias for a 32 kHz crystal and is harmless if fitted. |
+| 08 | R824–R837 removed; U800 pins 39, 40 and 45 are NC | Fitted, they gave PHY address 5, RX skew 0.5 ns and TX skew 3.5 ns. The wanted setting is mode 1 (open), so no fitted value can be correct. Skews can still be changed in software. This also removes stubs from RGMII RX. |
+| 08 | R816 removed | Fitted beside R815, it lifted RESET_N to about 0.8 V during reset. The fallback only needs R815 removed (see A10). |
 
 ## Software notes for the device tree
 

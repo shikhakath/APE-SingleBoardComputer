@@ -16,6 +16,7 @@ the body; pins sit on the left/right body edges on a 100 mil pitch.
 """
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -62,6 +63,13 @@ def display_comment(pl) -> tuple[str, str]:
         shown = c.split(" (")[0].split()[0]
         return shown, (c if c != shown else "")
     return c, ""
+
+
+def unique_id(designator: str, part: int = 1) -> str:
+    """Altium unique ID (8 capitals) derived from the designator, so a rebuilt
+    sheet keeps its links from the project variant and the PCB."""
+    digest = hashlib.sha256(f"{designator}/{part}".encode()).digest()
+    return "".join(chr(ord("A") + b % 26) for b in digest[:8])
 
 
 def overbar(name: str) -> str:
@@ -245,7 +253,7 @@ class Sheet:
         out = [f"SHEET|{self.path}", f"STYLE|{style}|{w}|{h}"]
         for pl in self.placed:
             pid = pl.part if pl.symbol.part_count > 1 else 0
-            out.append(f"PART|{pl.designator}|{lib_path}|{pl.symbol.name}|{pid}|{pl.x}|{pl.y + self.dy}|0|0")
+            out.append(f"PART|{pl.designator}|{lib_path}|{pl.symbol.name}|{pid}|{pl.x}|{pl.y + self.dy}|0|0|{unique_id(pl.designator, pl.part)}")
             shown, spec_text = display_comment(pl)
             if shown:
                 out.append(f"COMMENT|{shown}")

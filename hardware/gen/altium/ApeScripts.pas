@@ -84,7 +84,7 @@ end;
 procedure Ping;
 begin
     StartRun('Ping');
-    ApeFinish('{"success": true, "version": 11}');
+    ApeFinish('{"success": true, "version": 13}');
 end;
 
 // ------------------------------------------------------------ SaveDocs
@@ -330,7 +330,7 @@ end;
 // ---------------------------------------------------------- BuildSheet
 // Adapted from altium-mcp dev/build_circuit.pas. ape_sheet_spec.txt:
 //   SHEET|<full .SchDoc path>       STYLE|<sheet style>
-//   PART|desig|symlib|symbol|partid|x|y|orient|mirror
+//   PART|desig|symlib|symbol|partid|x|y|orient|mirror|uniqueid
 //   COMMENT|t  DESCRIPTION|t  FOOTPRINT|n  PARAM|name|value
 //   WIRE|x1|y1|x2|y2[|...]  JUNCTION|x|y  NOERC|x|y
 //   NETLABEL|x|y|orient|justification|text
@@ -347,7 +347,7 @@ var
     ServerDoc : IServerDocument;
     TargetDoc, LibDoc : ISch_Document;
     Iter, PIter : ISch_Iterator;
-    Prim, Comp, Pin, Obj, Impl, Param : IDispatch;
+    Prim, Comp, Other, Pin, Obj, Impl, Param : IDispatch;
 begin
     StartRun('BuildSheet');
     Spec := TStringList.Create;
@@ -427,7 +427,8 @@ begin
             Prim := Iter.FirstSchObject;
             while (Prim <> nil) do
             begin
-                if (Prim.LibReference = PipeField(Rec, 3)) then Comp := Prim;
+                if (Prim.LibReference = PipeField(Rec, 3)) then Comp := Prim
+                else Other := Prim;
                 Prim := Iter.NextSchObject;
             end;
             LibDoc.SchIterator_Destroy(Iter);
@@ -435,6 +436,10 @@ begin
                 Missing := Missing + PipeField(Rec, 1) + ':' + PipeField(Rec, 3) + ' '
             else
             begin
+                // Replicate drops the pins of the symbol the library editor is
+                // showing (verified on AD26), so show a different one first.
+                if (LibDoc.CurrentSchComponent.LibReference = PipeField(Rec, 3)) then
+                    LibDoc.CurrentSchComponent := Other;
                 Comp := Comp.Replicate;
                 Comp.Designator.Text := PipeField(Rec, 1);
                 Comp.DesignItemID := PipeField(Rec, 3);
@@ -446,6 +451,9 @@ begin
                 Comp.MoveByXY(
                     MilsToCoord(StrToInt(PipeField(Rec, 5)) - CoordToMils(Comp.Location.X)),
                     MilsToCoord(StrToInt(PipeField(Rec, 6)) - CoordToMils(Comp.Location.Y)));
+                // After registering, which assigns a new ID. A stable ID keeps
+                // the project variant and the PCB linked across rebuilds.
+                Comp.UniqueId := PipeField(Rec, 9);
                 Parts := Parts + 1;
             end;
         end

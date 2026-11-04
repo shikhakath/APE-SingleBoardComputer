@@ -6,6 +6,7 @@ Run from anywhere (paths are resolved from this file's location):
   python build.py project           register sheets + library in the .PrjPcb
                                     (close the project in Altium first)
   python build.py register          same, through Altium, while the project is open
+  python build.py variant           mark the DNP parts Not Fitted in the project variant
   python build.py smoke             build gen/out/smoke.SchDoc: proves the toolchain end to end
   python build.py lib               create the symbols in lib/APE-SBC.SchLib and save it
   python build.py footprints [--fresh] [NAME ...]
@@ -23,6 +24,7 @@ from __future__ import annotations
 import csv
 import importlib
 import json
+import re
 import shutil
 import sys
 from collections import defaultdict
@@ -39,7 +41,7 @@ import symbols  # noqa: E402
 LIB_PATH = HW / "lib" / "APE-SBC.SchLib"
 PCBLIB_PATH = HW / "lib" / "APE-SBC.PcbLib"
 SCH_DIR = HW / "sch"
-TEMPLATE_SHEET = HW / "Main.SchDoc"
+TEMPLATE_SHEET = GEN / "altium" / "SheetTemplate.SchDoc"
 PRJ_PATH = HW / "APE - Single Board Computer.PrjPcb"
 OUT = GEN / "out"
 BRIDGE = Path("C:/Users/Public/altium_mcp")
@@ -735,6 +737,37 @@ def pcb_project_edit(edit) -> bool:
     return ok
 
 
+VARIANT_NAME = "Production"
+
+
+def set_variant(text: str, parts: list[tuple[str, str]]) -> str:
+    """Project file text with VARIANT_NAME marking parts [(designator, unique ID)]
+    Not Fitted (Kind=1). Replaces that variant's section, or adds it."""
+    sections = list(re.finditer(r"^\[ProjectVariant(\d+)\]\n(?:(?!\[).*\n)*", text, re.M))
+    old = next((m for m in sections if f"\nDescription={VARIANT_NAME}\n" in m.group(0)), None)
+    n = int(old.group(1)) if old else max((int(m.group(1)) for m in sections), default=0) + 1
+    lines = [f"[ProjectVariant{n}]", f"UniqueID={schgen.unique_id(VARIANT_NAME)}", f"Description={VARIANT_NAME}",
+             "AllowFabrication=0", "ParameterCount=0", f"VariationCount={len(parts)}"]
+    lines += [f"Variation{i}=Designator={d}|UniqueId=\\{uid}|Kind=1|AlternatePart="
+              for i, (d, uid) in enumerate(parts, 1)]
+    section = "\n".join(lines) + "\n\n"
+    if old:
+        return text[:old.start()] + section + text[old.end():]
+    at = text.index("[Configuration")
+    return text[:at] + section + text[at:]
+
+
+def cmd_variant():
+    """Write the project variant: every part a sheet marks DNP is Not Fitted."""
+    parts = {}
+    for sh in load_sheets():
+        for pl in sh.placed:
+            if pl.params.get("DNP"):
+                parts.setdefault(pl.designator, schgen.unique_id(pl.designator, pl.part))
+    print(f"variant {VARIANT_NAME}: {len(parts)} parts Not Fitted")
+    return pcb_project_edit(lambda text: set_variant(text, sorted(parts.items())))
+
+
 def cmd_pcb(args):
     """Set up hardware/PCB.PcbDoc from gen/pcbsetup.py (README section 11).
     `build.py pcb` runs every step in order; `build.py pcb rules report` runs some."""
@@ -804,6 +837,7 @@ def main(argv):
         "check": lambda: cmd_check(),
         "project": lambda: cmd_project(),
         "register": lambda: cmd_register(),
+        "variant": lambda: cmd_variant(),
         "unwedge": lambda: cmd_unwedge(),
         "ping": lambda: run_ape("Ping", timeout=60)[0],
         "smoke": lambda: cmd_smoke(),

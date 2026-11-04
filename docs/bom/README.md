@@ -118,6 +118,10 @@ The CSV still has these known differences from the schematic. The schematic is r
 - No SN74LVC1G08 gates are used.
 - The 2.2 µF 0402 caps are rated 10 V, not 6.3 V.
 
+### After the 2026-11-03 update (714 placed parts)
+
+47 parts are DNP, and the `Production` project variant marks them Not Fitted. Generate BOM and pick-and-place outputs from that variant. R816 and R824–R837 (15 DNP resistors on the Ethernet sheet) no longer exist, and R603 is 10 MΩ. None of these were priced, so cost is unchanged.
+
 ## Line items (140 placed lines)
 
 Plug-in modules and PCB/assembly fees are included as lines. Prices are USD per unit at the 10-board break.

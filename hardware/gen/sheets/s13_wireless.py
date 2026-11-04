@@ -115,9 +115,7 @@ def build(sch_dir: str) -> Sheet:
         ("C1303", CAP, "VCC_3V3_SYS", "GND", C10U + " (pins 72/74)"),
         ("C1304", CAP, "VCC_3V3_SYS", "GND", C100N + " (pins 72/74)", P_C100N),
     ])
-    # Placed with MOUNTING_HOLE: on AD26 the STANDOFF_SMT_M2 symbol lost its only
-    # pin when copied onto the sheet (the library copy has it), which left the
-    # pad without a net. Same one-pin shape, so only the symbol changes.
+    # Placed with MOUNTING_HOLE, which has the same one-pin shape as STANDOFF_SMT_M2.
     sh.add("H1300", MOUNTING_HOLE, 19800, 12300, {"1": "GND"}, comment="9774015243R M2 SMT standoff 1.5 mm",
            footprint=STANDOFF_M2.footprint,
            MPN="9774015243R", Manufacturer="Wurth Elektronik", LCSC="C22431324")

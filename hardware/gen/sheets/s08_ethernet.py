@@ -50,7 +50,7 @@ def build(sch_dir: str) -> Sheet:
         "20": "NC", "22": "NC", "23": "NC", "21": "NC",
         "1": "ETH_MDI0_P", "2": "ETH_MDI0_N", "4": "ETH_MDI1_P", "5": "ETH_MDI1_N",
         "7": "ETH_MDI2_P", "8": "ETH_MDI2_N", "10": "ETH_MDI3_P", "11": "ETH_MDI3_N",
-        "47": "PHY_LED0", "46": "PHY_LED1", "45": "PHY_LED2", "39": "PHY_GPIO0", "40": "PHY_GPIO1",
+        "47": "PHY_LED0", "46": "PHY_LED1", "45": "NC", "39": "NC", "40": "NC",
         "19": "VCC_3V3_SYS", "30": "VCC_3V3_SYS", "41": "VCC_3V3_SYS",
         "3": "VDDA_2V5_PHY", "9": "VDDA_2V5_PHY",
         "6": "VDD_1V0_PHY", "24": "VDD_1V0_PHY", "31": "VDD_1V0_PHY", "42": "VDD_1V0_PHY",
@@ -66,7 +66,6 @@ def build(sch_dir: str) -> Sheet:
         ("R813", RES, "VCC_3V3_SYS", "ETH_MDIO", "2.2k 0402 (MDIO pull-up)"),
         ("R814", RES, "VCC_3V3_SYS", "ETH_PHY_INT_N", "2.2k 0402 (INT open drain)"),
         ("R815", RES, "RESETSTATZ", "ETH_PHY_RST_N", "1.5k 0402 (reset follows RESETSTATz)"),
-        ("R816", RES, "VCC_3V3_SYS", "ETH_PHY_RST_N", "10k 0402 (DNP, plain pull-up instead of R815)", DNP),
         ("R812", RES, "PHY_RBIAS", "GND", "11k 1% 0402 (RBIAS)"),
         ("C802", CAP, "PHY_RBIAS", "GND", "22pF 50V C0G 0402 (DNP, SK compliance option)", DNP),
     ])
@@ -113,24 +112,16 @@ def build(sch_dir: str) -> Sheet:
         ("C826", CAP, "VDD_1V0_PHY", "GND", C100N + " (pin 42)"),
     ])
 
-    # ---- 4-level straps (Rhi to VDDIO, Rlo to GND; 1% 0402). Fitted: RX_CTRL mode 3,
-    #      LED_1 mode 2. Everything else mode 1 (internal 9k pull-down), footprints DNP. ----
-    def pair(n, net, rhi, rlo, fit, what):
-        p = {} if fit else DNP
-        tag = what if fit else what + ", DNP"
-        return [(f"R{n}", RES, "VCC_3V3_SYS", net, f"{rhi} 1% 0402 (Rhi {tag})", p),
-                (f"R{n + 1}", RES, net, "GND", f"{rlo} 1% 0402 (Rlo {tag})", p)]
+    # ---- 4-level straps (Rhi to VDDIO, Rlo to GND; 1% 0402). Only the two pins that
+    #      differ from mode 1 have resistors: on RX_D0-D3, GPIO_0/1 and LED_2 the internal
+    #      9k pull-down gives the wanted mode 1, and any fitted pair would move the PHY
+    #      address or a skew. ----
+    def pair(n, net, rhi, rlo, what):
+        return [(f"R{n}", RES, "VCC_3V3_SYS", net, f"{rhi} 1% 0402 (Rhi {what})"),
+                (f"R{n + 1}", RES, net, "GND", f"{rlo} 1% 0402 (Rlo {what})")]
     sh.column(19600, 19400,
-              pair(820, "PHY_RX_CTRL", "5.76k", "2.49k", True, "RX_CTRL mode 3")
-              + pair(822, "PHY_LED1", "10k", "2.49k", True, "LED_1 mode 2")
-              + pair(824, "PHY_RX_D0", "10k", "2.49k", False, "RX_D0")
-              + pair(826, "PHY_RX_D1", "10k", "2.49k", False, "RX_D1 dummy"))
-    sh.column(23600, 19400,
-              pair(828, "PHY_RX_D2", "10k", "2.49k", False, "RX_D2")
-              + pair(830, "PHY_RX_D3", "10k", "2.49k", False, "RX_D3 dummy")
-              + pair(832, "PHY_GPIO0", "5.76k", "2.49k", False, "GPIO_0")
-              + pair(834, "PHY_GPIO1", "10k", "2.49k", False, "GPIO_1")
-              + pair(836, "PHY_LED2", "10k", "2.49k", False, "LED_2"))
+              pair(820, "PHY_RX_CTRL", "5.76k", "2.49k", "RX_CTRL mode 3")
+              + pair(822, "PHY_LED1", "10k", "2.49k", "LED_1 mode 2"))
 
     # ================================================================ RJ45
     sh.add("J800", HR911130A, 28000, 19500, {
@@ -159,7 +150,9 @@ def build(sch_dir: str) -> Sheet:
         "  LED_2 (45)  mode 1 open/open     TX skew TX[1:0] = 00",
         "  LED_1 (46)  mode 2 10k/2.49k     ANEG_SEL = 0 (10/100/1000), TX[2] = 1 -> TX skew 0 ns",
         "  LED_0 (47)  mode 1 open/open     Mirror = 0, SGMII Enable = 0 (RGMII)",
-        "  RX_D1/RX_D3: SGMII-pair dummies, must copy RX_D0/RX_D2 straps (both DNP = mode 1).",
+        "  RX_D1/RX_D3: SGMII-pair dummies, must copy RX_D0/RX_D2 straps (both open = mode 1).",
+        "Mode 1 pins have no strap footprints: a fitted pair changes the address or a skew (RX_D0 + RX_D2",
+        "  in mode 2 = address 5, so MDIO probing of address 0 fails). Change a skew in software (RGMIIDCTL).",
         "RGMIICTL resets with TX and RX shift enabled; TX skew strapped to 0 ns because the AM62x MAC",
         "  always delays TXC. Linux: phy-mode rgmii-rxid, ti,rx-internal-delay = 2.0 ns.",
         "LEDs: modes 1/2 make LED_0/1 active-high drivers, LEDs to GND via 470R (Fig 7-12).",
@@ -168,9 +161,8 @@ def build(sch_dir: str) -> Sheet:
         "  releases it when the SoC leaves reset, so ROM RGMII boot finds a strapped, running PHY.",
         "  GPIO0_88 can still reset the PHY (drives 2.2 mA into R815). RESET_N has ~9k internal",
         "  pull-up: worst-case low level 0.63 V during reset - check at bring-up.",
-        "  While the RESETSTATz pad is still Hi-Z (early power-up) that pull-up lifts the",
-        "  RESETSTATZ net to ~1.5 V against R611 10k (sheet 06); it settles once the SoC drives it.",
-        "  R816 (DNP) = plain 10k pull-up alternative: fit it and remove R815 to decouple the PHY.",
+        "  While the RESETSTATz pad is still Hi-Z (early power-up) R611 1k (sheet 06) holds the net low.",
+        "  To decouple the PHY from RESETSTATz, remove R815: the internal pull-up then holds RESET_N high.",
         "ETH_PHY_INT_N: open drain, 2.2k pull-up (datasheet); plain GPIO, so no 62R/47pF RC.",
         "Series R: 22R TX at the SoC balls, 22R RX at the PHY pins; may become 0R after SI sim.",
         "  Strap resistors sit on the PHY side of the RX series resistors. Groups matched <= 50 ps.",

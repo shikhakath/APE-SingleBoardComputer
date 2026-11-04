@@ -70,23 +70,6 @@ GenerateClassCluster=0
 DocumentUniqueId=
 
 [Document2]
-DocumentPath=Main.SchDoc
-AnnotationEnabled=1
-AnnotateStartValue=1
-AnnotationIndexControlEnabled=0
-AnnotateSuffix=
-AnnotateScope=All
-AnnotateOrder=-1
-DoLibraryUpdate=1
-DoDatabaseUpdate=1
-ClassGenCCAutoEnabled=1
-ClassGenCCAutoRoomEnabled=0
-ClassGenNCAutoScope=None
-DItemRevisionGUID=
-GenerateClassCluster=0
-DocumentUniqueId=CKNLTYTA
-
-[Document3]
 DocumentPath=PCB.PcbDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -103,7 +86,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=SAFXDLSQ
 
-[Document4]
+[Document3]
 DocumentPath=sch\01_Power_Input.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -120,7 +103,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=LLERQYRR
 
-[Document5]
+[Document4]
 DocumentPath=sch\02_PMIC.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -137,7 +120,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=JLVOJJZI
 
-[Document6]
+[Document5]
 DocumentPath=sch\03_SiP_Power.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -154,7 +137,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=CHIOASOY
 
-[Document7]
+[Document6]
 DocumentPath=sch\04_SiP_GND_NC.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -171,7 +154,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=BNDYWZKM
 
-[Document8]
+[Document7]
 DocumentPath=sch\05_SiP_IO.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -188,7 +171,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=HSGDPLTM
 
-[Document9]
+[Document8]
 DocumentPath=sch\06_Clock_Reset_Boot.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -205,7 +188,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=KGLVZPRD
 
-[Document10]
+[Document9]
 DocumentPath=sch\07_Storage.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -222,7 +205,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=GBQWNAHL
 
-[Document11]
+[Document10]
 DocumentPath=sch\08_Ethernet.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -239,7 +222,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=WESLNAZK
 
-[Document12]
+[Document11]
 DocumentPath=sch\09_USB.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -256,7 +239,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=BRMAHHQG
 
-[Document13]
+[Document12]
 DocumentPath=sch\10_HDMI.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -273,7 +256,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=RAETMWZP
 
-[Document14]
+[Document13]
 DocumentPath=sch\11_Audio.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -290,7 +273,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=FKIMPBWW
 
-[Document15]
+[Document14]
 DocumentPath=sch\12_Camera.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -307,7 +290,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=ZNXRIHQP
 
-[Document16]
+[Document15]
 DocumentPath=sch\13_Wireless.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -324,7 +307,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=HVACXXCS
 
-[Document17]
+[Document16]
 DocumentPath=sch\14_Expansion.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -341,7 +324,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=OCBKVQTE
 
-[Document18]
+[Document17]
 DocumentPath=sch\15_Debug.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -358,7 +341,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=TSPSYJBT
 
-[Document19]
+[Document18]
 DocumentPath=sch\16_Misc.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -375,7 +358,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=FBKYKZZM
 
-[Document20]
+[Document19]
 DocumentPath=lib\APE-SBC.SchLib
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -392,7 +375,7 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=VMEWHTVW
 
-[Document21]
+[Document20]
 DocumentPath=lib\APE-SBC.PcbLib
 AnnotationEnabled=1
 AnnotateStartValue=1
@@ -409,22 +392,59 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=OPPVXCNM
 
-[Document22]
-DocumentPath=lib\APE-SBC.SchLib
-AnnotationEnabled=1
-AnnotateStartValue=1
-AnnotationIndexControlEnabled=0
-AnnotateSuffix=
-AnnotateScope=All
-AnnotateOrder=-1
-DoLibraryUpdate=1
-DoDatabaseUpdate=1
-ClassGenCCAutoEnabled=1
-ClassGenCCAutoRoomEnabled=0
-ClassGenNCAutoScope=None
-DItemRevisionGUID=
-GenerateClassCluster=0
-DocumentUniqueId=YULPMMKV
+[ProjectVariant1]
+UniqueID=HUAVNKHP
+Description=Production
+AllowFabrication=0
+ParameterCount=0
+VariationCount=47
+Variation1=Designator=C1404|UniqueId=\AEKITVNP|Kind=1|AlternatePart=
+Variation2=Designator=C225|UniqueId=\YHEKRUVJ|Kind=1|AlternatePart=
+Variation3=Designator=C226|UniqueId=\GVZYYIMD|Kind=1|AlternatePart=
+Variation4=Designator=C358|UniqueId=\OBMCBMWM|Kind=1|AlternatePart=
+Variation5=Designator=C359|UniqueId=\BXFYHBLW|Kind=1|AlternatePart=
+Variation6=Designator=C360|UniqueId=\LQHGCCJF|Kind=1|AlternatePart=
+Variation7=Designator=C802|UniqueId=\VTZLMUEP|Kind=1|AlternatePart=
+Variation8=Designator=C831|UniqueId=\USWWYRCU|Kind=1|AlternatePart=
+Variation9=Designator=C913|UniqueId=\DOJUETTZ|Kind=1|AlternatePart=
+Variation10=Designator=J1501|UniqueId=\KKKUDOML|Kind=1|AlternatePart=
+Variation11=Designator=J701|UniqueId=\WBFASHKG|Kind=1|AlternatePart=
+Variation12=Designator=R1012|UniqueId=\CVWQORTA|Kind=1|AlternatePart=
+Variation13=Designator=R1013|UniqueId=\JVAZOKKT|Kind=1|AlternatePart=
+Variation14=Designator=R1014|UniqueId=\JKZJMTHV|Kind=1|AlternatePart=
+Variation15=Designator=R1015|UniqueId=\NZZFZIBH|Kind=1|AlternatePart=
+Variation16=Designator=R1016|UniqueId=\WZCQFTCN|Kind=1|AlternatePart=
+Variation17=Designator=R1203|UniqueId=\CFEFRTKF|Kind=1|AlternatePart=
+Variation18=Designator=R1314|UniqueId=\LVNBYRNO|Kind=1|AlternatePart=
+Variation19=Designator=R1432|UniqueId=\OXPGMPUP|Kind=1|AlternatePart=
+Variation20=Designator=R1506|UniqueId=\VQMWPOTI|Kind=1|AlternatePart=
+Variation21=Designator=R1529|UniqueId=\EHMWTMIA|Kind=1|AlternatePart=
+Variation22=Designator=R1601|UniqueId=\IQGUQXNG|Kind=1|AlternatePart=
+Variation23=Designator=R1603|UniqueId=\EEFSXSBB|Kind=1|AlternatePart=
+Variation24=Designator=R207|UniqueId=\YWAUTCDR|Kind=1|AlternatePart=
+Variation25=Designator=R603|UniqueId=\NMSMBJVG|Kind=1|AlternatePart=
+Variation26=Designator=R621|UniqueId=\QEUTHUQJ|Kind=1|AlternatePart=
+Variation27=Designator=R623|UniqueId=\CKDIJRGV|Kind=1|AlternatePart=
+Variation28=Designator=R624|UniqueId=\VTSOGWTC|Kind=1|AlternatePart=
+Variation29=Designator=R626|UniqueId=\RFYXGUTD|Kind=1|AlternatePart=
+Variation30=Designator=R628|UniqueId=\IXBKBOJP|Kind=1|AlternatePart=
+Variation31=Designator=R631|UniqueId=\WIKQWOLO|Kind=1|AlternatePart=
+Variation32=Designator=R633|UniqueId=\WYKEWMKN|Kind=1|AlternatePart=
+Variation33=Designator=R634|UniqueId=\VRAZYWFZ|Kind=1|AlternatePart=
+Variation34=Designator=R636|UniqueId=\MKUUBNHD|Kind=1|AlternatePart=
+Variation35=Designator=R638|UniqueId=\KLLVWAII|Kind=1|AlternatePart=
+Variation36=Designator=R640|UniqueId=\CXRPFEJL|Kind=1|AlternatePart=
+Variation37=Designator=R642|UniqueId=\QLAMGIFZ|Kind=1|AlternatePart=
+Variation38=Designator=R728|UniqueId=\JWWFCGSC|Kind=1|AlternatePart=
+Variation39=Designator=R900|UniqueId=\RZWKVCOX|Kind=1|AlternatePart=
+Variation40=Designator=R901|UniqueId=\PKYIAJSG|Kind=1|AlternatePart=
+Variation41=Designator=R905|UniqueId=\AEWYZWJM|Kind=1|AlternatePart=
+Variation42=Designator=R914|UniqueId=\IBSQDKAF|Kind=1|AlternatePart=
+Variation43=Designator=R915|UniqueId=\XVATJTST|Kind=1|AlternatePart=
+Variation44=Designator=R916|UniqueId=\EOUGJHUO|Kind=1|AlternatePart=
+Variation45=Designator=R917|UniqueId=\FVQJLGOJ|Kind=1|AlternatePart=
+Variation46=Designator=U1400|UniqueId=\UUAHPWNU|Kind=1|AlternatePart=
+Variation47=Designator=U202|UniqueId=\VGGGGNGR|Kind=1|AlternatePart=
 
 [Configuration1]
 Name=Sources
@@ -1394,34 +1414,6 @@ NetClassAutoNamedHarnessEnabled=0
 NetClassManualEnabled=1
 NetClassSeparateForBusSections=0
 
-[Comparison Options]
-ComparisonOptions0=Kind=Net|MinPercent=75|MinMatch=3|ShowMatch=0|UseName=-1|InclAllRules=0
-ComparisonOptions1=Kind=Net Class|MinPercent=75|MinMatch=3|ShowMatch=0|UseName=-1|InclAllRules=0
-ComparisonOptions2=Kind=Component Class|MinPercent=75|MinMatch=3|ShowMatch=0|UseName=-1|InclAllRules=0
-ComparisonOptions3=Kind=Rule|MinPercent=75|MinMatch=3|ShowMatch=0|UseName=-1|InclAllRules=0
-ComparisonOptions4=Kind=Differential Pair|MinPercent=50|MinMatch=1|ShowMatch=0|UseName=0|InclAllRules=0
-ComparisonOptions5=Kind=Structure Class|MinPercent=75|MinMatch=3|ShowMatch=0|UseName=-1|InclAllRules=0
-
-[SmartPDF]
-PageOptions=Record=PageOptions|CenterHorizontal=True|CenterVertical=True|PrintScale=1.00|XCorrection=1.00|YCorrection=1.00|PrintKind=1|BorderSize=5000000|LeftOffset=0|BottomOffset=0|Orientation=2|PaperLength=1000|PaperWidth=1000|Scale=100|PaperSource=7|PrintQuality=-3|MediaType=1|DitherType=10|PrintScaleMode=1|PaperKind=Letter|PaperIndex=1
-
-[Document23]
-DocumentPath=lib\APE-SBC.PcbLib
-AnnotationEnabled=1
-AnnotateStartValue=1
-AnnotationIndexControlEnabled=0
-AnnotateSuffix=
-AnnotateScope=All
-AnnotateOrder=-1
-DoLibraryUpdate=1
-DoDatabaseUpdate=1
-ClassGenCCAutoEnabled=1
-ClassGenCCAutoRoomEnabled=0
-ClassGenNCAutoScope=None
-DItemRevisionGUID=
-GenerateClassCluster=0
-DocumentUniqueId=XMLYFQGY
-
 [LibraryUpdateOptions]
 SelectedOnly=0
 UpdateVariants=1
@@ -1446,4 +1438,15 @@ SelectedOnly=0
 UpdateVariants=1
 UpdateToLatestRevision=1
 PartTypes=0
+
+[Comparison Options]
+ComparisonOptions0=Kind=Net|MinPercent=75|MinMatch=3|ShowMatch=0|UseName=-1|InclAllRules=0
+ComparisonOptions1=Kind=Net Class|MinPercent=75|MinMatch=3|ShowMatch=0|UseName=-1|InclAllRules=0
+ComparisonOptions2=Kind=Component Class|MinPercent=75|MinMatch=3|ShowMatch=0|UseName=-1|InclAllRules=0
+ComparisonOptions3=Kind=Rule|MinPercent=75|MinMatch=3|ShowMatch=0|UseName=-1|InclAllRules=0
+ComparisonOptions4=Kind=Differential Pair|MinPercent=50|MinMatch=1|ShowMatch=0|UseName=0|InclAllRules=0
+ComparisonOptions5=Kind=Structure Class|MinPercent=75|MinMatch=3|ShowMatch=0|UseName=-1|InclAllRules=0
+
+[SmartPDF]
+PageOptions=Record=PageOptions|CenterHorizontal=True|CenterVertical=True|PrintScale=1.00|XCorrection=1.00|YCorrection=1.00|PrintKind=1|BorderSize=5000000|LeftOffset=0|BottomOffset=0|Orientation=2|PaperLength=1000|PaperWidth=1000|Scale=100|PaperSource=7|PrintQuality=-3|MediaType=1|DitherType=10|PrintScaleMode=1|PaperKind=Letter|PaperIndex=1
 
