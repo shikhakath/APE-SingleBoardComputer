@@ -33,19 +33,22 @@ Every schematic sheet is a Python module. Several people or agents write sheets 
 | `VSYS_PD` | 01: TPS25730 output | LM61460 and TPS63070 inputs |
 | `VCC_3V3_MAIN` | 01: LM61460, always on | PMIC VSYS/PVIN (02), TPS22965 input |
 | `VCC_5V0` | 01: TPS63070 | USB-A switches (09), HDMI 5 V (10), header PTC (14), VMON (03) |
-| `VCC_3V3_SYS` | 02: TPS22965, sequenced by PMIC GPO2 | **All** SoC-side 3.3 V peripherals and pull-ups |
-| `VDD_1V8` | 02: PMIC Buck2 | 1.8 V IO peripherals: eMMC VCCQ, M.2 1.8 V, codec 1.8 V, oscillator |
+| `VCC_3V3_SYS` | 02: TPS22965, sequenced by PMIC GPO2 | Source of the 3.3 V IO banks. 3.3 V peripheral supplies that are not tied to one bank. |
+| `VDD_1V8` | 02: PMIC Buck2 | Source of the 1.8 V IO banks. M.2 VIO, codec DVDD, PHY 1.0 V LDO. |
 | `VDDA_1V8` | 02: PMIC LDO3 | SoC analog, plus the `VDDS_OSC0_1V8` branch. Do not load otherwise. |
 | `VDDS_OSC0_1V8` | 03: FB310 from `VDDA_1V8` | SiP VDDS_OSC0, the 25 MHz oscillator U600 and the MCU_PORz gate U601 (as on the SK and Octavo BRK) |
 | `DDR4_VPP_2V5` | 02: PMIC LDO4 | PHY 2.5 V through its own bead on 08 (`VDDA_2V5_PHY`) |
 | `VDD_1V0_PHY` | 02: TLV757 | PHY core |
 | `VDD_SDIO_LDO1` | 02: PMIC LDO1, 3.3/1.8 V | Input of the SD IO switch on 07 only |
 | `VDDSHV5_SD` | 07: TPS22996 channel 2 output | SoC VDDSHV5 (03) and SD pull-ups |
+| `VDDSHV0`, `VDDSHV2`, `VDDSHV3`, `VDDSHV_MCU`, `VDDSHV_CANUART` | 03: 0 Ω links from `VCC_3V3_SYS` | SoC IO banks. **Pull-ups and IO supplies go to the net of the bank that powers the SoC ball** (`hardware/gen/data/osd6254_ballmap.csv`, column 4). |
+| `VDDSHV1`, `VDDSHV4`, `VDDSHV6` | 03: 0 Ω links from `VDD_1V8` | Same rule; eMMC VCCQ is on `VDDSHV4` |
+| `VDDA_3P3_USB` | 03: FB311 from `VCC_3V3_SYS` | SoC USB 3.3 V analog only |
 | `GND` | | Single ground |
 
 New rails must look like `VCC_<V>_<USE>`, `VDD_<V>_<USE>` or `VBUS_<USE>`, for example `VDD_SD_3V3`, `VBUS_USBA1`, `VBUS_DBG`, `VCC_3V3_DBG` or `VCC_5V0_HDR`. Names in this form are drawn as power ports.
 
-Only rails that are **on when the SoC is on** may pull up or drive SoC pins (`VCC_3V3_SYS`, `VDD_1V8`). Most AM62x IOs are not fail-safe.
+Only rails that are **on when the SoC is on** may pull up or drive SoC pins (the `VDDSHV*` nets above). Most AM62x IOs are not fail-safe.
 
 ## Cross-sheet nets (other than SoC nets)
 
@@ -55,7 +58,7 @@ Only rails that are **on when the SoC is on** may pull up or drive SoC pins (`VC
 | `PMIC_PGOOD` | 02 → 06 | PMIC nRSTOUT, 10 k pull-up already on 02. Feeds the MCU_PORz AND gate. |
 | `PMIC_NINT` | 02 ↔ SoC | Already closed |
 | `I2C0_SCL/SDA` | SoC ball → R1620/R1621 47 Ω on 16 | Series resistors at the SoC (AM625 DS p.166, SK p.44) |
-| `I2C0_SCL_BUS/SDA_BUS` | 01 (TPS25730 0x20), 02 (PMIC 0x30), 16 (board ID 0x51, TMP102 0x48) | **All I2C0 devices connect here.** Pull-ups 2.2 k to `VCC_3V3_SYS` on 16. |
+| `I2C0_SCL_BUS/SDA_BUS` | 01 (TPS25730 0x20), 02 (PMIC 0x30), 16 (board ID 0x51, TMP102 0x48) | **All I2C0 devices connect here.** Pull-ups 2.2 k to `VDDSHV0` on 16. |
 | `I2C1_SCL/SDA` | SoC ↔ 10 (DDC via TPD12S016), 11 (codec 0x18) | **Pull-ups on 11** |
 | `JTAG_SRST_N` | 15 → 06 | Optional system reset from the debugger, ANDed into MCU_PORz (SK: JTAG_EMU_RSTn) |
 

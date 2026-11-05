@@ -78,11 +78,11 @@ def build(sch_dir: str) -> Sheet:
          {"DNP": "1", **P_R0}),
     ])
     sh.column(2200, 15400, [
-        (f"R{1305 + i}", RES, "VDD_1V8", f"M2_SDIO_{s}", "47k 0402 (SDIO pull-up)", P_R47K)
+        (f"R{1305 + i}", RES, "VDDSHV6", f"M2_SDIO_{s}", "47k 0402 (SDIO pull-up)", P_R47K)
         for i, s in enumerate(SDIO)
     ] + [
         ("R1310", RES, "WL_SDIO_CLK", "GND", "10k 0402 (SK R12, clock low while pad is off)", P_R10K),
-        ("R1311", RES, "VDD_1V8", "WLAN_IRQ", "10k 0402 (card IRQ is open drain, SK R6)", P_R10K),
+        ("R1311", RES, "VDDSHV6", "WLAN_IRQ", "10k 0402 (card IRQ is open drain, SK R6)", P_R10K),
         ("R1312", RES, "WLAN_EN", "GND", "2.2k 0402 (beats the card's 10k pull-up: 0.33 V)"),
     ])
     sh.note(1000, 11600, "WLAN_EN -> W_DISABLE1# = card HOST_nRESET. The card pulls it to its 1.8 V with 10k into an LVC1G17;")
@@ -101,8 +101,8 @@ def build(sch_dir: str) -> Sheet:
         ("C1305", CAP, "VDD_1V8_M2", "GND", C100N + " (pin 64)", P_C100N),
         # Octavo checklist 62_UART_2: pull-up on the SoC UART RX input (and CTS) so
         # they do not float when no card is fitted or the card is unpowered.
-        ("R1322", RES, "VDD_1V8", "BT_UART_RXD", "47k 0402 (UART6 RXD pull-up, 62_UART_2)", P_R47K),
-        ("R1323", RES, "VDD_1V8", "BT_UART_CTS_N", "47k 0402 (UART6 CTSn pull-up)", P_R47K),
+        ("R1322", RES, "VDDSHV1", "BT_UART_RXD", "47k 0402 (UART6 RXD pull-up, 62_UART_2)", P_R47K),
+        ("R1323", RES, "VDDSHV1", "BT_UART_CTS_N", "47k 0402 (UART6 CTSn pull-up)", P_R47K),
     ])
     sh.add("TP1300", TESTPOINT, 19800, 11300, {"1": "M2_UART_WAKE_N"}, comment="BT wake (no SoC GPIO)")
     sh.add("TP1301", TESTPOINT, 19800, 10900, {"1": "M2_VIO_CFG"}, comment="VIO_CFG (low = 3.3 V-only card)")

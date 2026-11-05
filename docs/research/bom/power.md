@@ -84,13 +84,13 @@ USB-C J1 (VBUS 5 V / 9 V; D+/D- -> SoC USB0)
       │    │    └─ GPO2 -> U5 TPS22965 ON
       │    ├─ U5 TPS22965 (CT 220 pF, QOD) -> VCC_3V3_SYS 3.3 V
       │    │    ├─ U8 TPS22996 ch1 -> VDD_SD ; U6 TLV75518 (DNP) -> VPP_1V8 eFuse
-      │    │    └─ VDDSHV0/2/3, VDDSHV_MCU, VDDA_3P3_USB, M.2 3.3 V, PHY VDDIO, codec, header 3.3 V ...
-      │    └─ VDDSHV_CANUART (always on), U1 VIN_3V3
+      │    │    └─ VDDSHV0/2/3, VDDSHV_MCU, VDDSHV_CANUART, VDDA_3P3_USB, M.2 3.3 V, PHY VDDIO, codec, header 3.3 V ...
+      │    └─ U1 VIN_3V3
       └─ U3 TPS63070 buck-boost (2-16 V) -> VCC_5V0 5.0 V
            ├─ U9/U10 TPS2051B (0.5 A each) -> USB-A VBUS x2 (150 µF polymer each)
            ├─ F1 1.1 A PTC -> 40-pin header 5 V
            ├─ HDMI +5 V (≤55 mA; its limit/ESD part lives in the HDMI section)
-           └─ VMON_VSYS divider 10 k / 1.1 k + 22 pF -> SoC VMON_VSYS (trip ≈ 4.54 V)
+           └─ VMON_VSYS divider 40.2 k / 4.87 k + 22 pF -> SoC VMON_VSYS (trip 3.97-4.47 V)
 ```
 
 | Rail | Source part | Input | Output | Rating | Budget (worst case) | Loads |
@@ -143,7 +143,7 @@ USB-C J1 (VBUS 5 V / 9 V; D+/D- -> SoC USB0)
 | TLV75801 VDD_CANUART LDO | Omitted; VDD_CANUART tied to VDD_CORE | One supply source is required unless Partial-IO is used |
 | INA231 monitors + 10 mΩ shunts | 0 Ω test links (1206 on the bucks, 2 in parallel on Buck1; 0603 on the LDOs) | Saves cost; current can still be measured on pre-production boards |
 | TPD1E01B04 on CC | PESD24VL1BA (24 V) | A diode with 6.4 V breakdown would fail on a CC-to-VBUS short at 9 V |
-| VMON_VSYS from VCC_5V0 (10 k / 1.1 k + 22 pF) | Same | Known-good |
+| VMON_VSYS from VCC_5V0 (40.2 k / 4.87 k + 22 pF) | SK uses 10 k / 1.1 k | Octavo 62_CONFIG_6 values, nearest stocked E96 |
 
 **Out of scope for this section:**
 - USB D+/D- ESD.

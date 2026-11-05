@@ -128,7 +128,7 @@ def build(sch_dir: str) -> Sheet:
     sh.column(14700, 16100, [
         ("R106", RES, "PD_RSVD36", "GND", "10k 1% 0402 (RESERVED)"),
         ("R107", RES, "PD_LDO_3V3", "PD_FAULT_IN_N", "10k 1% 0402 (FAULT_IN high = no fault)"),
-        ("R108", RES, "VCC_3V3_SYS", "PD_INT_N", "10k 1% 0402 (SoC-side pull-up)"),
+        ("R108", RES, "VDDSHV_CANUART", "PD_INT_N", "10k 1% 0402 (SoC-side pull-up)"),
         ("R109", RES, "PD_LDO_3V3", "TP_PD_SINK_EN_N", "100k 1% 0402"),
         ("R110", RES, "PD_LDO_3V3", "TP_PD_PLUG_EVT", "100k 1% 0402"),
         ("R111", RES, "PD_LDO_3V3", "TP_PD_PLUG_FLIP", "100k 1% 0402"),

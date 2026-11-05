@@ -4,7 +4,7 @@ References:
   * docs/research/pinmux-allocation.md section 3 (header map) and section 2.5
     (MCU_I2C0 on pins 3/5, WKUP_I2C0 on 27/28, both fail-safe open-drain buffers)
   * data/pinmux_allocation.csv: every header ball is 3.3 V (VDDSHV0, VDDSHV3,
-    VDDSHV_MCU, VDDSHV_CANUART), all fed from VCC_3V3_SYS on sheet 03
+    VDDSHV_MCU, VDDSHV_CANUART), all fed from VCC_3V3_SYS through the links on sheet 03
   * TI SK-AM62B-P1 PROC142B p.35 (J3) and the rev B design-update notes:
     62 Ohm + 47 pF RC slew limiter on the MCU_I2C0 / WKUP_I2C0 open-drain pads
     (SK p.34 WKUP_I2C0: 47 pF at the SoC pad, 62 Ohm in series, pull-up on the bus side)
@@ -79,7 +79,7 @@ def build(sch_dir: str) -> Sheet:
                          "into unpowered, non-fail-safe SoC pads and damp edges.")
 
     # ---- open-drain I2C: pins 3/5 (MCU_I2C0) and 27/28 (WKUP_I2C0, HAT ID) ----
-    # SoC pad -- 47 pF to GND -- 62R -- bus (header side) -- pull-up to VCC_3V3_SYS.
+    # SoC pad -- 47 pF to GND -- 62R -- bus (header side) -- pull-up to VDDSHV_MCU.
     # No 33R here: the 62R already sits between the pad and the header.
     sh.column(3200, 9000, [
         (f"R{n}", RES, SOC[3], hdr(3), R62, R62_P),
@@ -94,13 +94,13 @@ def build(sch_dir: str) -> Sheet:
         ("C1403", CAP, SOC[28], "GND", C47P, C47P_P),
     ])
     sh.column(10400, 9000, [
-        (f"R{n + 4}", RES, "VCC_3V3_SYS", hdr(3), "1.8k 1% 0402 (RPi I2C1 value)"),
-        (f"R{n + 5}", RES, "VCC_3V3_SYS", hdr(5), "1.8k 1% 0402 (RPi I2C1 value)"),
-        (f"R{n + 6}", RES, "VCC_3V3_SYS", hdr(27), "3.9k 1% 0402 (HAT ID bus)"),
-        (f"R{n + 7}", RES, "VCC_3V3_SYS", hdr(28), "3.9k 1% 0402 (HAT ID bus)"),
+        (f"R{n + 4}", RES, "VDDSHV_MCU", hdr(3), "1.8k 1% 0402 (RPi I2C1 value)"),
+        (f"R{n + 5}", RES, "VDDSHV_MCU", hdr(5), "1.8k 1% 0402 (RPi I2C1 value)"),
+        (f"R{n + 6}", RES, "VDDSHV_MCU", hdr(27), "3.9k 1% 0402 (HAT ID bus)"),
+        (f"R{n + 7}", RES, "VDDSHV_MCU", hdr(28), "3.9k 1% 0402 (HAT ID bus)"),
     ])
-    sh.note(1500, 9800, "MCU_I2C0 (pins 3/5) and WKUP_I2C0 (pins 27/28) are VDDSHV_MCU = VCC_3V3_SYS, "
-                         "fail-safe open-drain: pull up to VCC_3V3_SYS only.")
+    sh.note(1500, 9800, "MCU_I2C0 (pins 3/5) and WKUP_I2C0 (pins 27/28): separate pull-ups to VDDSHV_MCU (62_CONFIG_5), "
+                         "fail-safe open-drain. Path: ball, 62R, bus with pull-up, J1400.")
     sh.note(1500, 9600, "Place the 47pF + 62R within 5 mm of the SoC balls (slew-rate spec when pulled to 3.3 V); "
                          "pull-ups at the header.")
 
@@ -112,7 +112,7 @@ def build(sch_dir: str) -> Sheet:
     sh.column(18000, 8800, [
         ("C1404", CAP, "VCC_3V3_SYS", "GND", "100nF 16V X7R 0402 (EEPROM, DNP)", {"DNP": "1"}),
         ("R1432", RES, "VCC_3V3_SYS", "HAT_ID_WP", "1k 1% 0402 (WP pull-up, DNP)", {"DNP": "1"}),
-        ("R1433", RES, "VCC_3V3_SYS", "HDR10_UART_RXD", "47k 1% 0402 (UART5 RX idle high, Octavo 62_UART_2)"),
+        ("R1433", RES, "VDDSHV0", "HDR10_UART_RXD", "47k 1% 0402 (UART5 RX idle high, Octavo 62_UART_2)"),
     ])
     sh.add("TP1400", TESTPOINT, 17000, 7700, {"1": "HAT_ID_WP"}, comment="HAT_ID_WP: short to GND to write")
     sh.note(13300, 9800, "HAT-ID EEPROM, I2C 0x50 (A2..A0 = 0). DNP by default: on a Raspberry Pi the ID EEPROM "

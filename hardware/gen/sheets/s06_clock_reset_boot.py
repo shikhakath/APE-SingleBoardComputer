@@ -93,7 +93,7 @@ def build(sch_dir: str) -> Sheet:
     }, comment="SN74LVC1G11DCKR", MPN="SN74LVC1G11DCKR", Manufacturer="Texas Instruments")
     sh.column(5600, 12600, [
         ("C604", CAP, "VDDS_OSC0_1V8", "GND", C100N + " (U601 VCC)"),
-        ("R604", RES, "VCC_3V3_SYS", "JTAG_SRST_N", R10K + " (gate enabled with no debugger)"),
+        ("R604", RES, "VDDSHV_MCU", "JTAG_SRST_N", R10K + " (gate enabled with no debugger)"),
         ("R605", RES, "VDDS_OSC0_1V8", "PORZ_MAN_N", R10K + " (spare input high)"),
         ("C605", CAP, "MCU_PORZ", "GND", C22P + " (glitch filter at ball D6)"),
         ("R606", RES, "MCU_PORZ", "GND", "4.7k 1% 0402 (SK R201; holds PORz low when U601 is unpowered)"),
@@ -107,7 +107,7 @@ def build(sch_dir: str) -> Sheet:
     # ---- warm reset and user buttons through a Schmitt buffer (SK U82) ------
     sh.add("U602", SN74LVC2G17, 4200, 8800, {
         "1": "WARMRST_BTN_N", "3": "USERBTN_SW_N", "2": "GND",
-        "5": "VCC_3V3_SYS", "6": "RESET_REQZ", "4": "USER_BTN_N",
+        "5": "VDDSHV0", "6": "RESET_REQZ", "4": "USER_BTN_N",
     }, comment="SN74LVC2G17DBVR", MPN="SN74LVC2G17DBVR", Manufacturer="Texas Instruments")
     sh.add("SW600", TS1187A, 2000, 6700, {
         "1": "WARMRST_BTN_N", "2": "WARMRST_BTN_N", "3": "GND", "4": "GND",
@@ -116,25 +116,25 @@ def build(sch_dir: str) -> Sheet:
         "1": "USERBTN_SW_N", "2": "USERBTN_SW_N", "3": "GND", "4": "GND",
     }, comment="TS-1187A-B-A-B (USER)", MPN="TS-1187A-B-A-B", Manufacturer="XKB Connection")
     sh.column(5600, 6600, [
-        ("R607", RES, "VCC_3V3_SYS", "WARMRST_BTN_N", R10K),
+        ("R607", RES, "VDDSHV0", "WARMRST_BTN_N", R10K),
         ("C606", CAP, "WARMRST_BTN_N", "GND", C100N + " (debounce)"),
         ("D600", TVS_BI, "WARMRST_BTN_N", "GND", "TPD1E10B06DPYR",
          {"MPN": "TPD1E10B06DPYR", "Manufacturer": "Texas Instruments"}),
-        ("R608", RES, "VCC_3V3_SYS", "USERBTN_SW_N", R10K),
+        ("R608", RES, "VDDSHV0", "USERBTN_SW_N", R10K),
         ("C607", CAP, "USERBTN_SW_N", "GND", C100N + " (debounce)"),
         ("D601", TVS_BI, "USERBTN_SW_N", "GND", "TPD1E10B06DPYR",
          {"MPN": "TPD1E10B06DPYR", "Manufacturer": "Texas Instruments"}),
     ])
     sh.column(9300, 8700, [
-        ("C608", CAP, "VCC_3V3_SYS", "GND", C100N + " (U602 VCC)"),
-        ("R609", RES, "VCC_3V3_SYS", "RESET_REQZ", R10K + " (Octavo 62_RESET_6)"),
+        ("C608", CAP, "VDDSHV0", "GND", C100N + " (U602 VCC)"),
+        ("R609", RES, "VDDSHV0", "RESET_REQZ", R10K + " (Octavo 62_RESET_6)"),
         ("C609", CAP, "RESET_REQZ", "GND", C22P + " (glitch filter at ball D17)"),
     ])
     sh.note(800, 9500, "Buttons: 10k + 100nF RC into the Schmitt buffer (tau 1 ms). ESD diode at each button. Power button is on sheet 02.")
 
     # ---- reset status / error pins ------------------------------------------
     sh.column(5600, 3600, [
-        ("R610", RES, "VCC_3V3_SYS", "MCU_RESETZ", R10K + " (VDDSHV_MCU)"),
+        ("R610", RES, "VDDSHV_MCU", "MCU_RESETZ", R10K + " (Octavo 62_CONFIG_4, 62_RESET_4)"),
         ("R611", RES, "RESETSTATZ", "GND", "1k 1% 0402 (holds PHY/SD in reset against the PHY 9k pull-up; SoC load 3.3 mA)"),
         ("R612", RES, "PORZ_OUT", "GND", R10K + " (holds peripherals in reset)"),
         ("R613", RES, "MCU_ERRORN", "GND", R10K + " (DS Table 5-74: pull-down)"),
@@ -158,7 +158,7 @@ def build(sch_dir: str) -> Sheet:
         net = BOOT_NET[b]
         one = bit(b) == 1
         tag = f"B{b} = {bit(b)}: {BOOT_MEANING[b]}"
-        pu.append((f"R{n}", RES, "VCC_3V3_SYS", net, R10K + (" " if one else " DNP ") + f"({tag})",
+        pu.append((f"R{n}", RES, "VDDSHV3", net, R10K + (" " if one else " DNP ") + f"({tag})",
                    {} if one else DNP))
         pd.append((f"R{n + 1}", RES, net, "GND", R10K + (" DNP " if one else " ") + f"({tag})",
                    DNP if one else {}))
@@ -166,7 +166,7 @@ def build(sch_dir: str) -> Sheet:
     sh.column(12300, y_rows, pu)
     sh.column(14800, y_rows, pd)
     sh.note(11000, 13500, "BOOTMODE straps, default 0x0643 = 25 MHz, primary MMCSD port 1 (SD, FAT), backup USB DFU.")
-    sh.note(11000, 13300, "Pull-ups to VCC_3V3_SYS (= VDDSHV3). Both pads on every fixed bit, one fitted. Latched at PORz_OUT rising.")
+    sh.note(11000, 13300, "Pull-ups to VDDSHV3 (Octavo 62_BOOT_1). Both pads on every fixed bit, one fitted. Latched at PORz_OUT rising.")
     sh.note(11000, 13100, "B8-B15 are DPI_D16..23 (HDMI data): fixed 10k only. The TFP410 must not drive them while the SoC is in reset.")
 
     # DIP bits B3..B6: 47k default pull + 1k through the switch to the other rail.
@@ -176,13 +176,13 @@ def build(sch_dir: str) -> Sheet:
     k_ser, k_def = [], []
     for pos, b in enumerate(DIP_BITS, start=1):
         node = f"BOOT_SW{b}"
-        to_rail = "GND" if bit(b) else "VCC_3V3_SYS"
+        to_rail = "GND" if bit(b) else "VDDSHV3"
         sw_nets[str(pos)] = to_rail
         sw_nets[str(9 - pos)] = node
         on_val = 1 - bit(b)
         k_ser.append((f"R{n}", RES, node, BOOT_NET[b],
                       f"1k 1% 0402 (DIP pos {pos} ON -> B{b} = {on_val})"))
-        k_def.append((f"R{n + 1}", RES, "VCC_3V3_SYS" if bit(b) else BOOT_NET[b],
+        k_def.append((f"R{n + 1}", RES, "VDDSHV3" if bit(b) else BOOT_NET[b],
                       BOOT_NET[b] if bit(b) else "GND",
                       f"47k 1% 0402 (B{b} OFF = {bit(b)})"))
         n += 2

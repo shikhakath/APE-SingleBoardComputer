@@ -13,7 +13,7 @@ References:
   * AM625 DS SPRSP58C Table 5-74: TRSTn pulled down; EMU0/1, TCK, TDI, TMS pulled up
   * docs/research/bom/processor-clocks-debug-misc.md (Debug section)
 
-UART channel map (data/pinmux_allocation.csv; all SoC pads at 3.3 V on VCC_3V3_SYS):
+UART channel map (data/pinmux_allocation.csv; all SoC pads at 3.3 V):
   A = MAIN_UART0 (Linux console, VDDSHV0)     B = MAIN_UART1 (TIFS, VDDSHV0)
   C = MCU_UART0 (MCU+ SDK, VDDSHV_CANUART)    D = WKUP_UART0 (DM R5, VDDSHV_CANUART)
 Net naming: FTx_TXD / FTx_RXD are the FT4232 pins (FTDI view). FTx_TXD reaches the SoC
@@ -157,7 +157,7 @@ def build(sch_dir: str) -> Sheet:
 
     # ---- isolation buffers -------------------------------------------------
     # A port = FT4232 side (VCCA = VCC_3V3_DBG, also supplies DIR/OE), B port = SoC side
-    # (VCCB = VCC_3V3_SYS). Half 1 (DIR high, A->B): FTDI TXD -> SoC RXD.
+    # (VCCB = the SoC IO bank: VDDSHV0 on U1504, VDDSHV_CANUART on U1505). Half 1 (DIR high, A->B): FTDI TXD -> SoC RXD.
     # Half 2 (DIR low, B->A): SoC TXD -> FTDI RXD.
     for i, desig in enumerate(("U1504", "U1505")):
         (c1, rx1, tx1), (c2, rx2, tx2) = UARTS[2 * i], UARTS[2 * i + 1]
@@ -165,27 +165,28 @@ def build(sch_dir: str) -> Sheet:
             "1": "VCC_3V3_DBG", "2": "VCC_3V3_DBG", "3": "GND",
             "15": "DBG_BUF_OE_N", "14": "DBG_BUF_OE_N",
             "4": f"FT{c1}_TXD", "5": f"FT{c2}_TXD", "6": f"FT{c1}_RXD", "7": f"FT{c2}_RXD",
-            "8": "GND", "9": "GND", "16": "VCC_3V3_SYS",
+            "8": "GND", "9": "GND", "16": ("VDDSHV0", "VDDSHV_CANUART")[i],
             "13": rx1, "12": rx2, "11": tx1, "10": tx2,
         }, comment="SN74AVC4T245PWR", MPN="SN74AVC4T245PWR", Manufacturer="Texas Instruments")
     pulls = []
     n = 1511
     for _, rx, tx in UARTS:
-        pulls.append((f"R{n}", RES, "VCC_3V3_SYS", rx, "10k 1% 0402 (SoC RXD pull-up)"))
-        pulls.append((f"R{n + 1}", RES, "VCC_3V3_SYS", tx, "10k 1% 0402 (SoC TXD pull-up)"))
+        bank = "VDDSHV0" if "MAIN" in rx else "VDDSHV_CANUART"
+        pulls.append((f"R{n}", RES, bank, rx, "10k 1% 0402 (SoC RXD pull-up)"))
+        pulls.append((f"R{n + 1}", RES, bank, tx, "10k 1% 0402 (SoC TXD pull-up)"))
         n += 2
     sh.column(25600, 20400, pulls + [
         ("C1522", CAP, "VCC_3V3_DBG", "GND", C100N + " (U1504 VCCA)"),
-        ("C1523", CAP, "VCC_3V3_SYS", "GND", C100N + " (U1504 VCCB)"),
+        ("C1523", CAP, "VDDSHV0", "GND", C100N + " (U1504 VCCB)"),
         ("C1524", CAP, "VCC_3V3_DBG", "GND", C100N + " (U1505 VCCA)"),
-        ("C1525", CAP, "VCC_3V3_SYS", "GND", C100N + " (U1505 VCCB)"),
+        ("C1525", CAP, "VDDSHV_CANUART", "GND", C100N + " (U1505 VCCB)"),
     ])
     sh.note(20000, 15600, "Isolation: SN74AVC4T245 VCC isolation puts both ports in Hi-Z when either VCCA "
                           "(debug cable) or VCCB (SoC IO) is at 0 V; Ioff < 5 uA,")
     sh.note(20000, 15400, "so a powered debug cable never drives an unpowered SoC pad and vice versa. "
                           "OE# = FT4232 PWREN#: high (Hi-Z) until the host configures the FT4232,")
-    sh.note(20000, 15200, "and pulled up to VCCA by R1505 during cable plug-in. B outputs swing to VCCB = "
-                          "VCC_3V3_SYS, the same rail as the SoC pads. Always-on: remove R1530, fit R1506.")
+    sh.note(20000, 15200, "and pulled up to VCCA by R1505 during cable plug-in. B outputs swing to VCCB, "
+                          "the same rail as the SoC pads. Always-on: remove R1530, fit R1506.")
 
     # ---- JTAG: Tag-Connect TC2070 (TI 14-pin) ------------------------------
     sh.add("J1501", TC2070, 22500, 11500, {
@@ -198,14 +199,14 @@ def build(sch_dir: str) -> Sheet:
     sh.column(18000, 12000, [
         ("R1520", RES, "JTAG_TDO", "JTAG_TDO_TC", "22R 1% 0402 (TDO, near SoC)"),
         ("R1521", RES, "JTAG_TCK", "JTAG_RTCK_TC", "22R 1% 0402 (RTCK loopback)"),
-        ("R1522", RES, "VCC_3V3_SYS", "JTAG_VTREF", "100R 1% 0402 (VTref current limit)"),
-        ("R1523", RES, "VCC_3V3_SYS", "JTAG_TCK", "10k 1% 0402"),
-        ("R1524", RES, "VCC_3V3_SYS", "JTAG_TMS", "10k 1% 0402"),
-        ("R1525", RES, "VCC_3V3_SYS", "JTAG_TDI", "10k 1% 0402"),
-        ("R1526", RES, "VCC_3V3_SYS", "EMU0", "10k 1% 0402"),
-        ("R1527", RES, "VCC_3V3_SYS", "EMU1", "10k 1% 0402"),
+        ("R1522", RES, "VDDSHV_MCU", "JTAG_VTREF", "100R 1% 0402 (VTref current limit)"),
+        ("R1523", RES, "VDDSHV_MCU", "JTAG_TCK", "10k 1% 0402"),
+        ("R1524", RES, "VDDSHV_MCU", "JTAG_TMS", "10k 1% 0402"),
+        ("R1525", RES, "VDDSHV_MCU", "JTAG_TDI", "10k 1% 0402"),
+        ("R1526", RES, "VDDSHV_MCU", "EMU0", "10k 1% 0402"),
+        ("R1527", RES, "VDDSHV_MCU", "EMU1", "10k 1% 0402"),
         ("R1528", RES, "JTAG_TRSTN", "GND", "4.7k 1% 0402 (TRSTn pull-down)"),
-        ("R1529", RES, "VCC_3V3_SYS", "JTAG_SRST_N", "4.7k 0402 DNP (sheet 06 R604 already pulls SRST up)", {"DNP": "1"}),
+        ("R1529", RES, "VDDSHV_MCU", "JTAG_SRST_N", "4.7k 0402 DNP (sheet 06 R604 already pulls SRST up)", {"DNP": "1"}),
     ])
     sh.add("U1510", TPD4E05U06, 27000, 11500, {
         "1": "JTAG_TCK", "2": "JTAG_TMS", "4": "JTAG_TDI", "5": "JTAG_TDO_TC",

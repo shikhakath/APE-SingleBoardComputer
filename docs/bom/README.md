@@ -122,6 +122,10 @@ The CSV still has these known differences from the schematic. The schematic is r
 
 47 parts are DNP, and the `Production` project variant marks them Not Fitted. Generate BOM and pick-and-place outputs from that variant. R816 and R824–R837 (15 DNP resistors on the Ethernet sheet) no longer exist, and R603 is 10 MΩ. None of these were priced, so cost is unchanged. The eMMC reset gate U703 uses one of the five SN74LVC1G08 already priced, and its 100 nF capacitor C705 adds under $0.01.
 
+### After the 2026-11-04 update (726 placed parts)
+
+Sheet 03 gains eight 0 Ω links `R303`-`R310` (0402WGF0000TCE, C17168, 6.79M at LCSC), bead `FB311` (BLM15PX121SN1D, C88970) and 1 µF `C361`, about $0.05 in all. The VMON divider is now `R301` 40.2 kΩ (0402WGF4022TCE, C25893, 145k at LCSC) and `R302` 4.87 kΩ (0402WGF4871TCE, C25902, 2000 at LCSC, the lowest stock of the group; stock read 2026-11-04). The line items below are not re-priced.
+
 ## Line items (140 placed lines)
 
 Plug-in modules and PCB/assembly fees are included as lines. Prices are USD per unit at the 10-board break.

@@ -9,9 +9,9 @@ This folder builds the APE-SBC Altium schematic and libraries from Python. Symbo
 
 Section 8 lists what that run proved and fixed.
 
-**PCB set up (2026-10-20), [section 11](#11-pcb-setup):** `build.py pcb` gives `PCB.PcbDoc` the 100 × 70 mm outline, the JLC06161H-3313 6-layer stack, three impedance profiles, net and differential-pair classes, the SiP room and the design rules, and imports the schematic. All 707 parts (660 fitted, 47 DNP) arrive with their footprints, 449 nets, and every pad's net matches the generator. Placement has not started.
+**PCB set up (2026-10-20), [section 11](#11-pcb-setup):** `build.py pcb` gives `PCB.PcbDoc` the 100 × 70 mm outline, the JLC06161H-3313 6-layer stack, three impedance profiles, net and differential-pair classes, the SiP room and the design rules, and imports the schematic. All 707 parts (660 fitted, 47 DNP) arrive with their footprints, 449 nets, and every pad's net matched the generator at that point. The sheets have since moved to 717 parts and 458 nets (2026-11-04); the next Update PCB brings those in.
 
-**Schematic v0.1:** 16 sheets, 707 designators, 449 nets. `build.py check` passes with no single-node nets, no accidental connections and no overlaps. Open questions are in [`docs/schematic-open-items.md`](../../docs/schematic-open-items.md).
+**Schematic v0.1:** 16 sheets, 717 designators, 458 nets. `build.py check` passes with no single-node nets, no accidental connections and no overlaps. Open questions are in [`docs/schematic-open-items.md`](../../docs/schematic-open-items.md).
 
 | Sheet | Content |
 |---|---|

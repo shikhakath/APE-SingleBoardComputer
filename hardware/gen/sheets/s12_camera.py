@@ -35,8 +35,8 @@ def build(sch_dir: str) -> Sheet:
         ("C1203", CAP, "VCC_3V3_SYS", "GND", "100nF 16V X7R 0402 (bead input)"),
     ], pitch=300)
     sh.column(10500, 11600, [
-        ("R1200", RES, "VCC_3V3_SYS", "CAM_I2C_SCL", "2.2k 0402 (I2C2 pull-up)"),
-        ("R1201", RES, "VCC_3V3_SYS", "CAM_I2C_SDA", "2.2k 0402 (I2C2 pull-up)"),
+        ("R1200", RES, "VDDSHV3", "CAM_I2C_SCL", "2.2k 0402 (I2C2 pull-up)"),
+        ("R1201", RES, "VDDSHV3", "CAM_I2C_SDA", "2.2k 0402 (I2C2 pull-up)"),
         ("R1202", RES, "CAM_IO0", "GND", "10k 0402 (camera off in reset)"),
         ("R1203", RES, "CAM_IO1", "CAM_FPC_IO1", "0R 0402 DNP (fit for camera LED control)", {"DNP": "1"}),
     ], pitch=300)

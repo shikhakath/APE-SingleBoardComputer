@@ -10,7 +10,7 @@ References:
 
 Decisions:
   * eMMC module VCC (3.3 V) and VCCQ (1.8 V) come straight from VCC_3V3_SYS and
-    VDD_1V8 (no load switch). Both are PMIC-sequenced, so the module is power-cycled
+    VDDSHV4 (no load switch). Both are PMIC-sequenced, so the module is power-cycled
     on every PMIC off/on and cold reset; it keeps the BOM to in-stock basics and
     avoids back-powering the module through the 1.8 V pull-ups. U703 drives RST_n from
     AND(RESETSTATz, GPIO), which acts where the module wires RST_n and enables it.
@@ -41,7 +41,7 @@ def build(sch_dir: str) -> Sheet:
         "6": "EMMC_D0", "29": "EMMC_D1", "27": "EMMC_D2", "10": "EMMC_D3",
         "4": "EMMC_D4", "2": "EMMC_D5", "33": "EMMC_D6", "31": "EMMC_D7",
         "25": "EMMC_CMD", "8": "EMMC_MOD_CLK", "12": "EMMC_MOD_RST_N", "15": "EMMC_MOD_DS",
-        "20": "VDD_1V8", "21": "VDD_1V8", "22": "VCC_3V3_SYS", "23": "VCC_3V3_SYS",
+        "20": "VDDSHV4", "21": "VDDSHV4", "22": "VCC_3V3_SYS", "23": "VCC_3V3_SYS",
         **{p: "GND" for p in ("1", "3", "5", "7", "9", "11", "13", "14", "16", "17", "18", "19",
                               "24", "26", "28", "30", "32", "34")},
     }, comment="GB042-34P-H10-E3000", MPN="GB042-34P-H10-E3000", Manufacturer="LS Mtron",
@@ -53,15 +53,15 @@ def build(sch_dir: str) -> Sheet:
 
     # MMC0 data/CMD pull-ups at the connector end (no stubs), CLK has none.
     sh.column(7600, 15900, [
-        ("R701", RES, "VDD_1V8", "EMMC_CMD", "47k 0402"),
-        ("R702", RES, "VDD_1V8", "EMMC_D0", "47k 0402"),
-        ("R703", RES, "VDD_1V8", "EMMC_D1", "47k 0402"),
-        ("R704", RES, "VDD_1V8", "EMMC_D2", "47k 0402"),
-        ("R705", RES, "VDD_1V8", "EMMC_D3", "47k 0402"),
-        ("R706", RES, "VDD_1V8", "EMMC_D4", "47k 0402"),
-        ("R707", RES, "VDD_1V8", "EMMC_D5", "47k 0402"),
-        ("R708", RES, "VDD_1V8", "EMMC_D6", "47k 0402"),
-        ("R709", RES, "VDD_1V8", "EMMC_D7", "47k 0402"),
+        ("R701", RES, "VDDSHV4", "EMMC_CMD", "47k 0402"),
+        ("R702", RES, "VDDSHV4", "EMMC_D0", "47k 0402"),
+        ("R703", RES, "VDDSHV4", "EMMC_D1", "47k 0402"),
+        ("R704", RES, "VDDSHV4", "EMMC_D2", "47k 0402"),
+        ("R705", RES, "VDDSHV4", "EMMC_D3", "47k 0402"),
+        ("R706", RES, "VDDSHV4", "EMMC_D4", "47k 0402"),
+        ("R707", RES, "VDDSHV4", "EMMC_D5", "47k 0402"),
+        ("R708", RES, "VDDSHV4", "EMMC_D6", "47k 0402"),
+        ("R709", RES, "VDDSHV4", "EMMC_D7", "47k 0402"),
     ])
     # CLK series resistor at the SoC end; CLK and data-strobe pull-downs at the
     # connector (SK p.20 R398/R393: defined low while the clock is stopped and
@@ -70,28 +70,28 @@ def build(sch_dir: str) -> Sheet:
         ("R700", RES, "EMMC_CLK", "EMMC_MOD_CLK", "22R 0402 (at SoC; 0R option)"),
         ("R712", RES, "EMMC_MOD_CLK", "GND", "10k 0402 (CLK pull-down, at pin 8)"),
         ("R713", RES, "EMMC_MOD_DS", "GND", "10k 0402 (strobe pull-down)"),
-        ("R710", RES, "VDD_1V8", "EMMC_RST_N", "10k 0402 (GPIO pull-up: reset follows RESETSTATz by default)"),
+        ("R710", RES, "VDDSHV1", "EMMC_RST_N", "10k 0402 (GPIO pull-up: reset follows RESETSTATz by default)"),
         ("R711", RES, "EMMC_GATED_RST_N", "EMMC_MOD_RST_N", "1k 0402 (RST_n link, see note)"),
     ])
     # Connector decoupling: VCC 3.3 V pins 22/23, VCCQ 1.8 V pins 20/21.
     sh.column(11000, 13700, [
         ("C700", CAP, "VCC_3V3_SYS", "GND", C10U + " (VCC)"),
         ("C701", CAP, "VCC_3V3_SYS", "GND", C100N + " (VCC)"),
-        ("C702", CAP, "VDD_1V8", "GND", C4U7 + " (VCCQ)"),
-        ("C703", CAP, "VDD_1V8", "GND", C100N + " (VCCQ pin 20)"),
-        ("C704", CAP, "VDD_1V8", "GND", C100N + " (VCCQ pin 21)"),
+        ("C702", CAP, "VDDSHV4", "GND", C4U7 + " (VCCQ)"),
+        ("C703", CAP, "VDDSHV4", "GND", C100N + " (VCCQ pin 20)"),
+        ("C704", CAP, "VDDSHV4", "GND", C100N + " (VCCQ pin 21)"),
     ])
     # eMMC reset (Octavo 62_EMMC_9, SK p.20 U58): AND of RESETSTATz and the pulled-up
     # GPIO. Powered from VCCQ, so its 5.5 V tolerant inputs also shift RESETSTATz to 1.8 V.
     sh.add("U703", SN74LVC1G08, 15000, 12600, {
-        "1": "EMMC_RST_N", "2": "RESETSTATZ", "3": "GND", "4": "EMMC_GATED_RST_N", "5": "VDD_1V8",
+        "1": "EMMC_RST_N", "2": "RESETSTATZ", "3": "GND", "4": "EMMC_GATED_RST_N", "5": "VDDSHV4",
     }, comment="SN74LVC1G08DBVR", MPN="SN74LVC1G08DBVR", Manufacturer="Texas Instruments", LCSC="C7666")
-    sh.column(18200, 12500, [("C705", CAP, "VDD_1V8", "GND", C100N + " (U703 VCC)")])
+    sh.column(18200, 12500, [("C705", CAP, "VDDSHV4", "GND", C100N + " (U703 VCC)")])
     nx, ny = 14200, 16200
     for i, t in enumerate([
         "eMMC module (GB042 Odroid/Radxa/PINE64 standard). Do not hot-plug.",
-        "VCC/VCCQ fed directly from VCC_3V3_SYS / VDD_1V8 (no load switch): module",
-        "  power-cycles with the PMIC; pull-ups share VDD_1V8 so nothing back-powers it.",
+        "VCC from VCC_3V3_SYS, VCCQ from VDDSHV4 (no load switch): module",
+        "  power-cycles with the PMIC; pull-ups share VDDSHV4 so nothing back-powers it.",
         "MMC0 HS200: keep host traces <= 40 mm, matched <= 8 ps; connector next to SiP.",
         "  Module routing is unknown - drop to HS/DDR52 in DT if a module is marginal.",
         "R700 22R at the SoC ball (0R option); pulls at the connector pins, no stubs.",
@@ -145,7 +145,7 @@ def build(sch_dir: str) -> Sheet:
         ("R732", RES, "SD_SOCK_CLK", "GND", "10k 0402 (CLK pull-down, Octavo 62_SD_10)"),
         ("R729", RES, "SD_CLK", "SD_SOCK_CLK", "0R 0402 (at SoC; 22R option)"),
         ("R730", RES, "SD_SOCK_CD_N", "SD_CD_N", "100R 0402 (SDCD series)"),
-        ("R731", RES, "VCC_3V3_SYS", "SD_SOCK_CD_N", "47k 0402 (SDCD pull-up)"),
+        ("R731", RES, "VDDSHV0", "SD_SOCK_CD_N", "47k 0402 (SDCD pull-up)"),
     ])
     # ESD at the socket: 8 channels = CLK, CMD, DAT0-3, CD, card VDD.
     sh.add("U701", TPD4E05U06, 14600, 8600, {
@@ -168,7 +168,7 @@ def build(sch_dir: str) -> Sheet:
         "  ON VIH is only 1.2 V: if RESETSTATZ floats early in power-up (R815 on sheet 08 lifts it",
         "  to ~1.5 V) the switch may start; it turns off as soon as the SoC drives RESETSTATz low.",
         "Card VDD kept at 2.2 uF + 0.1 uF (SK) so QOD discharges it within a warm reset.",
-        "SD_CD_N: 100R series + 47k to VCC_3V3_SYS (VDDSHV0 pad); card present = LOW.",
+        "SD_CD_N: 100R series + 47k to VDDSHV0 (Octavo 62_SD_7); card present = LOW.",
         "  Verify on a TF-01A sample that the Cd spring closes to the shell on insertion.",
         "ESD U701/U702 at the socket; NC pins 6/7/9/10 left open (flow-through pads).",
         "SD CLK: R729 0R at the SoC, R732 10k pull-down (Octavo 62_SD_10), R728 pull-up DNP (SK).",

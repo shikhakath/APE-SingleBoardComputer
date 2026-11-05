@@ -55,8 +55,8 @@ def build(sch_dir: str) -> Sheet:
 
     # ---- I2C0 pull-ups (one set for the whole bus) -----------------------------
     sh.column(12500, 15700, [
-        ("R1605", RES, "VCC_3V3_SYS", "I2C0_SCL_BUS", "2.2k 1% 0402 (I2C0 SCL pull-up)"),
-        ("R1606", RES, "VCC_3V3_SYS", "I2C0_SDA_BUS", "2.2k 1% 0402 (I2C0 SDA pull-up)"),
+        ("R1605", RES, "VDDSHV0", "I2C0_SCL_BUS", "2.2k 1% 0402 (I2C0 SCL pull-up)"),
+        ("R1606", RES, "VDDSHV0", "I2C0_SDA_BUS", "2.2k 1% 0402 (I2C0 SDA pull-up)"),
         ("R1620", RES, "I2C0_SCL", "I2C0_SCL_BUS", "47R 1% 0402 (series at the SoC ball, SK p.44)"),
         ("R1621", RES, "I2C0_SDA", "I2C0_SDA_BUS", "47R 1% 0402 (series at the SoC ball, SK p.44)"),
     ])

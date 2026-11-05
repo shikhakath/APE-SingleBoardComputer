@@ -15,10 +15,19 @@ Rail decisions:
     VDDA_MCU and VDDA_PLL0/1/2 take 1 uF + 0.1 uF (Octavo Table 4-3 size columns, SK p.17):
     with 4.7 uF there, LDO3 would carry 32 uF, over its 30 uF slow-ramp limit
     (TPS65219 DS Table 8-3, LDO3_SLOW_PU_RAMP = 1 in SLVUCL1A).
-  * VDDS_OSC0 (also the MCU_PORz and MCU_ERRORn IO domain) is on VDD_1V8 (Buck2),
-    together with the 25 MHz oscillator and the MCU_PORz gate on sheet 06 (Octavo
-    62_CLOCK_2: same rail). The SK puts VDDS_OSC0 on VDDA_1V8 (p.15); see the review
-    open item about a filtered branch.
+  * VDDS_OSC0 (also the MCU_PORz and MCU_ERRORn IO domain) has its own bead from VDDA_1V8,
+    shared with the 25 MHz oscillator and the MCU_PORz gate on sheet 06 (Octavo 62_CLOCK_2:
+    same rail; 62_POWER_4 group 2).
+  * VDDA_TEMP shares the VDDA_MCU bead and VDDA_3P3_USB has its own bead from VCC_3V3_SYS
+    (Octavo 62_POWER_4 groups 3 and 5).
+  * Every VDDSHV bank is a named net, fed through a 0 Ohm link (R303-R310) from VCC_3V3_SYS
+    or VDD_1V8. Pull-ups and IO supplies on the other sheets go to the net of the bank that
+    powers the SoC ball, as the Octavo checklist words it (for example 62_CONFIG_4: MCU_RESETz
+    to VDDSHV_MCU). The link pads double as the rail probe points of 62_ALL_2.
+  * VDDSHV_CANUART stays on the switched 3.3 V rail: no Partial-IO, so AM625 DS Table 6-5
+    note 3 asks only for a valid IO source that ramps with the other 3.3 V supplies. An
+    always-on feed (as on the SK) would also need an always-on VDD_CANUART, because rails
+    may only stay up across a power cycle in that Partial-IO configuration (DS 6.12.2.2).
   * VPP (eFuse) goes to VPP_EFUSE_1V8 - normally off (LDO on sheet 02 is DNP).
   * OLDI0 is unused but VDDA_1P8_OLDI0 must still be powered (pinmux notes).
 """
@@ -29,6 +38,7 @@ C100N = "100nF 16V X7R 0402"
 C1U = "1uF 10V X5R 0402"
 C4U7 = "4.7uF 10V X5R 0402"
 C10U = "10uF 10V X5R 0603"
+R0_P = {"MPN": "0402WGF0000TCE", "Manufacturer": "UNI-ROYAL", "LCSC": "C17168"}
 BEAD_A = "BLM15PX121SN1D 120R@100MHz 2A"
 BEAD_C = "BLM18SG260TN1D 26R@100MHz 6A"
 
@@ -49,21 +59,21 @@ RAILS = {
     "VDDA_1P8_CSIRX0": "VDDA_1V8_CSI",
     "VDDA_1P8_OLDI0": "VDDA_1V8_OLDI",
     "VDDA_1P8_USB": "VDDA_1V8_USB",
-    "VDDA_TEMP": "VDDA_1V8",
-    "VDDA_3P3_USB": "VCC_3V3_SYS",
+    "VDDA_TEMP": "VDDA_1V8_MCU",
+    "VDDA_3P3_USB": "VDDA_3P3_USB",
     "VMON_1P8_SOC": "VDD_1V8",
     "VMON_3P3_SOC": "VCC_3V3_SYS",
     "VMON_VSYS": "VMON_VSYS",
     "VPP": "VPP_EFUSE_1V8",
-    "VDDSHV0": "VCC_3V3_SYS",
-    "VDDSHV1": "VDD_1V8",
-    "VDDSHV2": "VCC_3V3_SYS",
-    "VDDSHV3": "VCC_3V3_SYS",
-    "VDDSHV4": "VDD_1V8",
+    "VDDSHV0": "VDDSHV0",
+    "VDDSHV1": "VDDSHV1",
+    "VDDSHV2": "VDDSHV2",
+    "VDDSHV3": "VDDSHV3",
+    "VDDSHV4": "VDDSHV4",
     "VDDSHV5": "VDDSHV5_SD",
-    "VDDSHV6": "VDD_1V8",
-    "VDDSHV_MCU": "VCC_3V3_SYS",
-    "VDDSHV_CANUART": "VCC_3V3_SYS",
+    "VDDSHV6": "VDDSHV6",
+    "VDDSHV_MCU": "VDDSHV_MCU",
+    "VDDSHV_CANUART": "VDDSHV_CANUART",
 }
 
 
@@ -95,11 +105,29 @@ def build(sch_dir: str) -> Sheet:
         ("FB310", FB, "VDDA_1V8", "VDDS_OSC0_1V8", BEAD_A + " (VDDS_OSC0, 25 MHz osc, PORz gate)"),
     ])
 
-    # ---- VMON_VSYS: 5 V divider, 0.45 V threshold -> trips at ~4.54 V ----
+    # ---- IO-domain rails: one named net per VDDSHV bank (see the module docstring) ----
+    sh.note(6200, 9900, "IO-domain rails: pull-ups go to the net of the bank that powers the ball.")
+    sh.column(8500, 9500, [
+        ("R303", RES, "VCC_3V3_SYS", "VDDSHV0", "0R 0402 (UART0/1, I2C0/1, resets, SDCD)", R0_P),
+        ("R304", RES, "VDD_1V8", "VDDSHV1", "0R 0402 (OSPI balls: BT UART, eMMC GPIO)", R0_P),
+        ("R305", RES, "VCC_3V3_SYS", "VDDSHV2", "0R 0402 (RGMII, MDIO, PHY VDDIO)", R0_P),
+        ("R306", RES, "VCC_3V3_SYS", "VDDSHV3", "0R 0402 (DPI, GPMC, BOOTMODE)", R0_P),
+        ("R307", RES, "VDD_1V8", "VDDSHV4", "0R 0402 (MMC0, eMMC VCCQ)", R0_P),
+        ("R308", RES, "VDD_1V8", "VDDSHV6", "0R 0402 (MMC2, M.2 SDIO)", R0_P),
+        ("R309", RES, "VCC_3V3_SYS", "VDDSHV_MCU", "0R 0402 (MCU_RESETz, JTAG, MCU/WKUP_I2C0)", R0_P),
+        ("R310", RES, "VCC_3V3_SYS", "VDDSHV_CANUART", "0R 0402 (MCU/WKUP_UART0, PMIC_LPM_EN0)", R0_P),
+        ("FB311", FB, "VCC_3V3_SYS", "VDDA_3P3_USB", BEAD_A + " (62_POWER_4 group 5)"),
+    ])
+
+    # ---- VMON_VSYS: 62_CONFIG_6 / AM625 DS Fig 8-5 divider on the 5 V system supply. 0.45 V +-3%,
+    #      1% resistors, 2.5 uA leakage: trips between 3.97 V and 4.47 V (DS method). The figure's
+    #      4.81k is not an E96 value; 4.87k keeps the maximum trip under the 4.5 V (5 V - 10%) target.
     sh.column(3000, 9800, [
-        ("R301", RES, "VCC_5V0", "VMON_VSYS", "10k 1% 0402"),
-        ("R302", RES, "VMON_VSYS", "GND", "1.1k 1% 0402"),
-        ("C300", CAP, "VMON_VSYS", "GND", "22pF 50V C0G 0402"),
+        ("R301", RES, "VCC_5V0", "VMON_VSYS", "40.2k 1% 0402 (R2)",
+         {"MPN": "0402WGF4022TCE", "Manufacturer": "UNI-ROYAL", "LCSC": "C25893"}),
+        ("R302", RES, "VMON_VSYS", "GND", "4.87k 1% 0402 (R1)",
+         {"MPN": "0402WGF4871TCE", "Manufacturer": "UNI-ROYAL", "LCSC": "C25902"}),
+        ("C300", CAP, "VMON_VSYS", "GND", "22pF 50V C0G 0402 (C1)"),
     ])
 
     # ---- rail test points (Octavo checklist 62_ALL_2) -------------------------
@@ -121,14 +149,14 @@ def build(sch_dir: str) -> Sheet:
     for net in ("VDDA_1V8_CSI", "VDDA_1V8_USB"):
         analog += [(net, C4U7), (net, C100N)]
     analog += [("VDDA_1V8_OLDI", C1U), ("VDDA_1V8_OLDI", C100N),
-               ("VDDA_1V8", C100N + " (VDDA_TEMP ball)"),
+               ("VDDA_1V8_MCU", C100N + " (VDDA_TEMP ball)"),
                ("VDDS_OSC0_1V8", C1U + " (VDDS_OSC0)"), ("VDDS_OSC0_1V8", C100N + " (VDDS_OSC0)"),
-               ("VCC_3V3_SYS", C100N + " (VDDA_3P3_USB)")]
+               ("VDDA_3P3_USB", C100N + " (VDDA_3P3_USB)")]
     io = []
-    for rail, note in (("VCC_3V3_SYS", "VDDSHV0"), ("VDD_1V8", "VDDSHV1"), ("VCC_3V3_SYS", "VDDSHV2"),
-                       ("VCC_3V3_SYS", "VDDSHV3"), ("VDD_1V8", "VDDSHV4"), ("VDDSHV5_SD", "VDDSHV5"),
-                       ("VDD_1V8", "VDDSHV6"), ("VCC_3V3_SYS", "VDDSHV_MCU"),
-                       ("VCC_3V3_SYS", "VDDSHV_CANUART")):
+    for rail, note in (("VDDSHV0", "VDDSHV0"), ("VDDSHV1", "VDDSHV1"), ("VDDSHV2", "VDDSHV2"),
+                       ("VDDSHV3", "VDDSHV3"), ("VDDSHV4", "VDDSHV4"), ("VDDSHV5_SD", "VDDSHV5"),
+                       ("VDDSHV6", "VDDSHV6"), ("VDDSHV_MCU", "VDDSHV_MCU"),
+                       ("VDDSHV_CANUART", "VDDSHV_CANUART")):
         io += [(rail, f"{C1U} ({note})"), (rail, f"{C100N} ({note})")]
     vpp = [("VPP_EFUSE_1V8", C1U + " (VPP, DNP)", {"DNP": "1"}),
            ("VPP_EFUSE_1V8", C1U + " (VPP, DNP)", {"DNP": "1"}),
@@ -145,6 +173,8 @@ def build(sch_dir: str) -> Sheet:
             entries.append((f"C{n}", CAP, net, "GND", comment, params))
             n += 1
         sh.column(x, 15400, entries, pitch=400)
+    assert n == 361, n
+    sh.column(20000, 14200, [("C361", CAP, "VDDA_3P3_USB", "GND", C1U + " (VDDA_3P3_USB, FB311 output)")])
 
     sh.note(12000, 16200, "Decoupling per OSD62x-PM DS Rev 2.0 Table 4-3. Caps may sit on either side; none needed under the BGA.")
     sh.note(12000, 16000, "VDD_CORE and VDDA_CORE_USB must stay within 1% - keep the beads and their traces low-resistance.")

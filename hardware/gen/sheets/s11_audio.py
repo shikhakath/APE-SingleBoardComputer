@@ -88,8 +88,8 @@ def build(sch_dir: str) -> Sheet:
 
     # ---- I2C1 pull-ups, codec I2C series, reset and I2S pulls ----------------------
     sh.column(12600, 13300, [
-        ("R1100", RES, "VCC_3V3_SYS", "I2C1_SCL", "2.2k 0402 (I2C1 pull-up)"),
-        ("R1101", RES, "VCC_3V3_SYS", "I2C1_SDA", "2.2k 0402 (I2C1 pull-up)"),
+        ("R1100", RES, "VDDSHV0", "I2C1_SCL", "2.2k 0402 (I2C1 pull-up)"),
+        ("R1101", RES, "VDDSHV0", "I2C1_SDA", "2.2k 0402 (I2C1 pull-up)"),
         ("R1102", RES, "I2C1_SCL", "AUD_I2C_SCL", "47R 0402 (series, SK R759 practice)"),
         ("R1103", RES, "I2C1_SDA", "AUD_I2C_SDA", "47R 0402 (series, SK R760 practice)"),
         ("R1108", RES, "AUD_RST_N", "GND", "10k 0402 (codec held in reset)"),
