@@ -269,19 +269,27 @@ The pad sizes of `HDR_2X20_P2.54_THT` and `RJ45_HANRUN_HR911130A` were also chos
 
 ## 11. PCB setup
 
-`python hardware/gen/build.py pcb` sets up `hardware/PCB.PcbDoc` with the project open in Altium. It runs the steps below in order; name some to run only those (`build.py pcb rules report`). All values are in `pcbsetup.py`, from `docs/research/bom/jlcpcb-stackup-and-cost.md` (sections 2.2, 3.1, 4, 5) and the Octavo layout notes in `docs/research/osd62x-pm-sip.md` section 1.10. Every step is safe to re-run.
+`python hardware/gen/build.py pcb` sets up `hardware/PCB.PcbDoc` with the project open in Altium. It runs the steps below in order; name some to run only those (`build.py pcb rules report`). All values are in `pcbsetup.py`, from `docs/research/bom/jlcpcb-stackup-and-cost.md` (sections 2.2, 3.1, 4, 5), the Octavo layout notes in `docs/research/osd62x-pm-sip.md` section 1.10 and the sources in [High-speed constraints](#high-speed-constraints). Now that the board is placed, name the steps you need rather than running a bare `build.py pcb`: its `outline` step replaces the R3 outline below.
 
 | Step | What it does |
 |---|---|
 | `eco-options` | Stops Design » Import Changes from deleting the PCB-only objects below. It turns off the change orders Remove Net Classes, Remove Net Class Members, Remove Differential Pairs, Remove Differential Pair Classes and their members, and Remove Rooms. It closes the project, edits `[Modification Levels]` in the `.PrjPcb`, and opens the project again. It does nothing if they are already off. |
-| `outline` | 100 × 70 mm rectangle with square corners, lower-left corner at (1000, 1000) mil. The board origin is that corner. |
+| `outline` | 100 × 70 mm rectangle with square corners, lower-left corner at (1000, 1000) mil. The board origin is that corner. `python placement.py board` redraws it with the Pi's R3 corners and adds the module and card notes on Mechanical 13; run that afterwards. |
 | `stack` | JLC06161H-3313, see the table below. |
-| `impedance` | Profiles SE50, DIFF90 and DIFF100 with JLCPCB's widths and gaps, locked, ±10 %. It is always followed by `rules`, because the rules refer to the profiles by id. |
+| `impedance` | Profiles SE50, DIFF90 and DIFF100 with JLCPCB's widths and gaps per layer, locked, ±10 %. It is always followed by `rules`, because the rules refer to the profiles by id. |
 | `import` | Design » Import Changes. It presses Validate, Execute and Close in the ECO dialog and saves `out/eco_validate.png` and `out/eco_execute.png`. When nothing has changed, Altium says "Differences detected but no ECO generated" (the PCB-only objects); the step accepts that. |
-| `classes` | Net classes, differential pairs and differential-pair classes, see below. |
-| `rules` | The `U1_SiP` room and the design rules, see below. |
+| `classes` | Net classes, differential pairs, differential-pair classes and xSignal classes, see below. |
+| `rules` | The `U1_SiP` room and the design rules, see below. The length rules name xSignals, so these must exist first. |
 | `report` | Writes `out/pcb_report.txt` and checks every component, footprint and pad net against the generator. |
 | `clear` | Not in the default run. Deletes every component, so `build.py pcb clear import classes report` brings in changed footprints (the ECO compares footprint names only). Use it before placement only. |
+
+Three more commands live in `pcbsetup.py` itself, with Altium open:
+
+| Command | What it does |
+|---|---|
+| `python pcbsetup.py xsignals` | Creates the 62 xSignals that are not in the file yet (Altium's Pin Pairs, from U1's pin to the load's pin, through the series part). Run it after `import` and before `classes` and `rules`. |
+| `python pcbsetup.py verify` | Reads `Board6`, `Rules6`, `Classes6` and `SignalClasses` from the saved file and compares the stack, per-layer profiles, classes, pairs, xSignals, rule values, scopes and priorities with `pcbsetup.py`. Needs no Altium. |
+| `python pcbsetup.py drc` | Batch DRC. The process opens its dialog whatever the parameters say, so this raises "Stop when N violations found" (500 by default) and presses Run. The report goes to `Project Outputs for APE - Single Board Computer/`. Component Clearance is off for batch by default, so a report with no row for that rule hasn't tested it. Tick it under Rule Types to Check » Placement, click another row to commit it, and press OK. |
 
 **Layer stack** (TOP / GND / SIG / GND / PWR / BOT; section 5 asks for the calculator's model: Dk 4.3 for 3313 and the cores, 4.2 for 2116, outer copper 1.6 mil plated):
 
@@ -306,24 +314,100 @@ All six copper layers are signal layers, so L2, L4 and L5 take positive pours (s
 **Impedance profiles** (drawn width / gap in mil on L1, L3, L6): SE50 5.94, 5.59, 5.94; DIFF90 5.34/6, 5.03/6, 5.34/6; DIFF100 4.69/8, 4.33/8, 4.69/8. Altium computes its own impedance for these when the Layer Stack Manager's Impedance tab is opened; that has not been compared with JLCPCB's numbers yet.
 
 **Classes:**
-- Net classes: `PWR` (all 43 rails), split into `PWR_IN`, `PWR_CORE`, `PWR_DDR`, `PWR_1V8`, `PWR_3V3`, `PWR_OTHER`; `PWR_HI` (the 1 A rails and the switch nodes); `SE50` (RGMII, eMMC, SD, SDIO, DPI, reference clocks).
+- Net classes: `PWR` (all rails), split into `PWR_IN`, `PWR_CORE`, `PWR_DDR`, `PWR_1V8`, `PWR_3V3`, `PWR_OTHER`; `PWR_HI` (the 1 A rails and the switch nodes); `SE50` (RGMII, eMMC, SD, SDIO, DPI, reference clocks); one `HS_` class per interface, listed under [High-speed constraints](#high-speed-constraints).
+- xSignal classes: `RGMII_TX`, `RGMII_RX`, `MMC0`, `MMC1`, `MMC2`, `DPI`. Matching has to span the series resistors, so it is on xSignals, not nets.
 - Differential-pair classes: `USB0` (USB0, USBC1), `USB1` (USB1, HUB_P1, HUB_P2, USBA1, USBA2), `USB_DBG` (DBG_USB), `ETH_MDI` (MDI0–3), `HDMI_TMDS` (TX0–2, TXC), `CSI` (CLK, D0, D1). 19 pairs in all.
 
 **Rules**, highest priority first within each kind:
 
 | Kind | Rules |
 |---|---|
-| Clearance | `Clr_InnerPour_Hole` pours on L2/L4/L5 to vias and pads 0.20 mm; `Clr_SiP` 0.09 mm in the room; `Clr_SMD_SMD` 0.15 mm; `Clr_Default` 0.10 mm |
+| Clearance | `Clr_InnerPour_Hole` pours on L2/L4/L5 to vias and pads 0.20 mm; `Clr_SiP` 0.09 mm in the room; `Clr_HS_DP_Periodic` 50 mil and 19 `Clr_HS_<pair>` 30 mil, tracks only; `Clr_SMD_SMD` 0.15 mm; `Clr_Default` 0.10 mm |
 | Width | `W_SiP` 0.09 / 0.09 / 0.15 mm in the room; `W_SE50` from profile SE50; `W_PWR_HI` 0.20 / 1.00 / 3.0; `W_PWR` 0.15 / 0.40 / 3.0; `W_Default` 0.10 / 0.15 / 3.0 |
 | Differential pairs | `DP_90R_USB` (USB0, USB1, USB_DBG) from DIFF90; `DP_100R` (ETH_MDI, HDMI_TMDS, CSI) from DIFF100. Width and gap down to 0.09 mm for the SiP neck-down, 5 mm maximum uncoupled length |
 | Routing via | `Via_SiP` 0.15 / 0.25 mm in the room; `Via_PWR` (PWR and GND) 0.30 / 0.50 preferred; `Via_Default` 0.20 / 0.40 preferred, holes up to 0.50 mm for POFV |
 | Holes | Hole size 0.15–6.3 mm; annular ring 0.05 mm on vias and 0.15 mm on pads; hole to hole 0.45 mm between pads, 0.20 mm otherwise |
 | Masks | Solder mask 0 on U1 (1:1 on the NSMD lands), 0.05 mm elsewhere; paste −2.5 mm on the windowed exposed pads (the query `build.py footprints` prints) and on `TC2070-NL`, 0 elsewhere; mask sliver 0.10 mm; silk to mask 0.15 mm |
 | Board outline | 0.30 mm |
+| Length, matched length, via count, routing layers | See [High-speed constraints](#high-speed-constraints) |
 
-The template's polygon-connect rules (relief, four 10 mil spokes, 10 mil gap; vias direct) already match section 5 and are kept. The SiP region rules use `WithinRoom('U1_SiP')`: the room is the 9 × 14 mm body plus 1 mm, placed at the board centre for now. Move the room onto U1 when placing it; a room carries its components.
+The template's polygon-connect rules (relief, four 10 mil spokes, 10 mil gap; vias direct) already match section 5 and are kept. The SiP region rules use `WithinRoom('U1_SiP')`: the room is the 9 × 14 mm body plus 1 mm, centred on U1 at `placement.U1_XY`.
 
-**What `build.py pcb` verified on AD26:** 707 components (660 fitted, 47 DNP) with their footprints, 449 nets, every pad's net equal to the generator's; rule priorities as listed; the impedance-driven rules point at the current profiles; a further Import Changes generates no change orders.
+**What `build.py pcb` verified on AD26:** 717 components with their footprints, 458 nets, every pad's net equal to the generator's; rule priorities as listed; the impedance-driven rules point at the current profiles. `pcbsetup.py verify` confirms the stack, profiles, classes and rules in the saved file.
+
+### High-speed constraints
+
+Delay limits become lengths with two figures from this stack. Tolerances and maximums use 6.88 ps/mm (L3 stripline, √4.25 / c, the slowest layer, so a limit in ps gives the shortest length). Minimums use 6.1 ps/mm (L1, Hammerstad with solder mask, an estimate), which gives the longest.
+
+Sources: **SPRSP58C** is `datasheets/am625.pdf`. **SPRAAR7J** is TI's High-Speed Interface Layout Guidelines; its AM62x table is A-7 on p19. **SNLS504G** is the DP83867, **SLDS145D** the TFP410, **SLLSE96F** the TPD12S016.
+
+"Manhattan" is the pad-to-pad length through any series part on the current placement. It is a lower bound: a maximum that fails it can't be met, and one that passes is only plausible. Altium's own estimates for the eMMC xSignals are the same figures plus about 1.5 mm, the board thickness, where the two ends are on opposite sides. Altium estimates xSignals only: rules on plain nets and pairs see routed copper alone, so they can't fire before routing, and a minimum on them fires at 0 mm.
+
+| Interface | Constraint | Value | Rule | Source | Manhattan on this placement |
+|---|---|---|---|---|---|
+| RGMII | Impedance | 50 Ω | `W_SE50` | SNLS504G §9.2.2.1.2 p113 | |
+| | Length | ≤ 50.8 mm (2 in) | `L_RGMII` | SNLS504G §9.2.2.1.2: under 2 in recommended, 6 in maximum | 8.2–14.9 mm |
+| | Data skew | 60 mil (1.52 mm) | `M_RGMII_TXD`, `M_RGMII_RXD` | SNLS504G §9.2.2.1.2: under 11 ps | TXD spread 2.8, RXD 5.8 mm. Meanders, up to 4.3 mm on `ETH_RD3` |
+| | Skew with clock and control | 50 ps (7.27 mm) | `M_RGMII_TX`, `M_RGMII_RX` | SPRSP58C Table 6-35 p133 | Spread 6.3 and 5.8 mm |
+| | Layers | L1, L3 | `RL_RGMII` | SPRAAR7J §2.4, see L6 below | All pads on top |
+| MMC0 (eMMC) | Delay | 126–756 ps | `L_MMC0` 10.66–40 mm | SPRSP58C Table 6-82 p181. Minimum: 126 ps ÷ 6.1, less 10 mm in the module. Maximum 40 mm: project target, `docs/research/bom/storage-usb-ethernet.md` | **2.9–9.9 mm, so 9 of the 10 nets need lengthening: about 36 mm of meander, worst +6.3 mm on `EMMC_CMD`** (Altium's figures) |
+| | Mismatch | 8 ps (1.16 mm) | `M_MMC0` | SPRSP58C Table 6-82: HS SDR, HS200 | Spread 7.0 mm; the lengthening above covers it |
+| MMC1 (SD) | Delay | 126–1386 ps | `L_MMC1` 20.66–201 mm | SPRSP58C Table 6-101 p193 | 32.7–39.9 mm |
+| | Mismatch | 8 ps (1.16 mm) | `M_MMC1` | SPRSP58C Table 6-101: HS, SDR104. 20 ps for DDR50, 100 ps otherwise | Spread 7.2 mm. Meanders, up to 6.0 mm on `SD_D2` |
+| MMC2 (SDIO) | Delay | ≤ 1386 ps | `L_MMC2` ≤ 201 mm | SPRSP58C Table 6-101. Minimum is open: the card's own route is unknown | 10.3–25.8 mm |
+| | Mismatch | 8 ps (1.16 mm) | `M_MMC2` | SPRSP58C Table 6-101 | Spread 15.5 mm. Meanders, up to 14.3 mm on `WL_SDIO_CLK` |
+| DPI | Length | ≤ 71.1 mm (2.8 in) | `L_DPI` | SLDS145D §7.2.2.1 p26 | 7.2–21.2 mm |
+| | Mismatch | 100 ps (14.5 mm) | `M_DPI` | SPRSP58C Table 6-44 p139 | Spread 13.9 mm: 0.6 mm spare, so expect some meanders |
+| McASP | Delay | 100–1100 ps | `L_MCASP` 16.4–160 mm | SPRSP58C Table 6-73 p169 | 38.5–41.5 mm |
+| | Mismatch | 100 ps (14.5 mm) | `M_MCASP` | SPRSP58C Table 6-73 | Spread 3.0 mm |
+| SE50 (all) | Impedance | 50 Ω | `W_SE50` | Project stack table, `docs/research/bom/jlcpcb-stackup-and-cost.md` line 146. Only RGMII has a part-maker figure | |
+| USB 2.0 | Impedance | 81–99 Ω, built as 90 Ω | `DP_90R_USB` | SPRAAR7J Table A-7 | |
+| | Length | ≤ 304.8 mm (12000 mil) | `L_USB` | SPRAAR7J Table A-7 | U1 to J100 47 mm |
+| | Within-pair skew | 50 mil; 25 mil per segment where a choke splits the pair | `M_USB_DBG_Pair`; `M_USB0_Pair`, `M_USB1_Pair` | SPRAAR7J Table A-7, halved for two segments | |
+| | Vias | ≤ 4 per trace; 2 per segment where split | `V_USB_DBG`; `V_USB_Split` | SPRAAR7J Table A-7, halved | Each segment needs 1 or 2 |
+| | Stubs, test points | 0 | No DRC rule exists | SPRAAR7J Table A-7 | No test points. **The DNP choke bypass leaves 1.3–4.6 mm of stub per net, which the schematic requires** |
+| CSI | Impedance | 85–115 Ω, built as 100 Ω | `DP_100R` | SPRAAR7J Table A-7 | |
+| | Length | ≤ 254 mm (10 in) | `L_CSI` | SPRAAR7J Table A-7 | 10.3–16.8 mm |
+| | Pair skew | 8 ps (1.16 mm) | `M_CSI_Pair` | SPRAAR7J: general estimate of UI ÷ 50, at 400 ps UI | |
+| | Lane skew | 40 ps (5.8 mm) | `M_CSI_Lanes` | SPRAAR7J Table A-7 | Spread 6.5 mm. A meander of 0.7 mm on `CSI_D0` |
+| | Vias | ≤ 2 | `V_CSI` | SPRAAR7J Table A-7 | **At the limit:** one to leave ball row 3, one to come back to L1. `CSI_CLK` must also cross D0 and D1 (ball order D1, D0, CLK), which L1 and L3 allow |
+| Ethernet MDI | Impedance | 100 Ω | `DP_100R` | SNLS504G §9.2.2.2.1 | |
+| | Vias | ≤ 1 | `V_MDI` | Derived: SNLS504G asks for one layer, and J800's pin order forces one crossing. J800's through-hole pads take the second layer change | |
+| HDMI TMDS | Impedance | 90–110 Ω, built as 100 Ω | `DP_100R` | SPRAAR7J Table A-2. That table is AM57xx; it is the closest HDMI figure | |
+| | Length | ≤ 50.8 mm (2 in) | `L_TMDS` | SLDS145D §7.4.1.2 p29 | About 38 mm via U1001 |
+| | Pair skew | 5 mil | `M_TMDS_Pair` | SPRAAR7J Table A-2 (AM57xx) | |
+| | Vias, layers | 0 vias, L1 only | `V_TMDS`, `RL_TMDS` | SLLSE96F §10.1 p21 and Figure 20 p22; SLDS145D §7.4.1.2; SPRAAR7J Table A-2 | Pair order is the same at U1000, U1001 and J1000, as in Figure 20. Pairs run under U1001's body and reach its pads from inside |
+| Pairs | Pair to clock or periodic signal | ≥ 50 mil | `Clr_HS_DP_Periodic` | SPRAAR7J Table A-7 | Can't be judged before routing |
+| | Pair to anything else | ≥ 30 mil | 19 `Clr_HS_<pair>` | SPRAAR7J Table A-7 and §3.4 | **Not achievable at the pins**, see below |
+| | Uncoupled length | ≤ 5 mm | `DP_90R_USB`, `DP_100R` | No source found: value from the earlier setup, kept | |
+
+**Layer rules.** L2, L4 and L5 carry no impedance-controlled route. L6 references `L5_PWR`, and SPRAAR7J §2.4 says TI "does not recommend high-speed signal references to power planes". So:
+
+- RGMII, MDI, CSI and TMDS may not use L6 (`RL_RGMII`, `RL_MDI_CSI`, `RL_TMDS`). All their pads are on top, so nothing forces them there.
+- SE50 and USB may use L6 (`RL_SE50_USB`), because parts force it: `J700` and `J1300` are on the back, and so are the chokes `L900` and `L902`, the SDIO series resistors and `R729`. `J900` is entered from the bottom layer (SPRAAR7J §3.5). Keep those runs short, with unbroken L5 copper under them and stitching vias within 200 mil where the reference changes (§2.4). DRC can't check that.
+
+**The 30 mil rule at the pins.** TI scopes it "after package escape and before connector termination", and the rule covers tracks only, but pin spacing alone breaks it near some parts. Neighbouring pairs' tracks can be at most 0.38 mm apart at `J1000`, 0.53 mm at `U1001` and 0.63 mm at `U900`, against 0.76 mm required. It will also flag tracks on pins next to a pair at any fine-pitch part (`U800`, `U1000`, `U1500`). Treat hits within about 1 mm of those pins as waivers. Inside the `U1_SiP` room `Clr_SiP` applies instead.
+
+**Mixed layers.** L1 and L3 differ by about 0.78 ps/mm, so a bus can use up its 8 ps across only 10 mm of layer difference. Route each MMC bus with the same mix of layers on every net.
+
+**Open, with no sourced limit, so no rule:** MDI within-pair and pair-to-pair skew (SNLS504G gives none); TMDS pair-to-pair skew; via limits for RGMII, DPI and MMC; spacing between single-ended nets (SLDS145D's 5 × height is a guideline, and as a rule it would flag every pin fan-in); MMC2's minimum length. JTAG (SPRSP58C Table 6-52) and MDIO (Table 6-28) have limits that this board can't approach, so they have no rule.
+
+**High-speed nets by interface** (`SE50` also holds every single-ended net below except McASP and the crystals):
+
+| Interface | Class | Nets |
+|---|---|---|
+| RGMII TX | `HS_RGMII_TX` | `ETH_TD0`–`3`, `ETH_TXC`, `ETH_TX_CTL`, `PHY_TX_D0`–`3`, `PHY_GTX_CLK`, `PHY_TX_CTRL` |
+| RGMII RX | `HS_RGMII_RX` | `ETH_RD0`–`3`, `ETH_RXC`, `ETH_RX_CTL`, `PHY_RX_D0`–`3`, `PHY_RX_CLK`, `PHY_RX_CTRL` |
+| eMMC | `HS_MMC0` | `EMMC_CLK`, `EMMC_MOD_CLK`, `EMMC_CMD`, `EMMC_D0`–`7`; `EMMC_MOD_DS` is in `SE50` only |
+| SD | `HS_MMC1` | `SD_CLK`, `SD_SOCK_CLK`, `SD_CMD`, `SD_D0`–`3` |
+| SDIO | `HS_MMC2` | `WL_SDIO_CLK`, `WL_SDIO_CMD`, `WL_SDIO_D0`–`3`, `M2_SDIO_CLK`, `M2_SDIO_CMD`, `M2_SDIO_D0`–`3` |
+| DPI | `HS_DPI` | `DPI_D0`–`23`, `DPI_DE`, `DPI_HSYNC`, `DPI_VSYNC`, `DPI_PCLK`, `TFP_IDCK` |
+| McASP | `HS_MCASP` | `AUD_BCLK`, `AUD_FSYNC`, `AUD_DIN`, `AUD_DOUT` |
+| Clocks and crystals | `HS_CLK` | `OSC_25M`, `OSC25M_SRC`, `AUD_MCLK`, `AUD_MCLK_OSC`, `AUD_BCLK`, `ETH_TXC`, `PHY_GTX_CLK`, `ETH_RXC`, `PHY_RX_CLK`, `EMMC_CLK`, `EMMC_MOD_CLK`, `SD_CLK`, `SD_SOCK_CLK`, `WL_SDIO_CLK`, `M2_SDIO_CLK`, `DPI_PCLK`, `TFP_IDCK`, `PHY_XI`, `PHY_XO`, `HUB_XI`, `HUB_XO`, `FT_OSCI`, `FT_OSCO`, `LFOSC_XI`, `LFOSC_XO`, `LFOSC_XO_X` |
+| USB | `USB0`, `USB1`, `USB_DBG` (pair classes) | `USB0`, `USBC1`; `USB1`, `HUB_P1`, `HUB_P2`, `USBA1`, `USBA2`; `DBG_USB` |
+| Ethernet MDI | `ETH_MDI` (pair class) | `ETH_MDI0`–`3` |
+| HDMI | `HDMI_TMDS` (pair class) | `HDMI_TX0`–`2`, `HDMI_TXC` |
+| Camera | `CSI` (pair class) | `CSI_CLK`, `CSI_D0`, `CSI_D1` |
 
 **Notes from the AD26 run:**
 - Altium gives every new rule priority 1, so `PcbRules` adds the rules last to first.
@@ -332,8 +416,11 @@ The template's polygon-connect rules (relief, four 10 mil spokes, 10 mil gap; vi
 - `[Modification Levels]` in the `.PrjPcb` holds Type1–Type161 for Altium's `eModification_*` values 0–160, so value N is TypeN+1.
 - The ECO dialog's buttons ignore `BM_CLICK` while the dialog is not the active window. `build.py` sends the button's `BN_CLICKED` to its parent instead.
 - The MCP's `get_pcb_layer_stackup` omits the cores and prints wrong µm values (mil ÷ 254). Use the Layer Stack Manager or `pcb report`.
+- Impedance profiles and the routing-layers rule are indexed by the old layer numbers (1, 2, 3, 4, 5, 32). A new-style id from `COPPER` is ignored without an error: every profile had one entry on no layer until the file was read back. `pcb report` still prints the first entry only (`0=59400/0/0`), so use `verify`.
+- Nothing in `IPCB_PinPairsManager` that was tried creates a pin pair. Select the two pads and run `PCB:ManagePinPairs` with `Action=CreatePinPair`. Names are `<net>-<net>_PP1`, or `<net>_PP1` where both ends share a net.
+- Rule query keywords that exist on AD26: `InxSignal`, `InxSignalClass`, `InDifferentialPair`, `InDifferentialPairClass`, `IsTrack`.
 
-**Not done yet (layout):** placement and the connector edges, mounting-hole positions, fiducials (3 global, 2 local at U1; they are not in the schematic), the pours on L2, L4 and L5, via templates with tenting and removal of unused `VIA_BGA` pads on L2–L5, and the footprint-related layout items listed in section 10.
+**Not done yet (layout):** routing, fiducials (3 global, 2 local at U1; they are not in the schematic), the pours on L2, L4 and L5, via templates with tenting and removal of unused `VIA_BGA` pads on L2–L5, and the footprint-related layout items listed in section 10.
 
 ## Files
 

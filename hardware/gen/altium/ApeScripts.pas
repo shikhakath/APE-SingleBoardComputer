@@ -961,9 +961,10 @@ begin
     begin
         Rec := Spec[i];
         Kind := PipeField(Rec, 0);
-        if (Kind = 'NETCLASS') or (Kind = 'DPCLASS') then
+        if (Kind = 'NETCLASS') or (Kind = 'DPCLASS') or (Kind = 'XCLASS') then
         begin
             if (Kind = 'NETCLASS') then MK := eClassMemberKind_Net
+            else if (Kind = 'XCLASS') then MK := eClassMemberKind_Signal
             else MK := eClassMemberKind_DifferentialPair;
             ApeLog('class ' + PipeField(Rec, 1));
             C := FindBoardObject(Board, eClassObject, PipeField(Rec, 1), MK);
@@ -1035,7 +1036,11 @@ begin
     else if (Kind = 'PASTE') then Result := eRule_PasteMaskExpansion
     else if (Kind = 'SLIVER') then Result := eRule_MinimumSolderMaskSliver
     else if (Kind = 'SILKMASK') then Result := eRule_SilkToSolderMaskClearance
-    else if (Kind = 'OUTLINE') then Result := eRule_BoardOutlineClearance;
+    else if (Kind = 'OUTLINE') then Result := eRule_BoardOutlineClearance
+    else if (Kind = 'MATCHED') then Result := eRule_MatchedLengths
+    else if (Kind = 'LENGTH') then Result := eRule_MaxMinLength
+    else if (Kind = 'VIACOUNT') then Result := eRule_MaximumViaCount
+    else if (Kind = 'LAYERS') then Result := eRule_RoutingLayers;
 end;
 
 function ProfileIdOf(Board : IPCB_Board; Name : String) : String;
@@ -1228,7 +1233,34 @@ begin
             else if (Kind = 'SLIVER') then
                 Rule.MinSolderMaskSliver := StrToInt(PipeField(Rec, 5))
             else if (Kind = 'SILKMASK') then
-                Rule.SilkToMaskGap := StrToInt(PipeField(Rec, 5));
+                Rule.SilkToMaskGap := StrToInt(PipeField(Rec, 5))
+            else if (Kind = 'MATCHED') then
+            begin
+                // tolerance|check nets within a pair|check pair against pair.
+                // CheckxSignals and CheckOthers stay at their default, on (read back from Rules6).
+                Rule.Tolerance := StrToInt(PipeField(Rec, 5));
+                Rule.CheckNetsInDiffPair := (PipeField(Rec, 6) = '1');
+                Rule.CheckDiffPairVsDiffPair := (PipeField(Rec, 7) = '1');
+            end
+            else if (Kind = 'LENGTH') then
+            begin
+                Rule.MinLimit := StrToInt(PipeField(Rec, 5));
+                Rule.MaxLimit := StrToInt(PipeField(Rec, 6));
+            end
+            else if (Kind = 'VIACOUNT') then
+                Rule.Limit := StrToInt(PipeField(Rec, 5))
+            else if (Kind = 'LAYERS') then
+            begin
+                // layer:0 or layer:1;... for every copper layer
+                Lay := TStringList.Create;
+                Lay.Delimiter := ';';
+                Lay.StrictDelimiter := True;
+                Lay.DelimitedText := PipeField(Rec, 5);
+                for k := 0 to Lay.Count - 1 do
+                    if (Lay[k] <> '') then
+                        Rule.RoutingLayers[StrToInt(ColonField(Lay[k], 0))] := (ColonField(Lay[k], 1) = '1');
+                Lay.Free;
+            end;
             Board.AddPCBObject(Rule);
         end;
     end;
@@ -1236,6 +1268,102 @@ begin
     Kinds.Free;
     Rooms.Free;
     Spec.Free;
+    SaveBoard(Path);
+    ApeFinish('{"success": true}');
+end;
+
+// --------------------------------------------------------- PcbXSignals
+// ape_pcb_xsignals.txt: the .PcbDoc path, then XS|REF-PAD|REF-PAD per xSignal.
+// Uses Design >> xSignals >> Create xSignal from Selected Pins: Altium names it
+// <net>-<net>_PP<n> and follows it through a series part. gen/pcbsetup.py reads
+// the names back from Board6 and sends only the xSignals that are missing.
+function DescriptorPad(Board : IPCB_Board; Descriptor : String) : IDispatch;
+var
+    Comp, GI, Pad : IDispatch;
+    Ref, Name : String;
+    i : Integer;
+begin
+    Result := nil;
+    i := Pos('-', Descriptor);
+    Ref := Copy(Descriptor, 1, i - 1);
+    Name := Copy(Descriptor, i + 1, Length(Descriptor) - i);
+    Comp := Board.GetPcbComponentByRefDes(Ref);
+    if (Comp = nil) then Exit;
+    GI := Comp.GroupIterator_Create;
+    GI.AddFilter_ObjectSet(MkSet(ePadObject));
+    Pad := GI.FirstPCBObject;
+    while (Pad <> nil) do
+    begin
+        if (Pad.Name = Name) then Result := Pad;
+        Pad := GI.NextPCBObject;
+    end;
+    Comp.GroupIterator_Destroy(GI);
+end;
+
+procedure PcbXSignals;
+var
+    Spec : TStringList;
+    Board : IPCB_Board;
+    P1, P2 : IDispatch;
+    i, Made : Integer;
+    Path, Rec, Missing : String;
+begin
+    StartRun('PcbXSignals');
+    Spec := LoadSpec('ape_pcb_xsignals.txt');
+    Path := Trim(Spec[0]);
+    Board := ApeBoard(Path);
+    Board.SelectedObjects_Clear;
+    Made := 0;
+    Missing := '';
+    for i := 1 to Spec.Count - 1 do
+    begin
+        Rec := Spec[i];
+        if (PipeField(Rec, 0) = 'XS') then
+        begin
+            ApeLog(Rec);
+            P1 := DescriptorPad(Board, PipeField(Rec, 1));
+            P2 := DescriptorPad(Board, PipeField(Rec, 2));
+            if (P1 = nil) or (P2 = nil) then
+                Missing := Missing + PipeField(Rec, 1) + ' '
+            else
+            begin
+                P1.Selected := True;
+                P2.Selected := True;
+                ResetParameters;
+                AddStringParameter('Action', 'CreatePinPair');
+                RunProcess('PCB:ManagePinPairs');
+                P1.Selected := False;
+                P2.Selected := False;
+                Made := Made + 1;
+            end;
+        end;
+    end;
+    Spec.Free;
+    Board.SelectedObjects_Clear;
+    SaveBoard(Path);
+    ApeFinish('{"success": true, "made": ' + IntToStr(Made) + ', "count": ' +
+              IntToStr(Board.PinPairsManager.PinPairsCount) + ', "missing": "' + Missing + '"}');
+end;
+
+// -------------------------------------------------------------- PcbDrc
+// ape_pcb_report_in.txt: the .PcbDoc path. Runs the batch DRC and saves, so
+// gen/pcbsetup.py can read the violations from the file.
+procedure PcbDrc;
+var
+    Spec : TStringList;
+    Board : IPCB_Board;
+    Path : String;
+begin
+    StartRun('PcbDrc');
+    Spec := LoadSpec('ape_pcb_report_in.txt');
+    Path := Trim(Spec[0]);
+    Spec.Free;
+    Board := ApeBoard(Path);
+    ApeLog('drc');
+    ResetParameters;
+    AddStringParameter('Action', 'RunDRC');
+    RunProcess('PCB:DesignRuleCheck');
+    ApeLog('saving');
     SaveBoard(Path);
     ApeFinish('{"success": true}');
 end;

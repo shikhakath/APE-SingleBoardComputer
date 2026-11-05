@@ -19,6 +19,7 @@ import uuid
 from pathlib import Path
 
 import footprints
+import placement
 import schgen
 
 MIL = 10000                     # Altium coords per mil
@@ -33,9 +34,11 @@ def mil(v: float) -> int:
 
 
 # ------------------------------------------------------------------ outline
-# 100 x 70 mm, square corners; lower-left corner at (1000 mil, 1000 mil) in
-# Altium's absolute coordinates, and the board origin is set there.
-BOARD_W_MM, BOARD_H_MM = 100.0, 70.0
+# Size from placement.py (docs/pcb-placement.md has the numbers behind it);
+# lower-left corner at (1000 mil, 1000 mil) in Altium's absolute coordinates, and
+# the board origin is set there. `build.py pcb outline` draws square corners:
+# `placement.py board` draws the final R3 corners, so run it after that step.
+BOARD_W_MM, BOARD_H_MM = placement.BOARD_W, placement.BOARD_H
 BOARD_X0, BOARD_Y0 = mil(1000), mil(1000)
 
 
@@ -70,6 +73,10 @@ MASK_MIL, MASK_DK = 1.0, 3.8
 LAYER_IDS = {"Top Paste": 16973832, "Top Overlay": 16973830, "Top Solder": 16973834,
              "Bottom Solder": 16973835, "Bottom Overlay": 16973831, "Bottom Paste": 16973833}
 DIEL_ID0 = 17039361             # dielectric layer ids are 17039361 + n
+# The impedance profiles and the routing-layers rule are indexed by the old layer numbers (file
+# keys "TOP LAYER_V5", "MID LAYER 1_V5", ...). A new-style id from COPPER is ignored without an
+# error: every profile then had one entry on no layer (found by reading the file back, AD26).
+V5_LAYER = {"L1_TOP": 1, "L2_GND": 2, "L3_SIG": 3, "L4_GND": 4, "L5_PWR": 5, "L6_BOT": 32}
 
 
 def read_board6(pcb: Path) -> dict:
@@ -160,7 +167,7 @@ IMP_TOLERANCE = 10              # percent; JLCPCB impedance control is +/-10 %
 
 
 def impedance_spec(pcb: Path) -> str:
-    ids = {name: lid for name, lid, *_ in COPPER}
+    ids = V5_LAYER
     lines = [str(pcb)]
     for name, ohms, diff, layers in IMPEDANCE:
         lines.append(f"IMP|{name}|{ohms}|{int(diff)}|{IMP_TOLERANCE}")
@@ -190,7 +197,53 @@ DP_100R = ("ETH_MDI", "HDMI_TMDS", "CSI")
 # 50 ohm single-ended: RGMII, eMMC / SD / SDIO, DPI and the reference clocks
 SE50_RE = re.compile(r"^(ETH_(TD\d|RD\d|TXC|RXC|TX_CTL|RX_CTL)|PHY_(TX_D\d|RX_D\d|TX_CTRL|RX_CTRL|GTX_CLK"
                      r"|RX_CLK)|EMMC_(CLK|CMD|D\d|MOD_CLK|MOD_DS)|SD_(CLK|CMD|D\d|SOCK_CLK)"
-                     r"|M2_SDIO_(CMD|D\d)|WL_SDIO_(CLK|CMD|D\d)|DPI_.*|TFP_IDCK|OSC_25M|AUD_MCLK)$")
+                     r"|M2_SDIO_(CLK|CMD|D\d)|WL_SDIO_(CLK|CMD|D\d)|DPI_.*|TFP_IDCK|OSC_25M|OSC25M_SRC"
+                     r"|AUD_MCLK|AUD_MCLK_OSC)$")
+
+# ---- High-speed interfaces: limits are in the constraint table, README section 11.
+# class: (load part, [(net at the SiP, net at the load), ...]). The two names differ
+# where a series part sits in between, which is why these are xSignals, not nets.
+_DPI = [(f"DPI_D{i}", f"DPI_D{i}") for i in range(24)] + [("DPI_DE", "DPI_DE"), ("DPI_HSYNC", "DPI_HSYNC"),
+                                                         ("DPI_VSYNC", "DPI_VSYNC"), ("DPI_PCLK", "TFP_IDCK")]
+BUSES = {
+    "RGMII_TX": ("U800", [(f"ETH_TD{i}", f"PHY_TX_D{i}") for i in range(4)]
+                 + [("ETH_TXC", "PHY_GTX_CLK"), ("ETH_TX_CTL", "PHY_TX_CTRL")]),
+    "RGMII_RX": ("U800", [(f"ETH_RD{i}", f"PHY_RX_D{i}") for i in range(4)]
+                 + [("ETH_RXC", "PHY_RX_CLK"), ("ETH_RX_CTL", "PHY_RX_CTRL")]),
+    "MMC0": ("J700", [("EMMC_CLK", "EMMC_MOD_CLK"), ("EMMC_CMD", "EMMC_CMD")]
+             + [(f"EMMC_D{i}", f"EMMC_D{i}") for i in range(8)]),
+    "MMC1": ("J702", [("SD_CLK", "SD_SOCK_CLK"), ("SD_CMD", "SD_CMD")] + [(f"SD_D{i}", f"SD_D{i}") for i in range(4)]),
+    "MMC2": ("J1300", [("WL_SDIO_CLK", "M2_SDIO_CLK"), ("WL_SDIO_CMD", "M2_SDIO_CMD")]
+             + [(f"WL_SDIO_D{i}", f"M2_SDIO_D{i}") for i in range(4)]),
+    "DPI": ("U1000", _DPI),
+}
+MCASP_NETS = ["AUD_BCLK", "AUD_FSYNC", "AUD_DIN", "AUD_DOUT"]
+# Clocks and other periodic signals: differential pairs keep 50 mil from these
+PERIODIC_RE = re.compile(r"^(OSC_25M|OSC25M_SRC|AUD_MCLK|AUD_MCLK_OSC|AUD_BCLK|ETH_TXC|PHY_GTX_CLK|ETH_RXC|PHY_RX_CLK"
+                         r"|EMMC_CLK|EMMC_MOD_CLK|SD_CLK|SD_SOCK_CLK|WL_SDIO_CLK|M2_SDIO_CLK|DPI_PCLK|TFP_IDCK"
+                         r"|PHY_X.|HUB_X.|FT_OSC.|LFOSC_.*)$")
+
+# Propagation delay used to turn the datasheets' ps into mm. L3 stripline: sqrt(4.25) / c =
+# 6.88 ps/mm, the slowest layer here, so a tolerance in ps gives the shortest (safest) mm.
+# L1 microstrip is about 6.1 ps/mm (Hammerstad, 0.151 / 0.0994 mm, with solder mask; estimate).
+PS_PER_MM_L3, PS_PER_MM_L1 = 6.88, 6.1
+
+
+def ps_tol(ps):
+    return ps / PS_PER_MM_L3
+
+
+def ps_min_len(ps):
+    """Shortest route that gives this delay whichever layer it is on (L1 is the fast one)."""
+    return ps / PS_PER_MM_L1
+
+
+def ps_max_len(ps):
+    """Longest route that stays under this delay whichever layer it is on (L3 is the slow one)."""
+    return ps / PS_PER_MM_L3
+
+
+MIL_MM = 0.0254
 
 # Power rails by group; PWR holds every rail. PWR_HI are the rails and switch
 # nodes that carry an amp or more (USB-C input, 5 V, 3.3 V, core, DDR, 1.8 V).
@@ -216,6 +269,10 @@ def net_classes(nets: list[str]) -> dict[str, list[str]]:
     classes["PWR_OTHER"] = rest
     classes["PWR_HI"] = [n for n in PWR_HI if n in nets]
     classes["SE50"] = sorted(n for n in nets if SE50_RE.match(n))
+    for bus, (_, pairs) in BUSES.items():
+        classes["HS_" + bus] = sorted({n for pair in pairs for n in pair})
+    classes["HS_MCASP"] = list(MCASP_NETS)
+    classes["HS_CLK"] = sorted(n for n in nets if PERIODIC_RE.match(n))
     return classes
 
 
@@ -227,6 +284,57 @@ def classes_spec(pcb: Path, nets: list[str]) -> str:
         for pair, p, n in pairs:
             lines.append(f"DIFFPAIR|{pair}|{p}|{n}")
         lines.append("DPCLASS|" + cls + "|" + "|".join(pair for pair, _, _ in pairs))
+    names = xsignal_names(pcb)
+    for bus in BUSES:
+        members = [names[frozenset(pins)] for pins in xsignal_pins(bus) if frozenset(pins) in names]
+        if members:
+            lines.append("XCLASS|" + bus + "|" + "|".join(members))
+    return "\n".join(lines) + "\n"
+
+
+# ------------------------------------------------------------- xSignals
+def _netlist() -> dict:
+    """{net: [REF.PIN, ...]} from out/netlist.csv (build.py check writes it)."""
+    import csv
+    nets = {}
+    with open(Path(__file__).resolve().parent / "out" / "netlist.csv", newline="") as f:
+        for r in csv.DictReader(f):
+            nets[r["net"]] = r["nodes"].split()
+    return nets
+
+
+def _pin_on(nets, net, ref):
+    pins = [nd for nd in nets[net] if nd.split(".", 1)[0] == ref]
+    if not pins:
+        raise ValueError(f"net {net} has no pin on {ref}")
+    return pins[0].replace(".", "-", 1)
+
+
+def xsignal_pins(bus, nets=None):
+    """[(SiP pin, load pin), ...] as Altium pin descriptors, for one bus."""
+    nets = nets or _netlist()
+    load, pairs = BUSES[bus]
+    return [(_pin_on(nets, a, "U1"), _pin_on(nets, b, load)) for a, b in pairs]
+
+
+def xsignal_names(pcb: Path) -> dict:
+    """{frozenset of pin descriptors: xSignal name} read back from the PcbDoc's Board6."""
+    b6 = read_board6(pcb)
+    out = {}
+    for i in range(int(b6.get("PINPAIRCOUNT", 0))):
+        pins = b6.get(f"PINPAIRPINS{i}", "")
+        out[frozenset(pins.split(","))] = b6.get(f"PINPAIRNAME{i}", "")
+    return out
+
+
+def xsignals_spec(pcb: Path) -> str:
+    """The xSignals not yet in the PcbDoc, so the step can be re-run."""
+    have = xsignal_names(pcb)
+    lines = [str(pcb)]
+    for bus in BUSES:
+        for a, b in xsignal_pins(bus):
+            if frozenset((a, b)) not in have:
+                lines.append(f"XS|{a}|{b}")
     return "\n".join(lines) + "\n"
 
 
@@ -271,15 +379,16 @@ def set_eco_levels(text: str) -> str:
 
 # --------------------------------------------------------------- SiP room
 # The SiP region (section 5: WithinRoom('U1_SiP')). The room is the 9 x 14 mm
-# body plus 1 mm for the fan-out vias on every side. It starts at the board
-# centre; move it with U1 during placement (rooms carry their components).
-ROOM_W_MM, ROOM_H_MM = 11.0, 16.0
+# body plus 1 mm for the fan-out vias on every side, around U1 as placed by
+# placement.py (zero orientation: 14 mm along x), with 0.3 mm more so that it holds
+# the whole footprint, pin-1 dot and courtyard included (else a confinement violation).
+ROOM_W_MM, ROOM_H_MM = 16.6, 11.6
 SIP_ROOM = "U1_SiP"
 SIP = f"WithinRoom('{SIP_ROOM}')"
 
 
 def room_spec() -> str:
-    cx, cy = BOARD_X0 + mm(BOARD_W_MM / 2), BOARD_Y0 + mm(BOARD_H_MM / 2)
+    cx, cy = BOARD_X0 + mm(placement.U1_XY[0]), BOARD_Y0 + mm(placement.U1_XY[1])
     return (f"ROOM|{SIP_ROOM}|InComponent('U1')|{cx - mm(ROOM_W_MM / 2)}|{cy - mm(ROOM_H_MM / 2)}"
             f"|{cx + mm(ROOM_W_MM / 2)}|{cy + mm(ROOM_H_MM / 2)}")
 
@@ -293,11 +402,103 @@ def _per_layer(profile: str) -> str:
     """'layer:width:gap;...' for every copper layer from an impedance profile;
     the plane layers L2 / L4 / L5 take the L3 stripline values."""
     widths = next(layers for name, _, _, layers in IMPEDANCE if name == profile)
-    return ";".join(f"{lid}:{mil(widths.get(name, widths['L3_SIG'])[0])}"
-                    f":{mil(widths.get(name, widths['L3_SIG'])[1])}" for name, lid, *_ in COPPER)
+    return ";".join(f"{V5_LAYER[name]}:{mil(widths.get(name, widths['L3_SIG'])[0])}"
+                    f":{mil(widths.get(name, widths['L3_SIG'])[1])}" for name, *_ in COPPER)
 
 
-def rules() -> list[list]:
+def _dp_classes(names):
+    return "(" + " Or ".join(f"InDifferentialPairClass('{n}')" for n in names) + ")"
+
+
+V5_KEY = {"L1_TOP": "TOP LAYER_V5", "L2_GND": "MID LAYER 1_V5", "L3_SIG": "MID LAYER 2_V5",
+          "L4_GND": "MID LAYER 3_V5", "L5_PWR": "MID LAYER 4_V5", "L6_BOT": "BOTTOM LAYER_V5"}
+
+
+def _layers(*allowed):
+    """Old layer number:0 or 1 for every copper layer."""
+    return ";".join(f"{V5_LAYER[name]}:{int(name in allowed)}" for name, *_ in COPPER)
+
+
+def hs_clearance_rules() -> list[list]:
+    """TI SPRAAR7J Table A-7 (AM62x): differential pair to a clock or periodic signal 50 mil, to any
+    other signal 30 mil; section 3.4 applies the 30 mil between pairs too. Track to track only, so that
+    pads at a connector or IC pin don't count: TI scopes this "after package escape and before connector
+    termination". One rule per pair, so that the pair's own two nets are exempt. The SiP room's
+    higher-priority rule still applies inside the room."""
+    all_dp = _dp_classes(DIFF_PAIRS)
+    rows = [["CLEARANCE", "Clr_HS_DP_Periodic", f"InNetClass('HS_CLK') And IsTrack", f"{all_dp} And IsTrack", mm(50 * MIL_MM)]]
+    for pairs in DIFF_PAIRS.values():
+        for pair, _, _ in pairs:
+            rows.append(["CLEARANCE", f"Clr_HS_{pair}", f"InDifferentialPair('{pair}') And IsTrack",
+                         f"(Not InDifferentialPair('{pair}')) And IsTrack", mm(30 * MIL_MM)])
+    return rows
+
+
+def length_rules(pcb: Path) -> list[list]:
+    """Matched-length, length, via-count and layer rules. README section 11 has the source of each."""
+    names = xsignal_names(pcb)
+
+    def xs(bus, picks=None):
+        """Scope for a bus, or for the pairs of a bus whose SiP net is in ``picks``."""
+        if picks is None:
+            return f"InxSignalClass('{bus}')"
+        nets = _netlist()
+        out = []
+        for a, b in BUSES[bus][1]:
+            if a in picks:
+                pins = frozenset((_pin_on(nets, a, "U1"), _pin_on(nets, b, BUSES[bus][0])))
+                out.append(f"InxSignal('{names[pins]}')")
+        return " Or ".join(out)
+
+    txd = [f"ETH_TD{i}" for i in range(4)]
+    rxd = [f"ETH_RD{i}" for i in range(4)]
+    return [
+        # matched lengths: kind, name, scope, "", tolerance, nets within a pair, pair against pair
+        ["MATCHED", "M_RGMII_TXD", xs("RGMII_TX", txd), "", mm(60 * MIL_MM), 0, 0],
+        ["MATCHED", "M_RGMII_RXD", xs("RGMII_RX", rxd), "", mm(60 * MIL_MM), 0, 0],
+        ["MATCHED", "M_RGMII_TX", xs("RGMII_TX"), "", mm(ps_tol(50)), 0, 0],
+        ["MATCHED", "M_RGMII_RX", xs("RGMII_RX"), "", mm(ps_tol(50)), 0, 0],
+        ["MATCHED", "M_MMC0", xs("MMC0"), "", mm(ps_tol(8)), 0, 0],
+        ["MATCHED", "M_MMC1", xs("MMC1"), "", mm(ps_tol(8)), 0, 0],
+        ["MATCHED", "M_MMC2", xs("MMC2"), "", mm(ps_tol(8)), 0, 0],
+        ["MATCHED", "M_DPI", xs("DPI"), "", mm(ps_tol(100)), 0, 0],
+        ["MATCHED", "M_MCASP", "InNetClass('HS_MCASP')", "", mm(ps_tol(100)), 0, 0],
+        # within a pair. USB0 and the hub's downstream ports pass a common-mode choke, so each pair
+        # gets half of TI's 50 mil for each of its two segments.
+        ["MATCHED", "M_USB0_Pair", "InDifferentialPairClass('USB0')", "", mm(25 * MIL_MM), 1, 0],
+        ["MATCHED", "M_USB1_Pair", "InDifferentialPairClass('USB1')", "", mm(25 * MIL_MM), 1, 0],
+        ["MATCHED", "M_USB_DBG_Pair", "InDifferentialPairClass('USB_DBG')", "", mm(50 * MIL_MM), 1, 0],
+        ["MATCHED", "M_CSI_Pair", "InDifferentialPairClass('CSI')", "", mm(ps_tol(8)), 1, 0],
+        ["MATCHED", "M_CSI_Lanes", "InDifferentialPairClass('CSI')", "", mm(ps_tol(40)), 0, 1],
+        ["MATCHED", "M_TMDS_Pair", "InDifferentialPairClass('HDMI_TMDS')", "", mm(5 * MIL_MM), 1, 0],
+        # length limits: kind, name, scope, "", min, max
+        ["LENGTH", "L_RGMII", f"{xs('RGMII_TX')} Or {xs('RGMII_RX')}", "", 0, mm(2 * 25.4)],
+        ["LENGTH", "L_MMC0", xs("MMC0"), "", mm(ps_min_len(126) - 10.0), mm(40.0)],
+        ["LENGTH", "L_MMC1", xs("MMC1"), "", mm(ps_min_len(126)), mm(ps_max_len(1386))],
+        ["LENGTH", "L_MMC2", xs("MMC2"), "", 0, mm(ps_max_len(1386))],
+        ["LENGTH", "L_DPI", xs("DPI"), "", 0, mm(2.8 * 25.4)],
+        ["LENGTH", "L_MCASP", "InNetClass('HS_MCASP')", "", mm(ps_min_len(100)), mm(ps_max_len(1100))],
+        ["LENGTH", "L_USB", _dp_classes(("USB0", "USB1", "USB_DBG")), "", 0, mm(12000 * MIL_MM)],
+        ["LENGTH", "L_CSI", "InDifferentialPairClass('CSI')", "", 0, mm(10 * 25.4)],
+        ["LENGTH", "L_TMDS", "InDifferentialPairClass('HDMI_TMDS')", "", 0, mm(2 * 25.4)],
+        # vias per net. TI allows 4 per USB 2.0 trace end to end; the split pairs get 2 per segment.
+        ["VIACOUNT", "V_TMDS", "InDifferentialPairClass('HDMI_TMDS')", "", 0],
+        ["VIACOUNT", "V_MDI", "InDifferentialPairClass('ETH_MDI')", "", 1],
+        ["VIACOUNT", "V_CSI", "InDifferentialPairClass('CSI')", "", 2],
+        ["VIACOUNT", "V_USB_Split", _dp_classes(("USB0", "USB1")), "", 2],
+        ["VIACOUNT", "V_USB_DBG", "InDifferentialPairClass('USB_DBG')", "", 4],
+        # layers: L2, L4 and L5 are reference planes, so no impedance route goes there
+        ["LAYERS", "RL_TMDS", "InDifferentialPairClass('HDMI_TMDS')", "", _layers("L1_TOP")],
+        ["LAYERS", "RL_MDI_CSI", _dp_classes(("ETH_MDI", "CSI")), "", _layers("L1_TOP", "L3_SIG")],
+        ["LAYERS", "RL_RGMII", "InNetClass('HS_RGMII_TX') Or InNetClass('HS_RGMII_RX')", "",
+         _layers("L1_TOP", "L3_SIG")],
+        ["LAYERS", "RL_SE50_USB", "InNetClass('SE50') Or " + _dp_classes(("USB0", "USB1", "USB_DBG")), "",
+         _layers("L1_TOP", "L3_SIG", "L6_BOT")],
+        ["LAYERS", "RoutingLayers", "All", "", _layers(*[name for name, *_ in COPPER])],
+    ]
+
+
+def rules(pcb: Path = None) -> list[list]:
     """One list per rule: kind, name, scope1, scope2, values...; the order
     within a kind is the priority (first = highest). The template's polygon
     connect rules (relief 4 x 10 mil spokes, 10 mil gap; vias direct) already
@@ -312,6 +513,7 @@ def rules() -> list[list]:
         # fan-out, SMD pads 0.15 mm, 0.10 mm elsewhere
         ["CLEARANCE", "Clr_InnerPour_Hole", f"InPolygon And {inner}", "IsVia Or IsPad", mm(0.20)],
         ["CLEARANCE", "Clr_SiP", SIP, "All", mm(0.09)],
+        *hs_clearance_rules(),
         ["CLEARANCE", "Clr_SMD_SMD", "IsSMTPin", "IsSMTPin", mm(0.15)],   # AD26 has no IsSMDPad
         ["CLEARANCE", "Clr_Default", "All", "All", mm(0.10)],
         # width: min | preferred | max | impedance profile | layer:preferred;...
@@ -347,11 +549,261 @@ def rules() -> list[list]:
         ["SLIVER", "Mask_Sliver", "All", "All", mm(0.10)],
         ["SILKMASK", "Silk_To_Mask", "All", "All", mm(0.15)],
         ["OUTLINE", "Board_Outline", "All", "", mm(0.30)],
+        *length_rules(pcb),
     ]
 
 
 def rules_spec(pcb: Path) -> str:
     lines = [str(pcb), room_spec()]
-    for rule in rules():
+    for rule in rules(pcb):
         lines.append("RULE|" + "|".join(str(v) for v in rule))
     return "\n".join(lines) + "\n"
+
+
+# -------------------------------------------------------- read-back from the file
+def read_rules(pcb: Path) -> list[dict]:
+    """Every record of the PcbDoc's Rules6 stream."""
+    import olefile
+    import struct
+    with olefile.OleFileIO(str(pcb)) as ole:
+        raw = ole.openstream("Rules6/Data").read()
+    out, pos = [], 0
+    while pos + 6 <= len(raw):
+        n = struct.unpack_from("<I", raw, pos + 2)[0]
+        rec = raw[pos + 6:pos + 6 + n].decode("latin-1").rstrip("\x00")
+        pos += 6 + n
+        out.append(dict(x.split("=", 1) for x in rec.split("|") if "=" in x))
+    return out
+
+
+def read_classes(pcb: Path) -> dict:
+    """{(stream kind, class name): [members]} from Classes6 and SignalClasses."""
+    import olefile
+    import struct
+    out = {}
+    with olefile.OleFileIO(str(pcb)) as ole:
+        for st in ("Classes6/Data", "SignalClasses/Data"):
+            raw = ole.openstream(st).read()
+            pos = 0
+            while pos + 4 <= len(raw):
+                n = struct.unpack_from("<I", raw, pos)[0]
+                rec = raw[pos + 4:pos + 4 + n].decode("latin-1").rstrip("\x00")
+                pos += 4 + n
+                d = dict(x.split("=", 1) for x in rec.split("|") if "=" in x)
+                members = [v for k, v in d.items() if re.fullmatch(r"M\d+", k)]
+                out[(d.get("KIND"), d.get("NAME"))] = members
+    return out
+
+
+def read_violations(pcb: Path) -> dict:
+    """{violation stream: count} after a DRC, from the T*Violation streams in the file."""
+    import olefile
+    import struct
+    out = {}
+    with olefile.OleFileIO(str(pcb)) as ole:
+        for st in ole.listdir():
+            if st[0].endswith("Violation") and st[-1] == "Data":
+                raw = ole.openstream(st).read()
+                h = "/".join(st[:-1]) + "/Header"
+                count = struct.unpack("<I", ole.openstream(h).read()[:4])[0] if ole.exists(h) else None
+                out[st[0]] = (count, len(raw))
+    return out
+
+
+def press_drc_dialog(stop_at=100000, timeout=120):
+    """PCB:DesignRuleCheck opens its dialog whatever the parameters say. Raise "Stop when N violations
+    found" (500 by default, and the unrouted nets alone pass that), then press Run."""
+    import ctypes
+    import ctypes.wintypes as wt
+    import time
+    import build
+    user32 = ctypes.windll.user32
+    start = time.time()
+    while time.time() - start < timeout:
+        found = build.x2_windows("Design Rule Checker")
+        if found:
+            break
+        time.sleep(1)
+    else:
+        return
+    dlg = found[0]
+    time.sleep(1)
+    spin = []
+
+    @ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
+    def cb(h, _):
+        cls = ctypes.create_unicode_buffer(64)
+        user32.GetClassNameW(h, cls, 64)
+        if cls.value == "TXPSpinEdit":
+            spin.append(h)
+        return True
+
+    user32.EnumChildWindows(dlg, cb, 0)
+    user32.SendMessageW(spin[0], 0x000C, 0, ctypes.c_wchar_p(str(stop_at)))     # WM_SETTEXT
+    button = build.dialog_buttons(dlg)["Run Design Rule Check..."]
+    user32.PostMessageW(user32.GetParent(button), 0x0111, user32.GetDlgCtrlID(button) & 0xFFFF, button)
+
+
+def _mil(text):
+    return float(text.replace("mil", ""))
+
+
+def verify(pcb: Path, nets: list[str]) -> list[str]:
+    """Compare the saved PcbDoc with this file; returns the differences."""
+    problems = []
+    b6 = read_board6(pcb)
+    # ---- stack
+    names = {}
+    for k, v in b6.items():
+        m = re.fullmatch(r"V9_STACK_LAYER(\d+)_NAME", k)
+        if m:
+            names[int(m.group(1))] = v
+    order = [names[i] for i in sorted(names)]
+    want = [row[0] for row in stack_layers()]
+    if order != want:
+        problems.append(f"stack order {order} != {want}")
+    for i, (name, lid, kind, p) in enumerate(stack_layers()):
+        pre = f"V9_STACK_LAYER{i}_"
+        if b6.get(pre + "LAYERID") != str(lid):
+            problems.append(f"{name}: layer id {b6.get(pre + 'LAYERID')} != {lid}")
+        if kind == "copper" and abs(_mil(b6.get(pre + "COPTHICK", "0mil")) - p["cu"]) > 0.01:
+            problems.append(f"{name}: copper {b6.get(pre + 'COPTHICK')} != {p['cu']}")
+        if kind == "diel":
+            if abs(_mil(b6.get(pre + "DIELHEIGHT", "0mil")) - p["h_mil"]) > 0.01:
+                problems.append(f"{name}: height {b6.get(pre + 'DIELHEIGHT')} != {p['h_mil']:.4f}")
+            if abs(float(b6.get(pre + "DIELCONST", 0)) - p["dk"]) > 0.001:
+                problems.append(f"{name}: Dk {b6.get(pre + 'DIELCONST')} != {p['dk']}")
+    # ---- impedance profiles, per layer
+    profile = {}
+    for k, v in b6.items():
+        m = re.fullmatch(r"V9_IMPEDANCEPROFILE(\d+)_NAME", k)
+        if m:
+            profile[b6[f"V9_IMPEDANCEPROFILE{m.group(1)}_ID"]] = v
+    traces = {}
+    i = 0
+    while f"V9_TRACEIMPEDANCE{i}_PROFILE_ID" in b6:
+        pre = f"V9_TRACEIMPEDANCE{i}_"
+        traces[(profile.get(b6[pre + "PROFILE_ID"]), b6[pre + "LAYER_V7ID"])] = {
+            k[len(pre):]: v for k, v in b6.items() if k.startswith(pre)}
+        i += 1
+    ids = {name: str(lid) for name, lid, *_ in COPPER}
+    enabled = {k: [lay for (pn, lay), rec in traces.items() if pn == k and rec.get("ENABLED") == "TRUE"]
+               for k in profile.values()}
+    for name, ohms, diff, layers in IMPEDANCE:
+        if len(enabled.get(name, [])) != len(layers):
+            problems.append(f"profile {name}: {len(enabled.get(name, []))} enabled layers, expected {len(layers)}")
+        if name not in profile.values():
+            problems.append(f"profile {name} is missing")
+        for lname, (w, g) in layers.items():
+            rec = traces.get((name, ids[lname]))
+            if rec is None:
+                problems.append(f"profile {name} has no entry for {lname}")
+                continue
+            if rec.get("ENABLED") != "TRUE":
+                problems.append(f"profile {name} {lname} is not enabled")
+            if abs(_mil(rec.get("TRACE_WIDTH", "0mil")) - w) > 0.02:
+                problems.append(f"profile {name} {lname}: width {rec.get('TRACE_WIDTH')} != {w}")
+            if diff and abs(_mil(rec.get("DIFF_PAIR_GAP", "0mil")) - g) > 0.02:
+                problems.append(f"profile {name} {lname}: gap {rec.get('DIFF_PAIR_GAP')} != {g}")
+            top, bot = REFS[lname]
+            for key, ref in (("REF_TOP_V7ID", top), ("REF_BOT_V7ID", bot)):
+                if ref and rec.get(key) != ids[ref]:
+                    problems.append(f"profile {name} {lname}: {key} {rec.get(key)} != {ref}")
+    # ---- classes
+    cl = read_classes(pcb)
+    for name, members in net_classes(nets).items():
+        have = cl.get(("0", name))
+        if have is None:
+            problems.append(f"net class {name} is missing")
+        elif set(have) != set(members):
+            problems.append(f"net class {name}: missing {sorted(set(members) - set(have))[:5]}, "
+                            f"extra {sorted(set(have) - set(members))[:5]}")
+    for dpc, pairs in DIFF_PAIRS.items():
+        have = cl.get(("6", dpc))
+        if have is None or set(have) != {p for p, _, _ in pairs}:
+            problems.append(f"differential-pair class {dpc}: {have}")
+    xnames = xsignal_names(pcb)
+    for bus in BUSES:
+        want_x = {xnames.get(frozenset(pins)) for pins in xsignal_pins(bus)}
+        if None in want_x:
+            problems.append(f"bus {bus}: an xSignal is missing")
+        if set(cl.get(("10", bus), [])) != want_x - {None}:
+            problems.append(f"xSignal class {bus}: {cl.get(('10', bus))}")
+    # ---- rules
+    file_kind = {"CLEARANCE": "Clearance", "WIDTH": "Width", "DIFFPAIR": "DiffPairsRouting", "VIA": "RoutingVias",
+                 "HOLESIZE": "HoleSize", "ANNULAR": "MinimumAnnularRing", "HOLE2HOLE": "HoleToHoleClearance",
+                 "MASK": "SolderMaskExpansion", "PASTE": "PasteMaskExpansion", "SLIVER": "MinimumSolderMaskSliver",
+                 "SILKMASK": "SilkToSolderMaskClearance", "OUTLINE": "BoardOutlineClearance",
+                 "MATCHED": "MatchedLengths", "LENGTH": "Length", "VIACOUNT": "MaximumViaCount", "LAYERS": "RoutingLayers"}
+    saved = {(r.get("RULEKIND"), r.get("NAME")): r for r in read_rules(pcb)}
+
+    def near(rule, key, coord):
+        if key not in rule or abs(_mil(rule[key]) - coord / MIL) > 0.01:
+            problems.append(f"rule {rule.get('NAME')}: {key} = {rule.get(key)}, expected {coord / MIL:.3f} mil")
+
+    last = {}
+    for row in rules(pcb):
+        kind, name, s1, s2 = row[0], row[1], row[2], row[3]
+        r = saved.get((file_kind[kind], name))
+        if r is None:
+            problems.append(f"rule {name} ({kind}) is missing")
+            continue
+        if r.get("SCOPE1EXPRESSION") != s1:
+            problems.append(f"rule {name}: scope 1 {r.get('SCOPE1EXPRESSION')!r} != {s1!r}")
+        if s2 and r.get("SCOPE2EXPRESSION") != s2:
+            problems.append(f"rule {name}: scope 2 {r.get('SCOPE2EXPRESSION')!r} != {s2!r}")
+        pr = int(r.get("PRIORITY", 0))
+        if pr <= last.get(kind, 0):
+            problems.append(f"rule {name}: priority {pr} is out of order")
+        last[kind] = pr
+        if kind in ("CLEARANCE", "HOLE2HOLE"):
+            near(r, "GAP", row[4])
+        elif kind == "WIDTH":
+            near(r, "MINLIMIT", row[4])
+            near(r, "MAXLIMIT", row[6])
+        elif kind == "MATCHED":
+            near(r, "TOLERANCE", row[4])
+            if row[5] and r.get("CHECKNETSINDIFFPAIR") != "TRUE":
+                problems.append(f"rule {name}: does not check nets within the pair")
+            if row[6] and r.get("CHECKDIFFPAIRVSDIFFPAIR") != "TRUE":
+                problems.append(f"rule {name}: does not check pair against pair")
+            if not row[5] and not row[6] and r.get("CHECKXSIGNALS") != "TRUE":
+                problems.append(f"rule {name}: does not check xSignals")
+        elif kind == "LENGTH":
+            near(r, "MINLIMIT", row[4])
+            near(r, "MAXLIMIT", row[5])
+        elif kind == "VIACOUNT":
+            if r.get("LIMIT") != str(row[4]):
+                problems.append(f"rule {name}: limit {r.get('LIMIT')} != {row[4]}")
+        elif kind == "LAYERS":
+            on = {lname: r.get(V5_KEY[lname]) for lname in V5_KEY}
+            allowed = {V5_LAYER_NAME[int(item.split(":")[0])] for item in row[4].split(";") if item.endswith(":1")}
+            for lname, val in on.items():
+                if (val == "TRUE") != (lname in allowed):
+                    problems.append(f"rule {name}: {lname} = {val}, allowed {sorted(allowed)}")
+    return problems
+
+
+V5_LAYER_NAME = {v: k for k, v in V5_LAYER.items()}
+
+
+if __name__ == "__main__":
+    import sys
+    import build
+    pcb = build.PCB_PATH
+    cmd = sys.argv[1] if len(sys.argv) > 1 else ""
+    if cmd == "xsignals":
+        # creates the xSignals; then run `build.py pcb classes rules`, which reads their names back
+        spec = xsignals_spec(pcb)
+        print(len(spec.splitlines()) - 1, "xSignals to create")
+        build.pcb_run("PcbXSignals", "ape_pcb_xsignals.txt", spec, timeout=300)
+    elif cmd == "drc":
+        import threading
+        threading.Thread(target=press_drc_dialog, daemon=True).start()
+        build.pcb_run("PcbDrc", "ape_pcb_report_in.txt", f"{pcb}\n", timeout=1800)
+        print(read_violations(pcb))
+    elif cmd == "verify":
+        found = verify(pcb, build.pcb_nets())
+        print("\n".join(found) if found else "stack, profiles, classes, pairs, xSignals and rules match this file")
+    else:
+        print("usage: python pcbsetup.py xsignals | verify | drc")
