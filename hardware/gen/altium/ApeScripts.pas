@@ -1134,7 +1134,9 @@ begin
             Rule.ConstraintLayer := eTopLayer;
             Rule.BoundingRect := RectToCoordRect(Rect(StrToInt(PipeField(Rec, 3)), StrToInt(PipeField(Rec, 6)),
                                                       StrToInt(PipeField(Rec, 5)), StrToInt(PipeField(Rec, 4))));
-            Rule.Comment := 'SiP fan-out region (gen/pcbsetup.py); move it with U1';
+            // field 7, when given, says what the room is for; the SiP rooms leave it out
+            if (PipeField(Rec, 7) <> '') then Rule.Comment := PipeField(Rec, 7)
+            else Rule.Comment := 'SiP fan-out region (gen/pcbsetup.py); move it with U1';
             Board.AddPCBObject(Rule);
         end
         else if (Kind = 'RULE') then

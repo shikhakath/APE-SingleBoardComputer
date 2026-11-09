@@ -393,12 +393,25 @@ SIP = f"WithinRoom('{SIP_ROOM}')"
 # Pairs side by side need 1.20 mm centre to centre, against 0.50 mm at the balls, which takes about 2 mm of run at 45 degrees.
 ESCAPE_ROOM = "U1_Escape"
 ESCAPE_MM = 3.0
+# HDMI from U1000's TMDS pins to J1000's: all of it is package escape or connector termination, where TI
+# lifts the 30 mil (SPRAAR7J §3.3, §3.4). U1000's break-out may run 0.25 in (6.35 mm) and reaches under
+# U1001, the connector's ESD part, and the pairs pass U1001's 0.65 mm pads and J1000's 0.5 mm pins with no
+# GND between neighbours. Board mm, drawn round U1000 at (77.0, 40.0), U1001 and J1000 at (105.3, 36.95) as
+# placed by hand on 2026-11-09: their TMDS pads and the routes over and under U1001's ends. Move it with them.
+HDMI_ROOM = "HDMI_Escape"
+HDMI_ROOM_MM = (81.9, 32.9, 101.5, 46.75)       # x1, y1, x2, y2
 
 
 def room_spec(name=SIP_ROOM, grow=0.0) -> str:
     cx, cy = BOARD_X0 + mm(placement.U1_XY[0]), BOARD_Y0 + mm(placement.U1_XY[1])
     return (f"ROOM|{name}|InComponent('U1')|{cx - mm(ROOM_W_MM / 2 + grow)}|{cy - mm(ROOM_H_MM / 2 + grow)}"
             f"|{cx + mm(ROOM_W_MM / 2 + grow)}|{cy + mm(ROOM_H_MM / 2 + grow)}")
+
+
+def hdmi_room_spec() -> str:
+    x1, y1, x2, y2 = HDMI_ROOM_MM
+    return (f"ROOM|{HDMI_ROOM}|InComponent('U1001')|{BOARD_X0 + mm(x1)}|{BOARD_Y0 + mm(y1)}|{BOARD_X0 + mm(x2)}"
+            f"|{BOARD_Y0 + mm(y2)}|HDMI escape and connector termination (gen/pcbsetup.py); move it with U1000, U1001, J1000")
 
 
 # ------------------------------------------------------------------ rules
@@ -533,6 +546,8 @@ def rules(pcb: Path = None) -> list[list]:
         ["CLEARANCE", "Clr_SiP", SIP, "All", mm(0.09)],
         # Ahead of the 30 mil rules: TI scopes those "after package escape". Track to track, as they are.
         ["CLEARANCE", "Clr_HS_Escape", f"WithinRoom('{ESCAPE_ROOM}') And IsTrack", "IsTrack", mm(0.10)],
+        ["CLEARANCE", "Clr_HDMI_Escape", f"WithinRoom('{HDMI_ROOM}') And InDifferentialPairClass('HDMI_TMDS') And IsTrack",
+         "IsTrack", mm(0.10)],
         *hs_clearance_rules(),
         ["CLEARANCE", "Clr_SMD_SMD", "IsSMTPin", "IsSMTPin", mm(0.15)],   # AD26 has no IsSMDPad
         ["CLEARANCE", "Clr_Default", "All", "All", mm(0.10)],
@@ -577,7 +592,7 @@ def rules(pcb: Path = None) -> list[list]:
 
 
 def rules_spec(pcb: Path) -> str:
-    lines = [str(pcb), room_spec(), room_spec(ESCAPE_ROOM, ESCAPE_MM)]
+    lines = [str(pcb), room_spec(), room_spec(ESCAPE_ROOM, ESCAPE_MM), hdmi_room_spec()]
     for rule in rules(pcb):
         lines.append("RULE|" + "|".join(str(v) for v in rule))
     return "\n".join(lines) + "\n"
