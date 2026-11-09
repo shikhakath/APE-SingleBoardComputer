@@ -1,0 +1,67 @@
+# Parts moved so that the critical nets have clear lanes past the SiP. Written by patch_passives.py. Absolute coordinates, no shift.
+# near keeps out of these: a via here takes room on every signal layer
+keep B 60.3 38.3 72.5 48 DPI bus
+keep T 60.3 38.3 72.5 48 DPI bus
+keep B 58.6 30.7 66.5 39.8 RGMII series rows
+keep T 58.6 30.7 66.5 39.8 RGMII series rows
+keep B 56.5 53 62.6 64 M.2 bus
+keep B 61.4 52 66.6 55.6 SD bus
+# 0R links: where their rail's plane region meets the rail that feeds it, away from the RGMII rows
+near B 70.4,31.2 R305
+near B 72.6,48.4 R306
+near B 64.4,58 R304
+near B 63.6,58.6 R303
+near B 65.2,62.5 R308
+# Filter caps and the pull-up off the M.2 bus, VMON's filter cap off the SD stubs
+near B 49,59 R203 C220 C609
+at T 0 51.4 51.6 C300
+# Boot straps: static, and their switch is far off, so out of the DPI bus altogether
+row B 90 81.6 52.6 1.35 0 R626 R650 R648 R646 R644 R624 R622 R620
+row B 90 81.6 50.3 1.35 0 R627 R651 R649 R647 R645 R625 R623 R621
+# DPI straps: north of the bus, signal pads facing, VDDSHV3 vias along the north, GND vias along the south
+row B 90 62.05 50.65 1.32 0 R642 R640 R638 R636 R634 R632 R630
+at B 90 72.7 48.4 R628
+row B 90 62.05 48.4 1.32 0 R643 R641 R639 R637 R635 R633 R631 R629
+# Pull-ups with no reason to sit on a bus
+near B 67.3,36 R1200 R1201
+near B 68.6,35.4 TP305
+near B 64.6,56.6 R710 R204 R1322 R1323
+# C319's GND via stood at the mouth of the eMMC stubs: the nearest spot that clears them
+at B 0 44.8 46.55 C319
+# Held in place: decoupling capacitors and ESD parts, which the moves above would otherwise have shuffled
+pin B 0 72.500 32.550 C1000
+pin B 0 72.750 34.300 C1001
+pin B 180 75.250 34.300 C1002
+pin B 0 78.250 34.300 C1003
+pin B 180 79.130 53.000 C1300
+pin B 0 73.380 51.500 C1303
+pin B 180 59.750 52.000 C358
+pin B 90 60.500 47.500 C359
+pin B 180 57.250 52.000 C360
+pin B 180 58.750 69.800 C608
+pin B 270 30.750 49.850 C700
+pin B 0 33.000 49.100 C701
+pin B 270 35.250 49.900 C702
+pin B 180 37.500 45.150 C703
+pin B 180 37.500 46.900 C704
+pin B 0 68.950 30.450 C807
+pin B 0 68.450 32.200 C823
+pin B 0 66.450 30.200 C824
+pin B 180 35.775 25.000 D903
+pin B 270 74.350 29.300 C821
+pin B 270 72.600 30.050 C822
+pin B 0 69.300 15.200 C227
+pin B 90 67.200 14.700 C228
+pin B 180 76.350 22.800 C803
+pin B 0 68.950 28.700 C808
+pin B 270 65.800 28.050 C809
+pin B 180 73.200 17.400 C811
+pin B 90 74.200 19.650 C812
+pin B 0 65.700 22.900 C813
+pin B 180 73.450 21.900 C815
+pin B 180 70.950 21.900 C816
+pin B 90 63.450 20.400 C818
+pin B 90 72.450 19.650 C820
+pin B 90 61.800 23.050 C825
+pin B 90 63.550 23.050 C826
+pin B 270 38.200 53.400 C705

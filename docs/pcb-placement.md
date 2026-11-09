@@ -1,10 +1,8 @@
-# PCB component placement
+# PCB component placement and fan-out
 
-State of `hardware/PCB.PcbDoc`: outline set, every part placed (including DNP parts), stack and high-speed rules set, nothing routed. The rules, their sources and the net lists are in [`hardware/gen/README.md` section 11](../hardware/gen/README.md#high-speed-constraints).
+State of `hardware/PCB.PcbDoc`: 110 x 80 mm outline, 8-layer stack, every part placed (including DNP parts), high-speed rules set, fan-outs done. Signals are not routed, and there are no power pours yet. The rules, their sources and the net lists are in [`hardware/gen/README.md` section 11](../hardware/gen/README.md#high-speed-constraints).
 
-![Placed board in Altium with the ratsnest](pcb-placement-altium.png)
-
-*Altium, top view with both sides' copper shown and overlays hidden. Red is top copper, blue is bottom copper. DRC markers were cleared for this picture; the results are in [Checks](#checks).*
+![Placed board in Altium with fan-outs and the ratsnest](pcb-placement-altium.png)
 
 | Top side | Back side (seen from the top) |
 |---|---|
@@ -12,205 +10,232 @@ State of `hardware/PCB.PcbDoc`: outline set, every part placed (including DNP pa
 
 *Offline renders from `placement.py`. Courtyards are coloured by schematic sheet, pink areas are keepouts, blue lines are the signal ratsnest. The blue outline on the back is the M.2 card.*
 
-## Board size: 100 × 70 mm
+## Board size: 110 x 80 mm
 
-The Raspberry Pi rectangle (85 × 56) is the upper-left part of the board. The board grows 15 mm to the right and 14 mm down, so the holes and the 40-pin header stay where a Pi has them.
+The Raspberry Pi rectangle (85 x 56) is the upper-left part of the board. The board grows 25 mm to the right and 24 mm down, so the holes and the 40-pin header stay where a Pi has them.
 
 | Item | Position on this board (mm from the lower-left corner) | Source |
 |---|---|---|
 | Corners | R3 | Pi 4 mechanical drawing |
-| Mounting holes | (3.5, 17.5), (61.5, 17.5), (3.5, 66.5), (61.5, 66.5): 58 and 49 apart | Pi 4 drawing, HAT mechanical spec |
-| 40-pin header centre | (32.5, 66.5), pin 1 at (8.37, 65.23) | Pi 4 drawing: 29 from the hole column, on the upper hole row |
-| HAT footprint | x < 65, y > 14 | HAT spec: 65 × 56 |
+| Mounting holes | (3.5, 27.5), (61.5, 27.5), (3.5, 76.5), (61.5, 76.5): 58 and 49 apart | Pi 4 drawing, HAT mechanical spec |
+| 40-pin header centre | (32.5, 76.5), pin 1 at (8.37, 75.23) | Pi 4 drawing: 29 from the hole column, on the upper hole row |
+| HAT footprint | x < 65, y > 24 | HAT spec: 65 x 56 |
 
-### Area budget
-
-Totals come from the real footprints, 717 parts (`placement.py budget`). The "effective" figure adds what courtyards don't count but parts still can't use:
-
-| | mm² |
-|---|---|
-| All courtyards, both sides | 6,199 |
-| Far side of through-hole parts (header, RJ45, USB-A, 4 holes) | 1,204 (upper bound: some space between tails is usable) |
-| eMMC module beyond its two plugs (18 × 13 mm, 1 mm stack) | 161 |
-| Back of the SiP (fan-out vias) | 193 |
-| Back of the TFP410 (thermal vias) | 71 |
-| **Effective** | **7,827** |
-
-| Size | Both sides, mm² | Raw | Effective | Result |
-|---|---|---|---|---|
-| 85 × 56 (Pi) | 9,520 | 65 % | 82 % | Too tight. Also fails on edge length: see below |
-| 100 × 56 | 11,200 | 55 % | 70 % | Placed in full, judged too painful to route (see the note below) |
-| **100 × 70** | **14,000** | **44 %** | **56 %** | **Chosen. Same as the earlier project size, so the JLC quote stands** |
-
-These percentages are a density estimate, not a routing result. Nothing has been trial-routed.
-
-**Note on the 100 × 56 attempt:** when that version was reviewed, Altium's ratsnest was stale (see [Re-running](#re-running)) and overlays were on, so it looked worse than it was. The density was real, but 100 × 56 wasn't given a fair look. Going to 100 × 70 also let the layout improve, as described below.
-
-**Why 85 × 56 fails on edges as well as area:** RJ45, USB-A and HDMI take 52 of the right edge's 56 mm, which leaves no edge for microSD or the jack. The RJ45 and USB-A must also stay outside the HAT footprint (they are 13.5 and 16 mm tall).
-
-**Why going to 100 × 70 changed the layout rather than just scaling it:** the 14 mm strip below the Pi rectangle is outside a HAT's footprint, so tall connectors can sit on the bottom edge, directly below their buses. That removed the long RGMII and USB runs around the SiP and left the right side clear for HDMI.
+All courtyards on both sides add up to 6,199 mm². With the far side of through-hole parts, the area under the eMMC module, and the SiP and TFP410 via fields, that is 7,827 mm², or 44 % of both sides. [pcb-floorplan.md](pcb-floorplan.md#why-110-x-80) has the size comparison.
 
 ## Floorplan
 
-The SiP sits in its zero orientation at (44, 43). Of the four rotations this one has the lowest total wire length to the hand-placed parts (2,021 mm; the others are 2,776 to 3,328 mm), and each side of the ball map faces its destination:
+The SiP sits near the middle of the board at (52, 43). Each block sits on the side of the SiP that its balls face, so the whole board is used and no main bus crosses the board. [pcb-floorplan.md](pcb-floorplan.md) has the plan as first reviewed and what changed from it.
 
-| SiP side | Balls | Goes to | Path |
-|---|---|---|---|
-| Top (rows A–D) | HDR GPIO, I²C, SPI | J1400 header | Straight up, 15 mm channel |
-| Top left | UARTs, JTAG, EMU | Level shifters U1504/5, FT4232, J1501 | Left and up |
-| Top right | SD, SDIO | J702 on the top edge, J1300 on the back | Right |
-| Right (columns 25–28) | DPI | U1000 TFP410 | 6 mm clear corridor |
-| Bottom right | RGMII | U800 PHY directly below, then J800 | Straight down |
-| Bottom middle | CSI | J1200 directly below | Straight down |
-| Bottom left | USB | U900 hub directly below, then J900 | Straight down |
-| Left (columns 1–2) | MMC0, clocks | J700 on the back, U600, Y600 | Straight out |
-
-Bus order was checked against the pin tables by reasoning, not by trial routing:
-
-- **HDMI:** TFP410 rotated 90° so D12–23 enter its top side and D0–11 its left side, in the same top-to-bottom order as the balls. TMDS leaves its right side in the same order as the J1000 pins, heading down and right to the right edge.
-- **Ethernet:** PHY rotated 90° so its RGMII side faces up, right under the balls, and its MDI side faces down. MDI0–3 run left to right in the same order as the RJ45 pin field, apart from the MDI1/MDI2 split noted below.
-- **USB:** hub upstream side up, downstream down, directly above J900.
-
-### Placement by block
-
-| Block | Where | Measured |
+| SiP side | Goes to | Where |
 |---|---|---|
-| USB-C power | J100 on the left edge, U100 beside it | CC toward J100, VBUS and VSYS out of the top |
-| LM61460 3.3 V | Lower left | SW to L100: 3.4 mm. VIN caps on both sides of the part |
-| TPS63070 5 V | Left | L1/L2 to L101: 4.2 mm. Output caps below, input caps above |
-| PMIC | SiP's lower-left corner | LX to inductors: 2.8–3.2 mm |
-| 25 MHz oscillator | U1's left edge | U600 to R600 1.7 mm, R600 to ball G1 2.2 mm |
-| 32 kHz crystal | U1's left edge | Y600 to ball H1 2.9 mm. Load cap `C603` 1.9 mm from its pad, `C602` 9.6 mm. Series `R602` 8.0 mm from Y600 and 14.0 mm from ball H2 |
-| PHY crystal | Right of U800 | `C801` 1.7 mm and `C800` 2.7 mm from their pads |
-| Debug | Upper left | J1500 on the left edge, FT4232, level shifters toward U1 |
-| eMMC module | Back, against the SiP's left edge | Outline on Mechanical 13 |
-| M.2 card | Back, socket right of the SiP at the height of the SDIO balls | Card runs right over low parts. Outline on Mechanical 13 |
-| microSD, audio | Top edge, right of H1603 | Codec 50 mm and its oscillator 45 mm from the nearest switcher part |
-| Buttons, LEDs | Bottom edge | In the strip a HAT doesn't cover |
+| North (rows A-D) | Header, debug, SD, SDIO | Header series parts along its south edge; debug in the north-west; SD socket and audio in the north-east, M.2 card under them |
+| East (columns 25-28) | DPI, McASP | TFP410, then `U1001` and `J1000` in a straight line |
+| South (rows U-V) | USB1, CSI, RGMII | South edge, west to east: `J900` with the hub above it, `J1200`, `J800` with the PHY above it |
+| West (columns 1-2) | MMC0, clocks, USB0 | eMMC module on the back, clocks on top, `J100` on the west edge |
+| South-west corner | Power | PMIC at the SiP, 3.3 V buck and 5 V buck-boost further out |
 
-The 32 kHz crystal and 25 MHz oscillator have to sit at the SiP, which is also near the PMIC. They are 5.7 and 9.6 mm from the PMIC body, and 8.3 and 12.2 mm from its nearest inductor. This is the closest any sensitive part gets to a switcher, so check it first if clock noise shows up.
+## How positions are set
 
-### Rules the placer enforces
+Every position is in [`hardware/gen/blocks/`](../hardware/gen/blocks), one file per schematic function.
 
-- **Decoupling:** every SiP cap is assigned a ball on its rail (the named ball where the schematic comment gives one). Ball-side parts get first pick of the ring around U1: first the slew parts, then the SiP's caps, beads and links, then other parts marked "at SoC".
-- **Channels:** small parts have 0.3 mm around their courtyards on a 0.5 mm grid, which gives 0402s a 2.5–3 × 2 mm lattice with room for their vias.
-- **Corridors:** no small parts on the top side where a whole bus leaves U1 (DPI, HDR/JTAG, USB, RGMII, TMDS, MDI, D12–23).
-- **Back side:** small passives, small ICs and test pads, plus the M.2 socket and eMMC plugs. Nothing under the SiP or under exposed pads (thermal vias), and no test pads or IO-bank links under the M.2 card. Power-stage parts bigger than 0402 stay on top for short loops.
-- **Through-hole tails:** none under the M.2 card or eMMC module (`placement.py check` tests this). HDMI sits low on the right edge for this reason.
+- **Single parts and rows are written by hand** with coordinates: connectors, ICs, power stages, crystal groups, series rows, strap rows, SiP decoupling, header resistors.
+- **Other passives are given by hand as a pin and a side.** `blocks.py` only finds the nearest free spot there, 0.50 mm from its neighbours, with the part's pad on that net towards the pin.
+- **An overlap in a row is an error to fix in the file.** Nothing is moved to make it fit.
+- **Two-pin parts** placed with coordinates may turn 180° so that their pads face what they serve.
+
+### Passives around the SiP
+
+All on the back, grouped by rail.
+
+- **Under the body:** 20 parts in the spots that clear the fan-out vias. They go to the most central balls: `VDD_CORE`, `VDDS_DDR`, `VDDR_CORE`, the small analog rails and the IO banks.
+- **South:** one column per analog rail, in ball order: 100 nF nearest, then bulk, then the bead.
+- **East:** the IO banks' caps in a column in ball order, their 0R links beside them.
+- **North:** four rows. I²C slew parts first (sheet 14 wants them within 5 mm), then the parts the schematic puts at a ball, then bulk and beads.
+- **West:** the kept eMMC corridor, with pull-ups just south of it.
+
+## Fan-outs
+
+Scripted by `fanout.py`, with no autorouter. Nothing joins one part to another, except that a pad may share a same-net via beside it, and the switch nodes stay on the surface between their pads.
+
+| What | How | Count |
+|---|---|---|
+| SiP power and GND balls | One via between four balls, on a checkerboard of sites. Two-ball rails share a via | 176 balls, 170 vias |
+| SiP signals, outer row | Straight stub on L1, 1 mm past the ball field | 55 |
+| SiP signals, second row | A jog into the gap between two outer balls, then straight out on L1 | 53 |
+| SiP signals, further in | One via beside the ball, for L3 or L6. Each ball gets its own site | 72 |
+| Caps under the SiP | A stub to a same-rail via beside them, or a new via | 38 pads, 29 new vias |
+| Other SMD power and GND pads | Via in large pads; otherwise a short stub to a via or to a same-net via already beside it | 1,087 pads, 992 vias |
+| Switch nodes (`LM_SW`, `BB_L1`, `BB_L2`, `PMIC_LX_B1`-`B3`) | Wide tracks on the surface, no via | |
+
+In all: 1,263 vias and 1,458 stubs (666 mm), with every connected ball and every SMD power and GND pad done. SiP vias are 0.15 / 0.25 mm; others are 0.30 / 0.50 mm, or smaller where that didn't fit.
+
+The vias are tented by a rule, `Mask_Via`: a solder-mask expansion of -0.30 mm on `IsVia`. `IsTenting_Top` and `IsTenting_Bottom` don't stick when set by script on AD26.
+
+![SiP fan-out, top and back](pcb-fanout-sip.png)
+
+*Offline render. Blue: signal copper. Red: power. Grey: GND. Round: vias.*
+
+![SiP fan-out in Altium](pcb-fanout-altium.png)
+
+## Before and after
+
+"Before" is the placement before this rework, on 100 x 70 mm. Distances are straight lines from a passive's pad to the nearest IC, connector, crystal or inductor pin on the same net. Bus lengths are Manhattan, ball to pin. Ratsnest and demand count signal nets only, because power nets go on the planes.
+
+| Measure | Before | Now |
+|---|---|---|
+| Passives within 3 / 5 mm of the pin they serve (592 parts) | 22.5 / 43.2 % | 40.7 / 62.7 % |
+| Decoupling within 3 / 5 mm (263 caps) | 19.8 / 36.5 % | 48.7 / 70.7 % |
+| SiP decoupling, median / worst | 10.4 / 15.8 mm | 6.1 / 12.4 mm |
+| Total meander needed | 84.0 mm | 38.3 mm |
+| Routing demand (RUDY), area over 100 % | 424 mm² | 340 mm² |
+| Routing demand, area over 70 % | 908 mm² | 804 mm² |
+| Routing demand, peak | 2.92 | 2.89 |
+| eMMC length; meander | 2.9-7.5 mm; 53.8 mm | 10.4-15.0 mm; 13.3 mm |
+| TMDS | 38.1 mm, diagonal | 19.1 mm, straight |
+| MDI | 31.2-34.4 mm | 18.4-21.6 mm |
+| USB0 | 47.4 mm | 44.4 mm |
+| USB1 | 22.0 mm | 22.2 mm |
+| `C602` to `Y600` | 7.0 mm | 2.1 mm |
+| `R602` to `Y600`; to ball H2 | 5.7; 10.0 mm | 4.5; 3.3 mm |
+| `C361` to ball N7 | 9.3 mm | 2.3 mm |
+| `R1300`-`R1304` to their balls | 7.7-10.5 mm | 3.4-6.4 mm |
+
+**Worse:**
+
+| Measure | Before | Now | Why |
+|---|---|---|---|
+| Signal ratsnest | 7,624 mm | 8,575 mm (+12 %) | Connectors on edges, on a larger board. The old placement was annealed for exactly this number |
+| Ratsnest crossings | 3,080 | 3,156 (+2 %) | Same |
+| Main bus lines crossing, straight lines from ball to pin | 19 | 40 | SD and SDIO cross once as whole bundles (34), and can avoid each other by layer, as `J702` is on top and `J1300` on the back. RGMII TX and RX (4) and USB0 and USB1 (2) remain |
+| CSI | 10.4-16.9 mm | 39.2-44.7 mm | Edge connector, limit 254 mm. Lane spread 5.5 mm against 5.8 mm |
+| RGMII | 8.2-13.1 mm | 20.2-25.3 mm | Limit 50.8 mm |
+| SD | 32.8-40.0 mm | 42.7-49.9 mm | Socket east of the M.2 socket's peg, limit 201 mm |
+| SDIO | 10.3-14.3 mm | 33.8-35.8 mm | M.2 in the north-east, limit 201 mm. Meander falls from 6.4 to 1.2 mm |
+| DPI | 7.2-21.2 mm | 13.0-24.0 mm | Limit 71.1 mm. Spread falls from 13.9 to 10.9 mm |
+
+These measures don't show that the board routes more easily; only a real route can test that.
+
+## Placement by block
+
+| Block | Measured |
+|---|---|
+| LM61460 3.3 V | SW to `L100` 3.6 mm. VIN caps on both sides, output caps south of the inductor |
+| TPS63070 5 V, beside USB-A | L1 and L2 to `L101` 4.2 mm. Input caps north, output caps south |
+| PMIC | LX to inductors 2.8, 3.2, 3.1 mm. Small caps behind the pins they serve |
+| 25 MHz oscillator | `U600` to `R600` 2.1 mm, `R600` to ball G1 2.3 mm |
+| 32 kHz crystal | XI on the east pin: `Y600` to ball H1 4.9 mm, load caps 2.1 mm from their pins |
+| Hub | Straight below the USB1 balls. Chokes one on each side of the board |
+| Ethernet | Transmit series row at the SiP, receive series row on the way to the PHY, load caps behind the crystal |
+| Audio | 49 mm or more from the nearest switcher part |
+
+The 32 kHz crystal and 25 MHz oscillator have to sit at the SiP, which is also near the PMIC. They are 9.7 and 13.1 mm from the PMIC body, and 12.5 and 15.8 mm from `L200`. This is the closest any sensitive part gets to a switcher, so check it first if clock noise shows up.
 
 ### Placement notes from the schematic
 
 | Note | Result |
 |---|---|
-| Sheet 14: 47 pF + 62 Ω within 5 mm of the SoC balls | Met: all eight I²C slew parts are 2.9–4.8 mm from their balls |
-| Sheet 06: 25 MHz oscillator within a few mm of G1 | Met: see the table above |
-| `R303`–`R310` IO-bank links next to their bank's caps | 4.3–7.8 mm from a bank ball, none under the M.2 card |
-| `FB311`, `C361` near ball N7 | `FB311` 4.8 mm. **`C361` 9.3 mm is not close**; move it when routing if the ring has room |
-| "At SoC" series parts | Clock series `R700`, `R729`, `R1000`, `R1321` are 2.9–4.8 mm from their balls. SDIO data 0 Ω options `R1300`–`R1304` are 7.8–10.5 mm, and `R1620`/`R1621` (LEDs) 11–15 mm |
-| SiP decoupling | 62 caps, median 10.6 mm from the nearest ball on their rail; the worst is `C320` at 18.3 mm, then 15.8 mm. `C320` gave up its spot to the crystal's `C603`. Many rail balls are in the package's centre block, and the eMMC module and M.2 socket take two sides of the back |
-| Parts on high-speed nets | The annealer scored these as wire, which left some far from the route. 45 were re-placed for the shortest stub, see [Stubs](#stubs) |
-
-## Where routing will be hardest
-
-1. **SiP fan-out.** 500 balls at 0.5 mm, with every bus converging on U1. A coarse demand estimate (RUDY) is over capacity on about 650 mm² around U1, peaking at the lower-right corner where DPI, RGMII and audio meet. RUDY overstates this right at a BGA edge, but this is where layers will run out first. Whole-board demand is about 35 % of capacity (L1, L3 and L6 at 0.30 mm pitch, 50 % usable).
-2. **Lower-right corner of U1: RGMII ball order.** The ball order doesn't match the PHY's pin order, so RXC and TX need layer swaps in the 5 mm between U1 and the PHY. The series resistors sit in line on the top side, which leaves little room there.
-3. **Inner DPI balls.** D0–D4, HSYNC, DE, VSYNC and PCLK sit on inner columns 25–26 (rows M–T), behind the outer DPI balls, so they need L3 or L6.
-4. **Above the TFP410.** D12–D23, SD and audio share the 5.8 mm between the TFP410 and SW602. Expect SD and audio to use L3 there.
-5. **HDR balls on the right side.** Rows F–L in columns 25–26 carry 7 header nets that must cross the DPI escape to go up.
-6. **USB0.** It runs at least 47 mm from U1 to J100 through the choke on the back, and crosses USB1 once right at the balls, because USB0's balls are on the far side of USB1's.
-7. **MDI1/MDI2 at the RJ45.** The jack's pin order splits MDI1 around MDI2, so one crossing near J800 is unavoidable. H1601 also sits in the MDI band's path; the band passes above it.
-8. **TMDS at U1001.** The TPD12S016's TMDS pads face J1000, so the pairs can't reach them from the TFP410's side around the package. TI's Figure 20 (SLLSE96F p22) shows the answer for this TSSOP: enter over the top end of the package, run under its body on L1, and reach each pad from the inside. Pair order here matches that figure at all three parts.
-9. **eMMC lengthening.** The module is so close to U1 that its host-side nets are 2.9–9.9 mm against a 10.66 mm minimum, which comes to about 36 mm of meander. The module blocks the back, so this probably goes on L3 beside the balls.
-10. **CSI at its via limit.** Two vias per net: the balls are in row 3, so one is used to escape and one to return to L1. `CSI_CLK` must also cross D0 and D1.
-11. **Power on L5.** Many rails must be split out under the SiP, and L6's high-speed runs need unbroken L5 copper above them. VDD_CORE is the one to plan first (2.7 A from L200).
-
-## High-speed constraints on this placement
-
-Every constraint in the README's table was compared with pad-to-pad Manhattan lengths on this placement. None is impossible on length. These are the ones that aren't met as placed, or that cost something:
-
-| Constraint | Result |
-|---|---|
-| Pair to anything else ≥ 30 mil (`Clr_HS_<pair>`) | **Can't be met at some pins.** Tracks of neighbouring pairs can be at most 0.38 mm apart at J1000, 0.53 mm at U1001 and 0.63 mm at U900, against 0.76 mm. TI scopes the limit to after package escape and before the connector, so these are waivers |
-| 0 stubs on USB (TI Table A-7) | **Can't be met while the schematic has DNP choke bypasses.** 1.3–4.6 mm per net. No DRC rule covers this |
-| MMC0 minimum 10.66 mm | Met only with meanders on 9 of the 10 nets, about 36 mm in total and 6.3 mm at worst (Altium's estimate) |
-| MMC1, MMC2 mismatch 8 ps | Meanders, up to 6.0 and 14.3 mm. Both nets must also use the same layers, because L1 and L3 differ by about 0.78 ps/mm |
-| RGMII data skew 60 mil | Meanders up to 1.3 mm (TX) and 4.3 mm (RX), in the crowded 5 mm above the PHY |
-| CSI ≤ 2 vias | No spare via on any net |
-| DPI mismatch 100 ps | 0.6 mm spare before any routing detour |
-| TMDS 0 vias, L1 only | Achievable, following TI's Figure 20. It takes the whole `TMDS` corridor |
+| Sheet 14: 47 pF + 62 Ω within 5 mm of the SoC balls | Met: all eight I²C slew parts are 2.8-4.8 mm from their balls |
+| Sheet 06: 25 MHz oscillator within a few mm of G1 | Met: see above |
+| `FB311`, `C361` near ball N7 | Met: 4.7 and 2.3 mm |
+| "At SoC" series parts | `R1000` 0.6, `R700` 2.3, `R729` 2.9, `R1321` 4.3, `R1300`-`R1304` 3.4-6.4, `R1620`, `R1621` 4.8, 5.2 mm |
+| `R303`-`R310` IO-bank links next to their bank's caps | **Not all met:** 4.8-12.3 mm from a bank pin. They feed planes, so this is a probing convenience |
+| `C605` at ball D6, `C609` at ball D17 | **Not close:** 6.6 and 9.1 mm. The rows north of the SiP are full |
 
 ### Stubs
 
-| Parts | Before, mm | After, mm |
-|---|---|---|
-| `R900`, `R901` USB-C choke bypass | 11.2, 4.9 | Now straddle `L900`: 1.3–2.1 |
-| `C801`, `C800` PHY crystal load caps | 13.9, 8.8 | 1.7, 2.7 |
-| `C603` 32 kHz load cap | 32 | 1.9 |
-| DPI boot straps `R629`–`R643` | 6.0–17.7 | 0.4–7.3 |
-| SD pull-ups `R723`–`R732` | 0.1–3.0 | 0–1.9 |
-| SDIO pull-ups `R1305`–`R1310` | 4.8–11.5 | 1.5–8.5 |
-| **eMMC pull-ups `R701`–`R709`, `R712`** | 8.7–17.4 | **8.1–11.9** |
+Lengths are from a pad to the nearest point on the straight line between the net's other pads.
 
-Lengths are from a pad to the nearest point on the straight line between the net's other pads. The eMMC pull-ups stay long because the module and the SiP's fan-out keepout take all the nearby space on the back, and the top side there is full of the SiP's own parts. No datasheet here gives a stub limit, so this is a judgement to make when routing.
+| Parts | Length, mm |
+|---|---|
+| `R900`, `R901` USB-C choke bypass | 1.4 |
+| DPI boot straps `R628`-`R643` | 0.8-1.4 |
+| SD pull-ups `R723`-`R728`, `R732` | 0.7-3.5 |
+| SDIO pull-ups `R1305`-`R1310` | 1.6-4.2 |
+| eMMC pull-ups `R701`-`R709`, `R712` | 0.6-5.8 |
+
+No datasheet here gives a stub limit, so this is a judgement to make when routing.
+
+## Where routing will be hardest
+
+1. **Around the SiP.** RUDY is over capacity on about 340 mm² around U1. RUDY overstates this right at a BGA edge, but this is where layers will run out first.
+2. **L3 and L6 under the SiP.** 271 vias sit under the body, so the 72 inner signals leave between holes.
+3. **RGMII ball order.** The ball order doesn't match the PHY's pin order, so RXC and TX need layer swaps between U1 and the PHY.
+4. **East of the SiP.** DPI, McASP and SD all leave in about 11 mm between the SiP and the TFP410, and the transmit RGMII lines pass south of it.
+5. **HDR balls on the east side.** Rows F-L in columns 25-26 carry 7 header nets that must cross the DPI escape to go north.
+6. **USB0 crosses USB1** once at the balls, because USB0's balls are on the far side of USB1's.
+7. **MDI1/MDI2 at the RJ45.** The jack's pin order splits MDI1 around MDI2, so one crossing near `J800` is unavoidable.
+8. **TMDS at U1001.** The pairs enter over the top end of the package, run under its body on L1 and reach each pad from the inside (TI SLLSE96F Figure 20, p22).
+9. **CSI at its via limit.** Two vias per net: one to leave ball row 3, one to come back to L1 at `J1200`. `CSI_CLK` must also cross D0 and D1.
 
 ## Checks
 
 | Check | Result |
 |---|---|
-| Offline courtyards (`placement.py check`) | No overlaps, all pads inside the outline, no parts over through-holes on the far side, no tails under the module or card |
-| Altium `check_placement`, 6 mil, all 717 parts | 14 pairs on the first full run. 12 were tight hand-placed spots, now fixed; those moved parts and their neighbours were re-checked, not the whole board. **2 remain and are accepted:** `H1602`/`J1400` and `H1603`/`J1400` courtyards touch because the Pi fixes both positions. Their copper is 0.92 mm apart. This predates the changes in the next row; the batch DRC below is the whole-board check of the final placement |
-| Altium `check_orientation` | 549 parts checked: 172 suggestions, of which the 70 that were a pure 180° flip were applied. One batch failed on a file-permission error, so about 60 parts went unchecked. `R820` and `R821` moved to the top so RGMII stays on L1 and L3. 45 stub parts then moved |
-| Pads against the offline model | 20 parts on both sides: all within 0.01 mil |
+| Offline (`blocks.py check`) | No overlaps, all pads inside the outline, no parts over through-holes on the far side, nothing over thermal vias or the SiP's via field except the listed spots, no tails under the module or card |
+| Fan-out (`fanout.py plan`) | No ball or SMD power or GND pad left without a fan-out |
 | Pads against the schematic (`build.py pcb report`) | 717 components, 458 nets, every pad net matches |
-| Stack, profiles, classes, xSignals and rules (`pcbsetup.py verify`) | The saved file matches `pcbsetup.py`, including separate L1, L3 and L6 entries in each profile, 62 xSignals and 133 rules |
-| Nothing routed (`get_board_summary`, file read-back) | 0 vias, 0 polygons. Copper layers hold no free objects. The only free objects are 10 notes on Mechanical 13 and 1 on Multi Layer (not a pad; probably the outline, not confirmed) |
+| Stack, profiles, classes and rules (`pcbsetup.py verify`) | Match, with 3 xSignals that now list one more pad, see below |
+| `check_placement` and `check_orientation` | **Not re-run since the SiP moved.** The batch DRC below covers part spacing. On the previous pass `check_orientation` scored back-side parts wrongly (`R1406`: 94.7 mil scored, 57.3 mil real), so don't apply its back-side suggestions |
 
 ### Batch DRC
 
-7,245 violations and 1 warning, with no stop limit in effect. The per-rule counts add up to the total. The full list is in `hardware/Project Outputs for APE - Single Board Computer/Design Rule Check - PCB.html`.
-
 | Rule | Count | What it is |
 |---|---|---|
-| **Un-Routed Net** | **1,968** | **Expected: nothing is routed** |
-| Silk to Solder Mask | 3,289 | Silkscreen not cleaned up yet |
-| Silk to Silk | 1,766 | Silkscreen not cleaned up yet |
-| Component Clearance, 10 mil | 102 | No overlaps. `J1400` touches `H1602` and `H1603` (accepted, see above); the rest have courtyards 0.2–0.3 mm apart. The 10 mil is the Altium template's value, with no source, and it stays by decision. **These hits are still open.** The two `J1400` touches can't clear, because the Pi fixes both positions |
-| Solder Mask Sliver, 0.10 mm | 61 | **A real footprint issue, not placement:** a 0.07 mm web between 0.4 mm pitch pads on `J700` (32), `J701` (28) and `J702` (1), under JLCPCB's 0.10 mm |
-| Matched Lengths | 24 | Altium's estimate on unrouted xSignals: RGMII data 5, MMC0 9, MMC1 5, MMC2 5. These are the meanders listed above |
-| Length | 13 | `MMC0` 9, below its minimum as above. `HS_MCASP` 4 read 0 mm only because they aren't routed |
-| Board Outline Clearance | 22 | All on the overlays: reference designators and the outlines of connectors that overhang the edge. No copper |
-| All others | 0 | Includes every clearance, width, via-count and short-circuit rule, which have no copper to test yet |
+| **Un-Routed Net** | **1,727** | **Expected: nothing is routed** |
+| **Net Antennae** | **616** | **Expected: fan-out stubs end in open space until they are routed** |
+| Solder Mask Sliver, 0.10 mm | 61 | **A real footprint issue, not placement:** a 0.07 mm web between 0.4 mm pitch pads on `J700`, `J701` and `J702`, under JLCPCB's 0.10 mm |
+| Silk to Solder Mask | 13 | Top-side stubs passing under part outlines on the overlay. Silkscreen isn't cleaned up yet |
+| Board Outline Clearance | 12 | On the outlines of connectors that overhang the edge. No copper |
+| Width, `W_PWR_HI` | 2 | 0.15 mm stubs at the PMIC's 0.4 mm pitch pins, where 0.20 mm doesn't fit. A waiver |
+| Component Clearance, 10 mil | 2 | `J1400` touches `H1602` and `H1603`, forced by the Pi pattern |
+| Length | 25 | Altium's readings on unrouted nets: some 0 mm, some counting pull-up branches. MMC0 6, RGMII 8, DPI 5, McASP 4, MMC1 2 |
+| Matched Lengths | 52 | The same: DPI 22, MMC0 9, RGMII 10, MMC1 5, MMC2 5, USB1 1 |
+| All others | 0 | Includes every clearance, short-circuit, hole-to-hole and via rule, now tested on real vias and stubs |
 
-The warning is `H1300`, an unplated hole with net GND. That is how the footprint is drawn: the SMT standoff connects through its ring pad.
+The full list is in `hardware/Project Outputs for APE - Single Board Computer/Design Rule Check - PCB.html`. `pcbsetup.py drc` clears the markers afterwards, so unrouted connections don't show two ticks.
+
+### xSignals
+
+`SD_D2_PP1`, `SD_D3_PP1` and `DPI_PCLK-TFP_IDCK_PP1` each list one more pad than `pcbsetup.py` expects (`R726`, `R727`, `R1000`). Altium changed these during this work. They should be rebuilt before length-matching those nets.
+
+### Copper not from these scripts
+
+Two very short free tracks remain on L1 at `J702`: `SD_D2` at (79.42, 65.07)-(79.5, 65.15) and `SD_D3` at (80.6, 65.0)-(80.64, 64.96). They are what is left of 17 tracks on the SD nets and `VDDSHV5_SD` that appeared after an earlier placement push. The scripts leave them alone. They are why the two `MMC1` length hits read 0 mm.
 
 ## What was not verified
 
-- **Routability.** Nothing was trial-routed; density and demand figures are estimates.
+- **Routability.** Nothing beyond the fan-outs is routed; the figures above are estimates.
+- **Power planes.** No pours yet. Each via is a promise that its rail or GND will be there on the inner layers. `powerplanes.py` must be re-run on this placement, and its voltage-drop numbers from the last run no longer apply.
+- **Vias near the SiP's edge.** 9 cap vias sit off the site lattice, where the lattice had no room. They pass DRC, but they haven't been checked against the inner-layer pours.
+- **Negative mask expansion as tenting.** DRC reads it as closed (the via sliver hits went). Check the mask layer in the Gerbers.
 - **M.2 standoff position.** Derived from TI's SK-AM62A (socket centre line to standoff hole 30.06 mm), whose socket has the same contact-row spacing. The LOTES drawing doesn't give it. Check it against a real card.
-- **Heights under the M.2 card.** Assumed 1.5 mm clearance from the standoff. Parts under it are 0402, 0603 and 0805 caps, resistors and beads, using typical package heights rather than the chosen parts' datasheets.
+- **Heights under the M.2 card.** Assumed 1.5 mm clearance from the standoff. Parts under it are 0402, 0603 and 0805, using typical package heights rather than the chosen parts' datasheets.
 - **eMMC module.** Its position and orientation come from the Radxa export in the footprint notes, not from a physical module.
-- **3D fit.** The footprints have no 3D bodies, so HAT and case clearance is from footprint positions and drawing heights only.
-- **Pad numbering.** The assumed numbering in open items B2–B11 is still open. A correction could change a connector's rotation or a bus's order.
-- **Constraints on real copper.** Every length, skew, via and clearance rule has only been compared with pad-to-pad estimates. DRC can only test them once routes exist. A rule at 0 violations today says nothing yet about the routed board.
-- **Orientation.** About 60 parts missed the orientation check because a batch failed.
-- **Altium's own impedance.** Altium's calculated values for the profiles were never opened or compared with JLCPCB's. The file stores 0.000 until the Impedance tab is opened.
-- **eMMC module length.** The 10.66 mm minimum assumes 10 mm of trace in the module, from the research note's 10–15 mm, not a measurement.
-- **Propagation figures.** 6.88 and 6.1 ps/mm are calculated from the stack, not measured or taken from JLCPCB.
-- **L6 reference.** No rule can check that L5 copper is unbroken under an L6 run, or that stitching vias are present.
+- **3D fit.** HAT and case clearance is from footprint positions and drawing heights only.
+- **Pad numbering.** The assumed numbering in open items B2-B11 is still open. A correction could change a connector's rotation or a bus's order.
+- **Constraints on real copper.** Every length, skew and via rule has only been compared with pad-to-pad estimates.
+- **Altium's own impedance.** Altium's calculated values for the profiles were never opened or compared with JLCPCB's.
+- **eMMC module length.** The 10.66 mm minimum assumes 10 mm of trace in the module, from the research note's 10-15 mm, not a measurement.
+- **Altium stability.** Altium crashed once inside `ADVPCB.DLL` when a DRC started. Later DRC runs finished, and the cause is unknown.
 
 ## Not done yet
 
-- **Silkscreen.** Reference designators are at default size and overlap heavily; Altium also holds silk-to-silk violations for this. It's the main reason the board looks so busy with overlays on.
+- **Signal routing and power pours.**
+- **Silkscreen.** Reference designators are hidden (`NAMEON=FALSE`). Part outlines on the overlay haven't been cleaned up.
 - **Fiducials.** 3 global and 2 local at U1; they aren't in the schematic.
-- **JLC panel.** J100, J1500, J800, J900, J1000 and J1100 overhang the board edges, so edge rails on those sides won't work. Ask JLC for tab-routing or rails on free edges only.
-- **Double-sided assembly.** 469 parts are on the back (40 of them unassembled test pads), so this needs JLC's double-sided SMT option, which is already in the cost estimate.
+- **JLC panel.** J100, J1500, J800, J900, J1000 and J1100 overhang the board edges, so edge rails on those sides won't work.
+- **Double-sided assembly.** 434 parts are on the back, so this needs JLC's double-sided SMT option.
 
 ## Re-running
 
-Data is keyed by designator in `hardware/gen/placement.csv`; the floorplan is `FIXED` in `hardware/gen/placement.py`, whose header lists the commands. `STUB_PARTS` pins the 45 re-placed parts there too. After a netlist change: `build.py check`, `build.py pcb import classes`, `placement.py add`, `placement.py apply`.
+Positions are in `hardware/gen/blocks/`. After a change there, or a netlist change: `blocks.py build`, then with Altium open and the lock taken (`mkdir C:/Users/Public/altium_mcp.lock`): `placement.py apply`, `fanout.py apply`, `pcbsetup.py drc`, `build.py pcb report`. `placement.py board` redraws the outline and notes when the board size changes, and `build.py pcb rules` moves the `U1_SiP` room when U1 moves. After a netlist change, run `build.py check` and `build.py pcb import classes` first; a new part is reported as "not placed" until it has a line in a block file.
 
-Three things to know when driving this from scripts:
+`fanout.py apply` replaces all free copper on power and GND nets, and free copper on signal nets only within 2 mm of the SiP.
 
-- **`place_components` doesn't update the ratsnest.** The file stores connection lines in `Connections6`, and reopening doesn't rebuild them. They keep pointing at the old positions, far off the board. `placement.py apply` and `refresh` run `PCB:UpdateConnectivity` for this reason.
-- **Bottom-side rotation.** Through `place_components`, a bottom part is mirrored in y and then rotated. `placement.py` works in "mirror x, then rotate" and adds 180° on export. Pad positions were checked against the model after each apply.
+Things to know when driving this from scripts:
+
+- **`place_components` doesn't update the ratsnest.** The file stores connection lines in `Connections6`, and reopening doesn't rebuild them. `placement.py apply` and `refresh` run `PCB:UpdateConnectivity` for this reason.
+- **Bottom-side rotation.** Through `place_components`, a bottom part is mirrored in y and then rotated. `placement.py` works in "mirror x, then rotate" and adds 180° on export.
 - **`check_placement` on all parts at once** runs far past the bridge's timeout and locks Altium. `placement_check.py` sends batches.
+- **The DRC markers.** `PCB:ResetAllErrorMarkers` inside the DRC's own script run fires before the markers exist. `pcbsetup.py drc` runs it separately.

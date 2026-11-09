@@ -1,0 +1,70 @@
+# microSD, top side south of the socket
+at T 0 56.2 51.6 R729
+at T 90 85 61.5 U701
+at T 270 79.6 61.5 U702
+near T J702.1 R726
+near T J702.2 R727
+near T J702.3 R723
+near T J702.7 R724
+near T J702.8 R725
+near T J702.5 R728 R732
+near T J702.9 R730
+near B 58,62 R731
+near T J702.4 C713 C714
+at T 0 76 60 U700
+near T U700.2 C710
+near T U700.3 C711
+near T U700.2 C712
+near T U700.6 C715
+near T U700.1 R721
+near T U700.4 R722
+near T U1.T23 R720
+
+# M.2 SDIO series at the balls, in the order of the socket pins, so the lines fan out towards J1300 without crossing
+row B 90 54.1 50 1.32 0 R1321 R1300 R1301 R1302 R1303 R1304
+
+# M.2 parts, back side west of the socket and at its pins
+near B J1300.11 R1305
+near B J1300.13 R1306
+near B J1300.15 R1307
+near B J1300.17 R1308
+near B J1300.19 R1309
+near B J1300.21 R1311
+near B J1300.56 R1312 R1313
+near B J1300.62 R1314
+near B J1300.54 R1315
+near B J1300.32 R1316
+near B J1300.20 R1317 TP1300
+near B J1300.50 R1318
+near B J1300.18 R1319 TP1301
+near B J1300.64 R1320 C1305
+near B J1300.2 C1302 C1301
+near B J1300.72 C1304
+
+# Audio codec, top side. Decoupling at the pins named in the schematic, bulk after the bead.
+near T U1100.25 C1101 C1102
+near T U1100.18 C1103
+near T U1100.24 C1104 C1105 C1106
+near T U1100.7 C1107 C1108
+near T U1100.32 C1109 C1110
+near T U1100.25 C1100 FB1100
+near T U1100.19 C1111
+near T U1100.23 C1112
+near T U1100.14 C1113 R1105
+near T J1100.2 D1100
+near T J1100.3 D1101
+near T J1100.1 D1102
+at T 0 91.5 56.4 Y1100
+near T Y1100.4 C1114 C1115
+near T Y1100.3 R1104
+near T Y1100.1 R1106
+near T U1100.1 R1107
+near T U1100.31 R1108
+near T U1100.2 R1109
+near T U1100.3 R1110
+near T U1100.4 R1111
+near T U1100.5 R1112
+near T U1100.8 R1102
+near T U1100.9 R1103
+near T 56,60 R1100
+near T 56,60 R1101

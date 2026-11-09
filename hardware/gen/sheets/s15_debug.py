@@ -209,12 +209,14 @@ def build(sch_dir: str) -> Sheet:
         ("R1529", RES, "VDDSHV_MCU", "JTAG_SRST_N", "4.7k 0402 DNP (sheet 06 R604 already pulls SRST up)", {"DNP": "1"}),
     ])
     sh.add("U1510", TPD4E05U06, 27000, 11500, {
-        "1": "JTAG_TCK", "2": "JTAG_TMS", "4": "JTAG_TDI", "5": "JTAG_TDO_TC",
-        "3": "GND", "8": "GND", "6": "NC", "7": "NC", "9": "NC", "10": "NC",
+        "1": "JTAG_TCK", "10": "JTAG_TCK", "2": "JTAG_TMS", "9": "JTAG_TMS",
+        "4": "JTAG_TDI", "7": "JTAG_TDI", "5": "JTAG_TDO_TC", "6": "JTAG_TDO_TC",
+        "3": "GND", "8": "GND",
     }, comment="TPD4E05U06DQAR", MPN="TPD4E05U06DQAR", Manufacturer="Texas Instruments")
     sh.add("U1511", TPD4E05U06, 27000, 10300, {
-        "1": "JTAG_TRSTN", "2": "EMU0", "4": "EMU1", "5": "JTAG_SRST_N",
-        "3": "GND", "8": "GND", "6": "NC", "7": "NC", "9": "NC", "10": "NC",
+        "1": "JTAG_TRSTN", "10": "JTAG_TRSTN", "2": "EMU0", "9": "EMU0",
+        "4": "EMU1", "7": "EMU1", "5": "JTAG_SRST_N", "6": "JTAG_SRST_N",
+        "3": "GND", "8": "GND",
     }, comment="TPD4E05U06DQAR", MPN="TPD4E05U06DQAR", Manufacturer="Texas Instruments")
     sh.add("TP1500", TESTPOINT, 23500, 9800, {"1": "JTAG_SRST_N"}, comment="JTAG_SRST_N")
     sh.note(17500, 13200, "JTAG: TC2070 pads 1-14 = TI 14-pin header (TMS, nTRST, TDI, TDIS, VTref, KEY, TDO, "

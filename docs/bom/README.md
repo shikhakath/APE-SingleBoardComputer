@@ -31,9 +31,9 @@
 | eMMC module, 32 GB (plug-in) | 24.95 | PINE64 module (Hardkernel/Radxa-compatible connector) |
 | Wi-Fi 6 + BLE module (plug-in) | 55.00 | TI M2-CC3351 (TI.com, 74 in stock) |
 | **Parts total** | **179.90** | |
-| PCB + JLCPCB assembly (qty 10) | 52.72 | 6-layer JLC06161H-3313, ENIG, impedance control, Standard PCBA, X-ray, SiP consignment |
-| **Total per board, qty 10** | **232.62** | **Under the $300 target** |
-| Total per board, qty 5 | ≈ 267.5 | PCB + assembly rises to $87.60 per board at qty 5 |
+| PCB + JLCPCB assembly (qty 10) | 71.54 | 8-layer JLC08161H-3313, ENIG, impedance control, Standard PCBA, X-ray, SiP consignment. PCB quote 2026-11-05; assembly fees from 2026-10-17 |
+| **Total per board, qty 10** | **251.44** | **Under the $300 target** |
+| Total per board, qty 5 | ≈ 301.9 | PCB + assembly rises to $121.96 per board at qty 5 |
 
 **Not included:** shipping, import duties or VAT, spare parts, the Tag-Connect TC2070 cable ($49, a tool), and the HDMI/USB-C cables and power supply.
 
@@ -46,7 +46,7 @@
 | ES8316 codec instead of TLV320AIC3104 | −0.70 |
 | RTL8211F PHY instead of DP83867 (not recommended: no TI SDK reference) | −3.40 |
 | ADV7513 bridge for real HDMI with audio, instead of the DVI-only TFP410 | +21.90 |
-| Keep your exact layer order using the JLC06161H-3313**E** stackup | +6.73 (+$67.32 per order) |
+| Free stack JLC08161H-2116 instead of JLC08161H-3313, which puts L3 and L6 closer to the power planes than to GND | −8.39 (−$83.86 per order) |
 
 ## Changes forced by the in-stock rule
 
@@ -74,15 +74,17 @@ The modules themselves are in stock: PINE64 32 GB at $24.95, 16 GB at $15.95.
 
 Digi-Key holds the only stock (182, $44.06 at qty 10). Mouser shows 182 incoming on 2026-10-27. The factory lead time is 18 weeks. **Buy 10–12 SiPs now** (≈ $441–529) and consign them to JLC, or ask Octavo for a direct quote: its list price is $22.50, probably a volume price.
 
-## JLCPCB stackup (free standard option)
+## JLCPCB stackup
 
-JLC06161H-3313, 1.54 mm finished. The recommended layer order is **TOP / GND / SIG / GND / PWR / BOT**. In the order I first proposed, L3 sits 0.124 mm from the power plane, so its signals would reference power. Through vias of 0.15/0.25 mm with Octavo's one-via-between-balls escape fit within JLCPCB's limits. Filled and capped vias are standard on 6-layer boards at no cost. Full detail is in [`docs/research/bom/jlcpcb-stackup-and-cost.md`](../research/bom/jlcpcb-stackup-and-cost.md).
+JLC08161H-3313, 1.57 mm finished, +$83.86 per order at qty 10. The layer order is **TOP / GND / SIG / PWR / PWR / SIG / GND / BOT**, so all four signal layers sit 0.10 mm from GND and the two power planes can be split freely. Through vias of 0.15/0.25 mm with Octavo's one-via-between-balls escape are accepted by JLCPCB's quote at 10.5:1, and filled and capped vias are free at this layer count.
 
-| Impedance | L1/L6 microstrip, W/S (mil) | L3 stripline, W/S (mil) |
+| Impedance | L1/L8 microstrip, W/S (mil) | L3/L6 stripline, W/S (mil) |
 |---|---|---|
-| 50 Ω single-ended | 5.94 | 5.59 |
-| 90 Ω diff (USB) | 5.34 / 6 | 5.03 / 6 |
-| 100 Ω diff (Ethernet MDI, TMDS, CSI-2) | 4.69 / 8 | 4.33 / 8 |
+| 50 Ω single-ended | 5.94 | 4.83 |
+| 90 Ω diff (USB) | 5.34 / 6 | 4.65 / 6 |
+| 100 Ω diff (MDI, TMDS, CSI) | 4.69 / 8 | 4.01 / 8 |
+
+Stack options, the one-or-two-plane decision and the quote are in [`docs/research/bom/jlcpcb-stackup-and-cost.md`](../research/bom/jlcpcb-stackup-and-cost.md) section 8 and [`docs/pcb-placement.md`](../pcb-placement.md).
 
 ## Schematic reconciliation (schematic v0.1, 2026-10-17)
 
@@ -261,7 +263,7 @@ Plug-in modules and PCB/assembly fees are included as lines. Prices are USD per 
 | 127 | Passives (SiP + generic) | 0 R: debug USB shield link | 1 | 0402WGF0000TCE | UNI-ROYAL | LCSC/JLCPCB (C17168) | 0.0011 | 0.00 | 8664410 |
 | 128 | Storage (module, plug-in) | eMMC module 32 GB (plugs into J_EMMC1) | 1 | 32GB eMMC Module | PINE64 | PINE64 store (32GB eMMC Module) | 24.9500 | 24.95 | In stock (qty not publish… |
 | 129 | Wireless (module, plug-in) | Wi-Fi 6 + BLE M.2 2230 Key-E card | 1 | M2-CC3351 | Texas Instruments | TI.com (M2-CC3351) | 55.0000 | 55.00 | TI.com 74 (store inventor… |
-| 130 | PCB + Assembly | Bare PCB fabrication | 1 | APE-SBC rev A (JLC06161H-3313) | JLCPCB | JLCPCB (JLC06161H-3313) | 16.2530 | 16.25 | n/a |
+| 130 | PCB + Assembly | Bare PCB fabrication | 1 | APE-SBC rev A (JLC08161H-3313) | JLCPCB | JLCPCB (JLC08161H-3313) | 35.0670 | 35.07 | n/a |
 | 131 | PCB + Assembly | Feeder loading fee (unique parts) | 1 | 70 unique part numbers x $1.53 | JLCPCB | JLCPCB (Standard PCBA) | 10.7100 | 10.71 | n/a |
 | 132 | PCB + Assembly | X-ray inspection | 1 | ~20 X-ray parts/board | JLCPCB | JLCPCB (Standard PCBA) | 9.8000 | 9.80 | n/a |
 | 133 | PCB + Assembly | SiP consignment (handling + inbound courier) | 1 | OSD6254-1G-IPM consigned (JLC… | JLCPCB | JLCPCB (C49026186) | 5.5000 | 5.50 | n/a |

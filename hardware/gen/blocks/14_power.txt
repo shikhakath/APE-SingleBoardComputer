@@ -1,0 +1,65 @@
+# USB-C port and main converters, west side. Power stages on top for short loops; small parts behind their pins.
+
+# USB-C port: ESD at the pins, choke in line, VBUS parts south
+near T J100.A6 D900
+at T 0 11 39 L900
+# The DNP bypass straddles the choke: the eMMC module is behind it, so these stay on top
+at T 0 11 40.7 R900
+at T 0 11 37.3 R901
+near T J100.B4A9 D100 C101 C100
+near T J100.A4B9 D103
+near T J100.A5 D101
+near T J100.B5 D102
+near T U100.28 C102
+near T U100.29 C103
+near B U1.V11 R904
+near B J100.B4A9 R902 R903
+near B J100.B4A9 D901
+near B U1.C19 R905
+
+# TPS25730 PD controller
+near T U100.20 C107 C108
+near T U100.1 C105
+near T U100.4 C106
+near T U100.38 C104
+near B U100.3 R100 R101
+near B U100.5 R102 R103
+near B U100.26 R104
+near B U100.27 R105
+near B U100.36 R106
+near B U100.18 R107
+near B 44.5,57 R108
+near B U100.19 R109 TP100
+near B U100.37 R110 TP101
+near B U100.13 R111 TP102
+near B U100.10 R112 TP103
+
+# LM61460 3.3 V: VIN caps both sides of the part, output caps round the inductor
+at T 90 10.2 21 C109
+near T U101.8 C110
+at T 90 18.1 20.9 C111
+near T U101.12 C112
+at T 0 10.3 7.4 C117
+at T 0 15.4 7.4 C118
+at T 0 10.3 4.7 C119
+at T 0 15.4 4.7 C120
+near T U101.2 C113
+near T U101.1 C114
+near T U101.14 C115 R116
+near T U101.4 R117 R118 C116 R119
+near T U101.7 R113 R114
+near T U101.6 R115
+near B U101.5 R120 TP104
+
+# TPS63070 5 V: input caps north of the part, output caps south of it
+at T 0 23.1 21 C125
+at T 0 28.2 20.5 C126
+at T 0 23.1 18.2 C127
+near T 26.5,22.4 C128
+near T U102.12 C123 C121 C122
+near T U102.3 C124
+near T U102.14 R121
+near T U102.1 R122
+near T U102.5 R123 R124
+near T U102.2 R125
+near B U102.2 TP105

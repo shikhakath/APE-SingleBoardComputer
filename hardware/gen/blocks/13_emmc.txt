@@ -1,0 +1,17 @@
+# eMMC, back side. The bus runs straight from the balls to J700 through the kept corridor (y 50.4 to 54.6).
+shift 10 -10
+
+# Clock series, in line with the clock, at the ball
+at B 0 32.5 53.25 R700
+
+# Pull-ups just south of the corridor, west to east D7 to CMD, in ball order
+row B 0 27.9 49.6 0 -1.35 R709 R708 R707
+row B 0 30.2 49.6 0 -1.35 R706 R705 R704
+row B 0 32.5 49.6 0 -1.35 R703 R702 R701
+
+# Power at the module's VCC and VCCQ pins, north of the corridor
+near B J700.8 R712
+near B J700.12 R711
+near B J700.15 R713
+at B 0 29.5 60.2 U703
+near B C705.1 R307

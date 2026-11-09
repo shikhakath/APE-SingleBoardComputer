@@ -61,14 +61,14 @@ The footprints are in `hardware/gen/fplib/`. Section 10 of `hardware/gen/README.
 |---|---|---|
 | A8 | 01 | TPS25730 strap decoding is "firmware controlled": verify 5–9 V and 1.5/3 A on the EVM or the first boards. Its I2C address 0x20 collides with TCA64xx defaults (none on this board). |
 | A9 | 06 | Ethernet boot puts 25 MHz on header **pin 7** (ball D16, CLKOUT0), because BOOTMODE bit 9 is fixed at 1. Booting from the eMMC UDA through MMCSD is unreachable; use the eMMC boot partition. |
-| A10 | 07/08 | SD power-enable and PHY reset follow RESETSTATZ through resistors so the ROM can boot SD and Ethernet. R611 is now 1 kΩ to GND, which holds the net low against the PHY's 9 k internal pull-up while the pad is Hi-Z. Fallback: remove R815; the PHY's internal pull-up then holds RESET_N high. |
+| A10 | 07/08 | SD power-enable and PHY reset follow RESETSTATZ through resistors so the ROM can boot SD and Ethernet. R611 is 10 kΩ to GND, as on the SK. Before the SoC drives the pad, the PHY's ~9 k pull-up through R815 lifts RESETSTATZ to about 1.5 V, so RESET_N sits at 1.6–1.9 V (VIH 1.7 V), U703 reads high, and the U700 ON pins reach about 1.3 V (VIH 1.2 V). The PHY, eMMC reset and SD switch are not held off until the pad goes low, which then gives them a normal reset. Fallback: remove R815; the PHY's internal pull-up then holds RESET_N high, and nothing lifts the net. |
 | B13 | 06 | 25 MHz oscillator rise time: ≤ 7 ns at 15 pF specified, against ≤ 4 ns required at the SoC input. Confirm with ECS or measure. Alternative: TI LMK6CE025000. |
 | B14 | 10 | TFP410 latches on the falling edge (ti-tfp410 default). Setup at 1080p60 is 1.12 ns against the TFP410's 1.2 ns. DNP straps R1012–R1016 can add 350 ps of de-skew (fit R1013, R1014, R1016; remove R1005), giving 1.47 ns setup and 1.87 ns hold. Decide at bring-up from a 1080p60 margin test. |
 | B16 | 11 | AUDIO_EXT_REFCLK1 (G26) must be configured as an **input** to McASP1, because the 12.288 MHz oscillator drives it. Confirm in the TRM. |
 | B17 | 11 | Codec supply order: VDD_1V8 comes up before 3.3 V, but the datasheet wants AVDD ≥ DVDD. The codec is held in reset as on the SK. |
 | B18 | 01/09 | Total capacitance on VCC_5V0, including 2 × 150 µF USB-A bulk, must be ≤ 470 µF effective for the TPS63070 |
 | B19 | 03/08 | Capacitance on the LDO4 (DDR4_VPP_2V5) rail must be ≤ 30 µF including the SiP's internal caps. About 14.5 µF is on the board. |
-| C1 | 08 | PHY RESET_N low level with its ~9 k internal pull-up and R611: measure. |
+| C1 | 06/07/08 | Measure RESET_N with its ~9 k internal pull-up: about 0.47 V with the pad low, 1.6–1.9 V before the pad is driven. Also check VDD_SD_3V3 for a short pulse in early power-up. |
 | C2 | 15 | The FT4232 consoles go Hi-Z while the USB host suspends the bridge (PWREN# drives the buffers' OE# through R1530). For always-on consoles, remove R1530 and fit R1506. |
 | C3 | 14 | The 5 V header pins stay live while the SoC is off. Only the 33 Ω resistors limit back-drive from a HAT into SoC pads. |
 | C5 | 02 | Optional upgrades: a Buck1 inductor rated ≥ 7.4 A (TI recommendation; DFE252012F-R47M is 6.7 A, the SK uses 4.5 A), and a VMON divider of 40.2 k / 4.87 k (trip 3.97–4.47 V instead of 4.33–4.79 V). |
@@ -86,7 +86,7 @@ Closed in this review: **A7** (TI SLVUCL1A confirms the TPS6521904 rail map, seq
 | 03 | FB310 from VDDA_1V8 feeds a new `VDDS_OSC0_1V8` rail (SiP VDDS_OSC0, U600, U601) | VDDS_OSC0 was on the noisy Buck2 rail; Octavo 62_POWER_4, 62_CLOCK_2 |
 | 03 | C322/C324/C326/C328 4.7 µF → 1 µF | 32 µF on LDO3 exceeded its 30 µF slow-ramp limit |
 | 03 | TP300–TP312 on 13 rails | Octavo 62_ALL_2 |
-| 06 | R611 1 kΩ | See A10 |
+| 06 | R611 1 kΩ (back to 10 kΩ on 2026-11-06) | See A10 |
 | 07 | R732 SD CLK pull-down | Octavo checklist |
 | 09 | R913 fitted (USB1_DRVVBUS pull-down) | TPS2051B EN floated while the SoC IO rail is off |
 | 10 | R1012–R1016 de-skew straps (DNP) | See B14 |
@@ -115,7 +115,7 @@ Every checklist item that names a supply was checked against the netlist. Each S
 | 03 | `R303`-`R310` (0 Ω) feed new nets `VDDSHV0`, `VDDSHV1`, `VDDSHV2`, `VDDSHV3`, `VDDSHV4`, `VDDSHV6`, `VDDSHV_MCU` and `VDDSHV_CANUART` from `VCC_3V3_SYS` or `VDD_1V8` | The checklist names pull-up rails by bank. All banks shared two nets, so a pull-up to `VCC_3V3_SYS` could not be told apart from a pull-up to the right bank. Voltages and sources do not change. |
 | All | 110 parts moved to the net of their bank: pull-ups, decoupling, `J700` VCCQ, `U800` VDDIO, `U602`, `U703`, `U1504`, `U1505` | 62_CONFIG_4, 62_CONFIG_5, 62_CONFIG_9, 62_RESET_4, 62_RESET_6, 62_BOOT_1, 62_I2C_1, 62_I2C_3, 62_UART_2, 62_EMMC_3, 62_EMMC_8, 62_SD_7, 62_DPI_3, 62_ETH_1, 62_ETH_2 |
 | 03 | `R301` 40.2 kΩ, `R302` 4.87 kΩ (were 10 kΩ, 1.1 kΩ) | 62_CONFIG_6 figure is 40.2 kΩ / 4.81 kΩ. The old values could trip as high as 4.79 V, only 4 % under a 5 V rail. Now 3.97-4.47 V. |
-| 03 | `FB311` + `C361` give `VDDA_3P3_USB` its own bead; `VDDA_TEMP` joins `VDDA_1V8_MCU` | 62_POWER_4 groups 5 and 3 |
+| 03 | `FB311` gives `VDDA_3P3_USB` its own bead; `VDDA_TEMP` joins `VDDA_1V8_MCU`. `C361`, added here on the bead output, was deleted on 2026-11-06 with the other capacitors not in OSD62x-PM Table 4-3. | 62_POWER_4 groups 5 and 3 |
 
 Divider details, using the AM625 DS 8.2.4 method (0.45 V ±3 %, 1 % resistors, 2.5 µA leakage):
 - The figure's 4.81 kΩ trips at 4.01-4.52 V. It is not an E96 value, and a stocked 1 % 0402 part could not be confirmed (the parts searches were failing on 2026-11-04). 4.87 kΩ (C25902) trips at 3.97-4.47 V, which keeps the maximum under the 4.5 V target.

@@ -1,0 +1,64 @@
+# SiP decoupling, back side. Each rail keeps its caps and bead together on the side nearest its balls.
+# The SoM sits at y 45. The parts under and north of it move with it; the columns south of it stay.
+shift 10 -8
+
+# ---- Under the body, for the most central balls. Clear of the via sites: the ones on the signal rows stand upright in a
+# channel (fanout.in_channel), where no via goes.
+# south edge
+at B 0 34.8 48.55 C339     # VDDA_3P3_USB
+at B 0 39.8 48.55 C302     # VDD_CORE
+at B 0 42.3 48.55 C303     # VDD_CORE
+at B 0 45.6 48.62 R300    # VDD_CORE to VDDR_CORE: 150 mA, 0.81 V minimum, so it sits on both rails
+# west edge
+at B 0 34.8 50.05 C318     # VDDS_DDR
+at B 0 34.8 53.05 C320     # VDDS_DDR
+at B 0 34.8 57.05 C313     # VDD_CANUART ball
+# north edge
+at B 0 39.8 58.05 C329     # VDDA_1V8_PLL2
+# east edge
+at B 90 48.6 50.75 R1000   # DPI clock series: the schematic wants it at ball T26
+
+shift 10 -10
+# ---- South of the body: one column per analog rail, in ball order. 100 nF nearest, then bulk, then the bead.
+row B 90 36.15 46.6 0 -2.4 FB311 C323
+at B 90 36.15 41.75 C322
+at B 90 37.6 41.75 FB303
+row B 90 37.6 46.6 0 -2.4 C321 FB302
+row B 90 39.05 46.6 0 -2.4 C335 C334
+row B 90 40.5 46.6 0 -2.4 C333 C332
+row B 90 41.95 46.6 0 -2.4 C331 C330
+row B 90 43.4 46.6 0 -2.4 C309 C308
+row B 90 45.05 46.6 0 -2.4 C311 C310
+row B 90 46.5 46.6 0 -2.4 C325 C324
+row B 90 47.95 46.6 0 -2.4 C327 C326
+row B 90 49.4 46.6 0 -2.4 C314 C316
+at B 90 39.05 41.75 FB308
+at B 90 40.5 41.75 FB309
+at B 90 41.85 41.75 FB307
+at B 90 43.4 41.55 FB300
+at B 90 45.1 41.55 FB301
+at B 90 46.65 41.75 FB304
+at B 90 48.05 41.75 FB305
+at B 90 49.45 41.75 C317
+
+# ---- East of the body: the IO banks' 0R links
+
+shift 10 -8
+# ---- North of the body, four rows. I2C slew parts first: sheet 14 wants them within 5 mm of the balls.
+row B 90 34 60 1.45 0 R1425 C1401 C1400 C1402 R1424 R1427 R1426
+row B 90 34 62.4 1.45 0 C307 C605 C306 C1403 R1620 R1621 R1520 C305 R1310
+near B 50,54 C304
+row B 90 36.9 64.8 1.45 0 R302 R301 C328 FB310 FB306
+shift 0 0
+at B 0 50.7 59.2 R309
+near B 43.5,49.7 R310
+# Debug pull-ups on the UART lines, and the header's idle pull-up
+# Sorted by rail: CANUART in its region west of the MCU lane, VDDSHV0 east of the 3.3 V lane
+row B 90 34 67.2 1.45 0 R1515 R1516 R1517 R1518
+row B 90 42.7 67.2 1.45 0 R1511 R1512 R1513 R1514 R1433
+# VMON's filter cap on top, at ball A15 in the outer row
+
+# ---- The rest of the ring
+near B U1.G12 C312
+near B 47,34 C301
+at B 0 48.25 48.62 C315

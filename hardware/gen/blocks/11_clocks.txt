@@ -1,0 +1,30 @@
+# Clocks and reset, top side west of the SiP.
+shift 10 -10
+
+# 32 kHz crystal at balls H1, H2: XI on the east pin, so H1 runs straight into it. Rd and Rbias on the ball side.
+at T 180 29.1 53.8 Y600
+at T 0 32.5 52.05 R602
+at T 0 32.5 53.4 R603
+at T 0 30.1 51.7 C602
+at T 0 27.6 51.7 C603
+
+# 25 MHz oscillator: the series R between it and ball G1
+at T 0 31.8 57.75 U600
+at T 0 32.5 54.75 R600
+near T U600.1 R601
+near T U600.4 C600 C601
+
+# Reset gate and its parts
+at T 0 24.5 49 U601
+near T U601.5 C604
+near T U601.6 R605
+near B U1.D6 TP601
+near T U601.4 R606
+near B U1.C5 TP602
+near B 40,57 R610
+near B U1.C18 R611 TP603
+near B U1.D18 R612 TP604
+near B U1.D7 R613 TP605
+near B U1.C6 TP606
+near B U601.6 TP600
+near B 58,60 R609

@@ -135,7 +135,7 @@ def build(sch_dir: str) -> Sheet:
     # ---- reset status / error pins ------------------------------------------
     sh.column(5600, 3600, [
         ("R610", RES, "VDDSHV_MCU", "MCU_RESETZ", R10K + " (Octavo 62_CONFIG_4, 62_RESET_4)"),
-        ("R611", RES, "RESETSTATZ", "GND", "1k 1% 0402 (holds PHY/SD in reset against the PHY 9k pull-up; SoC load 3.3 mA)"),
+        ("R611", RES, "RESETSTATZ", "GND", R10K + " (RESETSTATz pull-down, as SK; SoC load 0.33 mA)"),
         ("R612", RES, "PORZ_OUT", "GND", R10K + " (holds peripherals in reset)"),
         ("R613", RES, "MCU_ERRORN", "GND", R10K + " (DS Table 5-74: pull-down)"),
     ])

@@ -147,14 +147,18 @@ def build(sch_dir: str) -> Sheet:
         ("R730", RES, "SD_SOCK_CD_N", "SD_CD_N", "100R 0402 (SDCD series)"),
         ("R731", RES, "VDDSHV0", "SD_SOCK_CD_N", "47k 0402 (SDCD pull-up)"),
     ])
-    # ESD at the socket: 8 channels = CLK, CMD, DAT0-3, CD, card VDD.
+    # ESD at the socket: 8 channels = CLK, CMD, DAT0-3, CD, card VDD. Each channel uses the pad facing it too (1-10, 2-9,
+    # 4-7, 5-6), which is not connected inside: the signal runs straight through the part. Channels are interchangeable,
+    # so DAT2 and DAT3 take whichever pair of pads suits the routing.
     sh.add("U701", TPD4E05U06, 14600, 8600, {
-        "1": "SD_SOCK_CLK", "2": "SD_CMD", "4": "SD_D0", "5": "SD_D1",
-        "3": "GND", "8": "GND", "6": "NC", "7": "NC", "9": "NC", "10": "NC",
+        "1": "SD_CMD", "10": "SD_CMD", "2": "SD_SOCK_CLK", "9": "SD_SOCK_CLK",
+        "4": "SD_D0", "7": "SD_D0", "5": "SD_D1", "6": "SD_D1",
+        "3": "GND", "8": "GND",
     }, comment="TPD4E05U06DQAR", MPN="TPD4E05U06DQAR", Manufacturer="Texas Instruments")
     sh.add("U702", TPD4E05U06, 14600, 6900, {
-        "1": "SD_D2", "2": "SD_D3", "4": "SD_SOCK_CD_N", "5": "VDD_SD_3V3",
-        "3": "GND", "8": "GND", "6": "NC", "7": "NC", "9": "NC", "10": "NC",
+        "1": "SD_D3", "10": "SD_D3", "2": "SD_D2", "9": "SD_D2",
+        "4": "SD_SOCK_CD_N", "7": "SD_SOCK_CD_N", "5": "VDD_SD_3V3", "6": "VDD_SD_3V3",
+        "3": "GND", "8": "GND",
     }, comment="TPD4E05U06DQAR", MPN="TPD4E05U06DQAR", Manufacturer="Texas Instruments")
 
     nx, ny = 9800, 4600
@@ -170,7 +174,7 @@ def build(sch_dir: str) -> Sheet:
         "Card VDD kept at 2.2 uF + 0.1 uF (SK) so QOD discharges it within a warm reset.",
         "SD_CD_N: 100R series + 47k to VDDSHV0 (Octavo 62_SD_7); card present = LOW.",
         "  Verify on a TF-01A sample that the Cd spring closes to the shell on insertion.",
-        "ESD U701/U702 at the socket; NC pins 6/7/9/10 left open (flow-through pads).",
+        "ESD U701/U702 at the socket, flow-through: pads 6/7/9/10 carry the channel facing them (1-10, 2-9, 4-7, 5-6).",
         "SD CLK: R729 0R at the SoC, R732 10k pull-down (Octavo 62_SD_10), R728 pull-up DNP (SK).",
     ]):
         sh.note(nx, ny - i * 200, t)

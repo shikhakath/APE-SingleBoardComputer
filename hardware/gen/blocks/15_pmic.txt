@@ -1,0 +1,41 @@
+# TPS65219 PMIC. Input caps at their pins, output caps at their inductors, on top. Small parts behind the pins.
+near T U200.4 C200
+near T U200.30 C202
+near T U200.26 C203
+near T U200.22 C207
+near T U200.13 C209 C204
+near B U200.5 C201
+near B U200.6 C205
+near T L200.2 C210 C211
+near T L201.2 C212 C213
+near T L202.2 C214 C215
+near B U200.20 C206
+near T U200.14 C208
+near B U200.7 C216
+near B U200.19 C217
+near B U200.21 C218
+at B 0 35.6 27.8 C219
+
+# Signals: pull-ups and test pads at their pins
+near B 58,62 R202
+near T U200.17 R205
+near T U200.18 R201
+near T U200.28 R209
+near T U200.31 R207
+near B 44.5,57 R210 R208
+near B U200.28 TP200
+near B U200.31 TP201
+near B U200.8 TP202
+near B U200.16 TP203
+near B C217.1 TP204
+
+# 3.3 V switch to the system rail
+near T U201.1 C222
+near T U201.7 C224 C223
+near T U201.6 C221
+
+# VPP LDO, DNP, out of the way west of the switch
+near T U1.C16 U202
+near T U202.1 C225
+near T U202.5 C226
+near T U202.3 R206

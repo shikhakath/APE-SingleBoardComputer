@@ -1,0 +1,7 @@
+# Boot straps, back side east of the SiP. One row per strap: the pull-up and pull-down meet on the signal in the
+shift 10 -10
+# middle, one of each pair is DNP. Rows run north to south in ball order.
+
+# BOOTMODE00-07
+
+# DPI_D16-D23, on the DPI lines. North of the TFP410's thermal land: each pair stacked, meeting on the signal.

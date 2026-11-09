@@ -161,7 +161,7 @@ def build(sch_dir: str) -> Sheet:
         "  releases it when the SoC leaves reset, so ROM RGMII boot finds a strapped, running PHY.",
         "  GPIO0_88 can still reset the PHY (drives 2.2 mA into R815). RESET_N has ~9k internal",
         "  pull-up: worst-case low level 0.63 V during reset - check at bring-up.",
-        "  While the RESETSTATz pad is still Hi-Z (early power-up) R611 1k (sheet 06) holds the net low.",
+        "  Until the SoC drives the pad low (early power-up) R611 10k leaves RESET_N ~1.8 V: not held.",
         "  To decouple the PHY from RESETSTATz, remove R815: the internal pull-up then holds RESET_N high.",
         "ETH_PHY_INT_N: open drain, 2.2k pull-up (datasheet); plain GPIO, so no 62R/47pF RC.",
         "Series R: 22R TX at the SoC balls, 22R RX at the PHY pins; may become 0R after SI sim.",

@@ -1,0 +1,67 @@
+# Connectors, ICs and everything else that fixes the floorplan. The SiP sits near the middle of the board and each
+# block sits on the side of the SiP its balls face, so the whole board is used and no bus crosses the board.
+
+# Raspberry Pi pattern
+at T 0 3.5 27.5 H1600
+at T 0 61.5 27.5 H1601
+at T 0 3.5 76.5 H1602
+at T 0 61.5 76.5 H1603
+at T 0 32.5 76.5 J1400
+
+# SiP. Zero orientation: rows A-D (header, JTAG, SD, SDIO) north, columns 25-28 (DPI) east,
+# rows U-V (USB, CSI, RGMII) south, columns 1-2 (MMC0, clocks) west.
+at T 0 52 45 U1
+
+# HDMI in a straight line east of the DPI balls
+at T 90 77 40 U1000
+at T 0 93.4 40.4 U1001
+at T 90 105.3 36.95 J1000
+
+# South edge, west to east in the order of the balls: USB hub, camera, Ethernet
+at T 0 39 5.3 J900
+at T 90 45.5 20 U900
+at T 180 60 4.6 J1200
+at T 0 81.7 7.65 J800
+at T 90 69.2 25.3 U800
+
+# West edge: USB-C level with the SiP, debug USB-C in its corner, buttons south of the Pi hole
+at T 270 3.185 39 J100
+at T 270 3.185 60 J1500
+at T 90 3.5 20 SW200
+at T 90 3.5 12 SW601
+at T 90 3.5 4.1 SW600
+
+# Boot DIP on the south edge beside the RJ45
+at T 90 97 6.1 SW602
+
+# North-east: SD on the top edge, east of the M.2 socket's north peg; audio beside it; M.2 card under both
+at T 180 81.7 72.75 J702
+at T 180 104.5 73.95 J1100
+at T 90 94.2 62.5 U1100
+at B 90 70.5 64 J1300
+at B 0 100.415 64 H1300
+
+# eMMC module on the back, west of the SiP
+at B 270 34 42 J700
+at B 270 21 42 J701
+
+# Debug: north-west. The shifters sit between the Tag-Connect's locating holes, which go through the board.
+at T 0 17 60 U1500
+at T 0 30 63.8 U1504
+at T 0 30 57.6 U1505
+at B 0 30 61.3 J1501
+
+# Power: PD controller by J100. 3.3 V buck south of it, output caps south of the inductor.
+# 5 V buck-boost beside USB-A, which is most of its load.
+at T 90 14.6 30 U100
+at T 270 14 21 U101
+at T 270 14 13.4 L100
+at T 0 23.5 25 U102
+at T 270 28.2 25 L101
+
+# PMIC at the SiP's south-west corner: LX_B1 east into L200, LX_B2 and LX_B3 south into L201 and L202
+at T 180 40 30.5 U200
+at T 270 44.7 28.7 L200
+at T 270 41.6 24.7 L201
+at T 270 38.2 24.7 L202
+at T 0 33 31.5 U201

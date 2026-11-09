@@ -1,4 +1,6 @@
-# APE-SBC: JLCPCB 6-layer stackup, BGA escape and PCB + assembly cost
+# APE-SBC: JLCPCB stackup, BGA escape and PCB + assembly cost
+
+**The board is now 8 layers: see [section 8](#8-eight-layers-jlc08161h-3313-updated-2026-11-05).** Sections 1 to 7 are the 6-layer research. Section 8 replaces their stack, widths and PCB price. Their capabilities, BGA escape and PCBA fees still apply.
 
 Research date: 2026-10-17. The JLCPCB pages used here show "Last updated Sep 09, 2026" unless noted otherwise.
 
@@ -356,6 +358,124 @@ Lead time: PCB 8–9 days, Standard PCBA ≥ 4 days, THT +1 day. Consignment cus
 2. Fixture fee applicability, and the exact X-ray count. Both are visible only in the live PCBA quote after BOM and CPL upload.
 3. The 1.54 mm finished thickness of 3313 (the quote shows a reminder). Check it against the connector stack heights and the 40-pin HAT standoffs.
 4. MSL-4 handling for the consigned tray: request a bake of 34 h at 125 °C, or opening within 72 h of assembly.
+
+## 8. Eight layers: JLC08161H-3313 (updated 2026-11-05)
+
+JLC's impedance page lists only 4- and 6-layer stacks, so the 8-layer data below comes from the same calculator and quote that page feeds. Stack data is from the calculator's template list (`jlcTools/impedance/selectPageImpedanceDefaultTemplate`, 8 layers, 1.6 mm, 0.5 oz inner, 1 oz outer). Fees are from the live quote at qty 5.
+
+### 8.1 Stacks
+
+Thicknesses in mm, prepreg and core only. The first column is the layer pair.
+
+| Stack | Fee, qty 5 | L1-L2 | L2-L3 | L3-L4 | L4-L5 | L5-L6 | L6-L7 | L7-L8 | Finished |
+|---|---|---|---|---|---|---|---|---|---|
+| JLC08161H-2116 | **$0** | 2116 0.1164 | 0.30 | 1080 x2 0.1528 | 0.30 | 0.1528 | 0.30 | 0.1164 | 1.60 |
+| **JLC08161H-3313** | **$83.29** | **3313 0.0994** | **0.10** | **2116 x3 0.3568** | **0.30** | **0.3568** | **0.10** | **0.0994** | **1.57** |
+| JLC08161H-2313 | $83.29 | 2313 0.0964 | 0.13 | 7628 + 2313 0.3048 | 0.30 | 0.3048 | 0.13 | 0.0964 | 1.52 |
+| JLC08161H-2313A | $83.29 | 2313 0.0964 | 0.15 | 2116 x3 0.3658 | 0.15 | 0.3658 | 0.15 | 0.0964 | 1.58 |
+| JLC08161H-2116C | $83.29 | 2116 0.1194 | 0.13 | 2116 x3 0.3658 | 0.13 | 0.3658 | 0.13 | 0.1194 | 1.52 |
+| JLC08161H-1080J | $83.29 | 1080 0.0764 | 0.15 | 2116 x3 0.3658 | 0.15 | 0.3658 | 0.15 | 0.0764 | 1.50 |
+| JLC08161H-1080A | $83.29 | 1080 0.0764 | 0.10 | 7628 + 1080 + 7628 0.5048 | 0.10 | 0.5048 | 0.10 | 0.0764 | 1.62 |
+| JLC08161H-1080D | $83.29 | 1080 0.0764 | 0.25 | 2116 x2 0.2328 | 0.25 | 0.2328 | 0.25 | 0.0764 | 1.53 |
+| JLC08161H-7628 | $49.91 | 7628 0.2104 | 0.20 | 7628 0.2028 | 0.20 | 0.2028 | 0.20 | 0.2104 | 1.59 |
+| JLC08161H-1080 | $49.91 | 1080 0.0764 | 0.30 | 7628 0.2028 | 0.30 | 0.2028 | 0.30 | 0.0764 | 1.62 |
+
+The quote also offers 2116A, 2116B, 1080B and 1080C, which were not priced here. Copper is 0.035 mm outer and 0.0152 mm inner on all of them.
+
+### 8.2 Layer order
+
+| Option | Stack | Order | Power planes | Signal layers | Nearest plane to each inner signal layer |
+|---|---|---|---|---|---|
+| A | 2116, free | TOP / GND / SIG / GND / PWR / PWR / GND / BOT | 2 | 3 (L1, L3, L8) | L3: GND at 0.153 mm |
+| B | 2116, free | TOP / GND / SIG / GND / PWR / SIG / GND / BOT | 1 | 4 | L3: GND at 0.153 mm. **L6: PWR at 0.153 mm**, GND at 0.30 mm |
+| C | 2116, free | TOP / GND / SIG / PWR / PWR / SIG / GND / BOT | 2 | 4 | **L3 and L6: PWR at 0.153 mm**, GND at 0.30 mm |
+| D | 3313 | TOP / GND / SIG / PWR / GND / SIG / GND / BOT | 1 | 4 | L3 and L6: GND at 0.10 mm |
+| **E** | **3313** | **TOP / GND / SIG / PWR / PWR / SIG / GND / BOT** | **2** | **4** | **L3 and L6: GND at 0.10 mm** |
+
+TI SPRAAR7J section 2.4 says high-speed signals should reference solid GND and "does not recommend high-speed signal references to power planes". That rules out B and C for high-speed routing. A keeps only three signal layers, the same number as the 6-layer board. D and E have the same widths and differ only in whether L5 is power or GND. `docs/pcb-placement.md` has the one-or-two-plane result, which rules out D.
+
+The other $83.29 stacks with the L2-L3 and L6-L7 pairs tight would also work. 3313 is chosen because L1 and L8 keep the 6-layer board's microstrip geometry and widths, and L4-L5 stays 0.30 mm apart, so the two power planes couple less than on 2116C (0.13 mm).
+
+**Dropped from the 6-layer plan:** L8 now references GND on L7, so the bottom layer is no longer limited to low-speed nets.
+
+**Re-checked against the Octavo layout guide, 2026-11-06: stay at 8 layers.** The guide's 4-layer reference (OSD62-PM-BRK) has no bottom-side passives and runs nearly all IO from one 3.3 V plane. This board has 437 parts on the back and 53 rails. A throwaway maze route of all 398 signal nets, the same on each stack (0.25 mm grid, best of four net orders, 772 connections):
+
+| Stack | Power planes | Connections routed | Nets incomplete | CSI | MMC/SD | DPI |
+|---|---|---|---|---|---|---|
+| 8 layers, as above | 2 | 629 | 96 | 6/6 | 19/28 | 9/28 |
+| TOP GND SIG PWR GND BOT | 1 | 598 | 118 | 3/6 | 16/28 | 6/28 |
+| Same, with today's L4 strips moved to L3 | 1 | 588 | 128 | 3/6 | 16/28 | 6/28 |
+| TOP GND PWR PWR GND BOT | 2 | 548 | 154 | 2/6 | 12/28 | 5/28 |
+
+This compares stacks; it is not a real route, and no stack finished. The one-plane rows are generous: they add no power copper beyond what the table says. Not tested: merging the IO banks onto one 3.3 V rail as the reference board does, which would ease a one-plane stack but changes the schematic.
+
+### 8.3 The stack
+
+| # | Layer | Use | Thickness (mm) | Dk (page / calculator) |
+|---|---|---|---|---|
+| L1 | L1_TOP | Components, microstrip | 0.035 | |
+| | Prepreg 3313 | | 0.0994 | 4.1 / 4.3 |
+| L2 | L2_GND | Solid GND, reference for L1 and L3 | 0.0152 | |
+| | Core | | 0.10 | 4.36 / 4.3 |
+| L3 | L3_SIG | Stripline: GND at 3.94 mil, L4 at 14.64 mil | 0.0152 | |
+| | Prepreg 2116 x3 | | 0.3568 | 4.16 / 4.2 |
+| L4 | L4_PWR | Core, 1.8 V, 5 V and the PHY rails | 0.0152 | |
+| | Core | | 0.30 | 4.41 / 4.3 |
+| L5 | L5_PWR | 3.3 V, VDDS_DDR, IO banks, small SiP rails | 0.0152 | |
+| | Prepreg 2116 x3 | | 0.3568 | 4.16 / 4.2 |
+| L6 | L6_SIG | Stripline: GND at 3.94 mil, L5 at 14.64 mil | 0.0152 | |
+| | Core | | 0.10 | 4.36 / 4.3 |
+| L7 | L7_GND | Solid GND, reference for L6 and L8 | 0.0152 | |
+| | Prepreg 3313 | | 0.0994 | 4.1 / 4.3 |
+| L8 | L8_BOT | Components, microstrip | 0.035 | |
+
+Finished 1.57 mm ±10 %. Inner layers can't be reordered without changing the widths, because L3 and L6 are the only layers with these heights.
+
+### 8.4 Widths
+
+Calculated with JLC's calculator endpoint (`jlcTools/impedance/calc`, Polar models as in section 3) using its fixed Dk values and 1.0 / 0.6 mil mask. As a check, the same call gives the 6-layer widths in section 3.1 within 0.05 mil. The endpoint was called directly because the page's form would not accept every row; the L1 row on the page itself shows 5.94 mil for this stack.
+
+| Target | L1, L8 microstrip (H 3.91 mil) | L3, L6 stripline (H 3.94 / 14.64 mil) | Use |
+|---|---|---|---|
+| 50 ohm single-ended | 5.94 mil (0.151 mm) | **4.83 mil (0.123 mm)** | RGMII, SDIO / eMMC, DPI, clocks |
+| 90 ohm differential | 5.34 / S 6.0 mil | **4.65 / S 6.0 mil (0.118 / 0.152 mm)** | USB 2.0 |
+| 100 ohm differential | 4.69 / S 8.0 mil | **4.01 / S 8.0 mil (0.102 / 0.203 mm)** | MDI, TMDS, CSI |
+
+Other L3 options: 90 ohm at S 5 is 4.30 mil. 100 ohm is 3.83 mil at S 7 and 3.59 mil at S 6, both still above JLC's 3.5 mil minimum.
+
+For comparison, the free 2116 stack gives 7.15 mil on L1 and, with L3 referenced to the power plane, 6.75 mil at 50 ohm, 5.99 / 6 at 90 ohm and 5.27 / 8 at 100 ohm.
+
+### 8.5 The 0.15 / 0.25 mm SiP via
+
+| Check | Result |
+|---|---|
+| Aspect ratio | 1.57 / 0.15 = **10.5:1**. The 6-layer board was 10.3:1. JLC publishes no aspect-ratio limit |
+| JLC accepts it | The live quote offers 0.15 / (0.25 / 0.3) mm on this 8-layer, 1.6 mm stack and prices it |
+| Filling | Epoxy Filled & Capped, $0, the default at 6 layers and up |
+| Geometry under the SiP | Unchanged from section 4 |
+
+**Still to confirm with JLC:** the aspect ratio, in the same engineering review section 7 asks for.
+
+### 8.6 PCB cost
+
+Live quote, 2026-11-05: 100 x 70 mm, 1.6 mm, ENIG, Shengyi S1000-2M TG170, ±10 % impedance, Epoxy Filled & Capped, min via 0.15 / 0.25 mm, 7-8 day build.
+
+| Line | 8L 3313, qty 5 | 8L 3313, qty 10 | 8L 2116, qty 5 | 8L 2116, qty 10 | 6L 3313, qty 5 | 6L 3313, qty 10 |
+|---|---|---|---|---|---|---|
+| Base | $90.00 | $120.00 | $90.00 | $120.00 | $32.00 | $47.00 |
+| Stackup fee | $83.29 | $83.86 | $0 | $0 | $0 | $0 |
+| ENIG | $17.40 | $18.20 | $17.40 | $18.20 | $17.40 | $18.20 |
+| S1000-2M | $38.42 | $40.45 | $38.42 | $40.45 | $38.42 | $40.45 |
+| Impedance control | $33.08 | $33.08 | $33.08 | $33.08 | $33.08 * | $33.08 * |
+| Min via 0.15 mm | $34.82 | $36.56 | $34.82 | $36.56 | $34.82 | $36.56 |
+| 4-wire Kelvin test | $17.00 | $17.47 | $17.00 | $17.47 | $17.00 | $17.47 |
+| Confirm production file | $1.05 | $1.05 | $1.05 | $1.05 | $1.05 * | $1.05 * |
+| **PCB total** | **$315.06** | **$350.67** | **$231.77** | **$266.81** | **$173.77** | **$193.81** |
+| Per board | $63.01 | $35.07 | $46.35 | $26.68 | $34.75 | $19.38 |
+
+* The 6-layer form would not take these two options in this session, so their lines are carried from the 8-layer quote today and the 6-layer quote in section 6.1, which match. **The other 6-layer lines were read live, so this is not a full 6-layer quote.** S1000-2M rose from $7.89 / $9.17 in section 6.1 to $38.42 / $40.45, which is why the 6-layer total also moved.
+
+So 8 layers with this stack adds **$141.29 per order at qty 5 and $156.86 at qty 10** over the 6-layer board at today's prices. $83.29 / $83.86 of that is the stack fee, which option A or C would avoid, at the cost described in section 8.2.
 
 ## Sources
 

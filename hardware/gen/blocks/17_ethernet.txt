@@ -1,0 +1,39 @@
+# Gigabit PHY, top side south of the RGMII balls.
+
+# Transmit series at the SiP, in the order of the PHY's pins, so the lines run straight south of the row
+at T 90 56.2 36.7 R801
+row T 90 58 36.7 1.32 0 R800 R802 R803 R804 R805
+
+# Receive series on the way to the PHY, in the order of its pins. West of x = 65 so the transmit lines pass east of it.
+row T 90 58 33.5 1.32 0 R807 R811 R810 R809 R808 R806
+
+# Crystal east of pins 14, 15; load caps behind it
+at T 0 76.4 26 Y800
+near B Y800.1 C800
+near B Y800.3 C801
+
+# Decoupling behind the pin each serves
+near B U800.19 C806 C805
+near B U800.41 C810
+near B U800.3 C814
+near B U800.6 C819
+near B U800.19 C804
+at B 180 65.8 21.3 FB800
+near B U800.6 C817
+
+# 1.0 V LDO for the PHY, on the back south of it
+at B 0 68.5 18 U203
+
+# Straps and pull-ups at their pins
+near T U800.12 R812 C802
+near T U800.17 R813
+near T U800.44 R814
+near T U800.43 R815
+near B U800.38 R821 R820
+near T U800.46 R822 R823 R841
+near T U800.47 R840
+
+# RJ45
+near T J800.1 C830
+near T J800.15 R842
+near T J800.16 C831

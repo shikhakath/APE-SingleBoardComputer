@@ -1346,8 +1346,8 @@ begin
 end;
 
 // -------------------------------------------------------------- PcbDrc
-// ape_pcb_report_in.txt: the .PcbDoc path. Runs the batch DRC and saves, so
-// gen/pcbsetup.py can read the violations from the file.
+// ape_pcb_report_in.txt: the .PcbDoc path. Runs the batch DRC. gen/pcbsetup.py reads the counts from the report in
+// Project Outputs, then runs PcbClearMarkers.
 procedure PcbDrc;
 var
     Spec : TStringList;
@@ -1363,6 +1363,28 @@ begin
     ResetParameters;
     AddStringParameter('Action', 'RunDRC');
     RunProcess('PCB:DesignRuleCheck');
+    ApeLog('saving');
+    SaveBoard(Path);
+    ApeFinish('{"success": true}');
+end;
+
+// ---------------------------------------------------- PcbClearMarkers
+// ape_pcb_report_in.txt: the .PcbDoc path. The report file keeps the results. Left on the board, every unrouted
+// connection shows the violation overlay's two ticks across its line, and the file carries thousands of markers.
+// This has to be its own run: inside PcbDrc the reset fires before the DRC has written its markers.
+procedure PcbClearMarkers;
+var
+    Spec : TStringList;
+    Board : IPCB_Board;
+    Path : String;
+begin
+    StartRun('PcbClearMarkers');
+    Spec := LoadSpec('ape_pcb_report_in.txt');
+    Path := Trim(Spec[0]);
+    Spec.Free;
+    Board := ApeBoard(Path);
+    ResetParameters;
+    RunProcess('PCB:ResetAllErrorMarkers');
     ApeLog('saving');
     SaveBoard(Path);
     ApeFinish('{"success": true}');

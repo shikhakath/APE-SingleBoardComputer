@@ -1,0 +1,86 @@
+# 40-pin header: series resistors and pull-ups on the back along its south edge, each under its own pin column:
+# x = 8.37 + 2.54 * ((n - 1) // 2). Odd pins in the row nearest the header, even pins in the next.
+near B 40,60 R1428    # pin 3
+near B 40,60 R1429    # pin 5
+at B 90 15.99 73.3 R1400    # pin 7
+at B 90 15.99 71.05 R1412    # pin 8
+at B 90 18.53 71.05 R1413    # pin 10
+at B 90 21.07 73.3 R1401    # pin 11
+at B 90 21.07 71.05 R1414    # pin 12
+at B 90 23.61 73.3 R1402    # pin 13
+at B 90 26.15 73.3 R1403    # pin 15
+at B 90 26.15 71.05 R1415    # pin 16
+at B 90 28.69 71.05 R1416    # pin 18
+at B 90 31.23 73.3 R1404    # pin 19
+at B 90 33.77 73.3 R1405    # pin 21
+at B 90 33.77 71.05 R1417    # pin 22
+at B 90 36.31 73.3 R1406    # pin 23
+at B 90 36.31 71.05 R1418    # pin 24
+at B 90 38.85 71.05 R1419    # pin 26
+near B 40,60 R1430    # pin 27
+near B 40,60 R1431    # pin 28
+at B 90 43.93 73.3 R1407    # pin 29
+at B 90 46.47 73.3 R1408    # pin 31
+at B 90 46.47 71.05 R1420    # pin 32
+at B 90 49.01 73.3 R1409    # pin 33
+at B 90 51.55 73.3 R1410    # pin 35
+at B 90 51.55 71.05 R1421    # pin 36
+at B 90 54.09 73.3 R1411    # pin 37
+at B 90 54.09 71.05 R1422    # pin 38
+at B 90 56.63 71.05 R1423    # pin 40
+near B 6,72 C1405 C1406 C1407 F1400
+
+# HAT ID EEPROM, DNP, by its header pins
+at T 0 42 68.5 U1400
+near T U1400.8 C1404 R1432
+near B U1400.7 TP1400
+
+# Board ID EEPROM, temperature sensor and I2C0, top side east of the header channel
+at T 0 58 68 U1600
+near T U1600.8 C1600
+near T U1600.1 R1600 R1601
+near T U1600.7 R1602 R1603
+at T 0 58 63 U1601
+near T U1601.5 C1601
+near T U1601.3 R1604
+near B U1601.3 TP1600
+near T U1600.6 R1605
+near T U1600.5 R1606
+near B U1600.6 TP1601
+near B U1600.5 TP1602
+
+# Camera: filter and pull-ups on the back of the connector
+near B J1200.15 C1202 C1201 C1200 FB1200 C1203
+near B J1200.11 R1202
+near B J1200.12 R1203
+
+# Buttons on the west edge: debounce and ESD behind them, on the back
+near B 55,66.5 U602
+near B SW600.1 D600 C606
+near B U602.1 R607
+near B SW601.1 D601 C607
+near B U602.3 R608
+near B SW200.1 D200 R200
+
+# LEDs in a row just north of the boot DIP, in the south-east corner, where no HAT covers them
+row T 0 94 13.5 4.2 0 LED1600 LED1601
+row T 0 102 13.5 3.4 0 LED1602 LED1603
+near T LED1600.1 R1607
+near T LED1601.1 R1608
+near T LED1602.1 R1609
+near T LED1603.1 R1610
+
+# Test pads for the rails, back side, each beside its own rail. One row in the south-east cost about 560 mm of plane
+# copper, 15 % of all the rails' span.
+near B U102.13 TP300
+near B R301.1 TP301
+near B R209.1 TP302
+near B R303.1 TP303
+near B C305.1 TP304
+near B L202.2 TP306
+near T FB302.2 TP307
+near B R304.1 TP308
+near T 52,32 TP309
+near B C604.1 TP310
+near B R725.1 TP311
+near B C821.1 TP312

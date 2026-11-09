@@ -1,13 +1,10 @@
-"""APE-SBC component placement, computed offline and applied to PCB.PcbDoc.
+"""APE-SBC placement helpers: the board, part geometry, checks, renders, and applying a placement to PCB.PcbDoc.
 
-The hand floorplan is ``FIXED`` below (connectors, ICs, power stages, mounting
-hardware). Everything else (passives, small parts, test pads) is placed by simulated
-annealing around those parts. Results live in ``placement.csv``, keyed by designator,
-so a netlist change only re-places what is new. Run from hardware/gen:
+The positions themselves are written by hand in blocks/, one file per schematic function, and blocks.py turns them
+into placement.csv. docs/pcb-floorplan.md says why each block is where it is. Run from hardware/gen:
 
     python build.py check            refresh out/netlist.csv and friends
-    python placement.py solve        anneal everything not in FIXED (about 3 minutes)
-    python placement.py add          place only the parts missing from the csv
+    python blocks.py build           check the block files and write placement.csv
     python placement.py check        offline courtyard, outline and through-hole checks
     python placement.py render       out/place_top.png, out/place_bot.png
     python placement.py budget       area, routing-demand and distance numbers
@@ -28,7 +25,6 @@ from __future__ import annotations
 import csv
 import json
 import math
-import random
 import re
 import sys
 import time
@@ -44,13 +40,11 @@ CSV_PATH = GEN / "placement.csv"
 MM_TO_MIL = 1 / 0.0254
 
 # ------------------------------------------------------------------ board
-BOARD_W, BOARD_H = 100.0, 70.0   # pcbsetup reads these
+BOARD_W, BOARD_H = 110.0, 80.0   # pcbsetup reads these
 CORNER_R = 3.0                   # Raspberry Pi drawing: all corners R3
 EDGE_CLR = 0.5                   # courtyard to outline, parts not on an edge
-GRID = 0.5                       # annealed parts: with the margin below, 0402s fall on a 2.5-3 x 2 mm lattice
-MARGIN = 0.3                     # around every annealed courtyard, room for its fan-out vias
 # The Raspberry Pi rectangle (85 x 56) is the board's upper-left part: the board grows
-# 15 mm to the right and 14 mm down, so the holes and the 40-pin header keep their
+# 25 mm to the right and 24 mm down, so the holes and the 40-pin header keep their
 # positions and a HAT still fits. PI_Y is the Pi frame's bottom edge on this board.
 PI_Y = BOARD_H - 56.0
 # Raspberry Pi 4 mechanical drawing and HAT mechanical spec (official PDFs): holes 3.5
@@ -64,202 +58,27 @@ HEADER = (32.5, PI_Y + 52.5)
 # read from the same drawing). Their holes and pads stay well inside the board.
 OVERHANG = 3.0
 
-U1_XY = (44.0, 43.0)             # SiP centre: CSI balls over J1200, HDR balls under J1400
-M2_XY = (62.0, 38.0)             # back side, card toward +x, SDIO pins level with the SDIO balls
+U1_XY = (52.0, 45.0)             # SiP centre, near the middle of the board: docs/pcb-placement.md
+M2_XY = (70.5, 64.0)             # back side, north-east, card toward +x under the SD socket and audio
 # Socket centre line to the standoff hole: 30.06 mm on TI SK-AM62A (reference/2_PROC142A
 # IPC-D-356: J2 rows at x -45.6 / +251.6 mil, SH3 at 1286.6 mil). Same contact-row spacing
 # as the LOTES socket (7.55 mm). The rows' centre is 1.5 mm above the holes' line, the
 # footprint origin 1.355 mm.
 M2_STANDOFF_DX = 30.06 - (1.5 - 1.355)
-EMMC_XY = (33.5, 42.0)           # J700, back side; the module runs toward -x
+EMMC_XY = (34.0, 42.0)           # J700, back side; the module runs toward -x
 
-# designator: (x, y, rotation, side)
-FIXED = {
-    # ---- mechanics, Raspberry Pi pattern
-    **{d: (x, y, 0, "T") for d, (x, y) in HOLES.items()},
-    "J1400": (HEADER[0], HEADER[1], 0, "T"),
-    "U1400": (41.0, 60.6, 0, "T"),
-    # I2C slew parts on the back, by balls A7, B7, A8, B8: sheet 14 wants the 62 R and 47 pF
-    # within 5 mm of the balls. Pad 1 (the ball side) faces the balls.
-    "R1425": (37.6, 49.6, 0, "B"),
-    "C1401": (37.6, 50.95, 0, "B"),
-    "R1424": (39.85, 49.6, 0, "B"),
-    "C1400": (39.85, 50.95, 0, "B"),
-    "R1426": (42.1, 49.6, 180, "B"),
-    "C1402": (42.1, 50.95, 180, "B"),
-    "R1427": (44.35, 49.6, 180, "B"),
-    "C1403": (44.35, 50.95, 180, "B"),
-
-    # ---- SiP. Zero orientation: rows A-D (HDR, JTAG, SD, SDIO) up, columns 25-28
-    # (DPI) right, rows U-V (USB, CSI, RGMII) down, columns 1-2 (MMC0, clocks) left.
-    "U1": (U1_XY[0], U1_XY[1], 0, "T"),
-
-    # ---- HDMI, straight run to the right edge. DPI enters the TFP410's top (D12-23) and left
-    # (D0-11) sides, level with the DPI balls; TMDS leaves its right side toward J1000.
-    "U1000": (63.7, 37.5, 90, "T"),
-    "U1001": (83.4, 24.0, 0, "T"),
-    # Low enough that the M.2 card on the back (y > 27) clears the shell-leg tails
-    "J1000": (BOARD_W - 4.70, 18.7, 90, "T"),
-
-    # ---- Ethernet, straight down from the RGMII balls: PHY's RGMII side up (same left-to-right
-    # order as the balls), MDI side down (same order as the RJ45 pins). The RJ45 sits in the
-    # strip below the HAT, beside H1601.
-    "U800": (52.5, 28.7, 90, "T"),
-    "Y800": (59.2, 25.5, 0, "T"),
-    "U203": (52.0, 21.5, 0, "B"),
-    # RGMII series resistors in line on the top side, two rows between U1 and the PHY:
-    # transmit at the SiP, receive at the PHY. Rows U and V escape on L1 straight into them.
-    "R801": (48.4, 36.75, 270, "T"),
-    "R806": (49.65, 36.75, 90, "T"),
-    "R800": (50.9, 36.75, 270, "T"),
-    "R802": (52.15, 36.75, 270, "T"),
-    "R803": (53.4, 36.75, 270, "T"),
-    "R804": (54.65, 36.75, 270, "T"),
-    "R805": (55.9, 36.75, 270, "T"),
-    "R807": (48.4, 34.45, 90, "T"),
-    "R811": (49.65, 34.45, 90, "T"),
-    "R810": (50.9, 34.45, 90, "T"),
-    "R809": (52.15, 34.45, 90, "T"),
-    "R808": (53.4, 34.45, 90, "T"),
-    "J800": (74.4, 10.65 - OVERHANG, 0, "T"),
-
-    # ---- USB, straight down from the USB balls: hub, CMC, then the stacked USB-A in the strip
-    # below the HAT. Bulk caps at the VBUS pins on its left.
-    "U900": (38.0, 20.0, 90, "T"),
-    "Y900": (43.0, 22.4, 0, "B"),
-    "L901": (38.0, 15.6, 0, "T"),
-    "L902": (38.0, 15.6, 0, "B"),
-    "D904": (43.0, 17.2, 90, "B"),
-    "D905": (33.0, 17.2, 90, "B"),
-    "J900": (40.5, 8.5 - OVERHANG - 0.2, 0, "T"),
-    "C907": (28.0, 6.2, 90, "T"),
-    "C911": (27.55, 16.95, 90, "T"),
-    "U901": (33.1, 17.6, 90, "T"),
-    "U902": (33.1, 22.7, 90, "T"),
-
-    # ---- camera: on the Pi's camera-connector line (x = 45, the HAT slot), flex straight up
-    "J1200": (45.0, 26.0, 90, "T"),
-
-    # ---- SD on the top edge, level with the SD balls; audio beyond it, far from the switchers
-    "J702": (73.75, BOARD_H - 7.25, 180, "T"),
-    "J1100": (88.0, BOARD_H - 6.05, 180, "T"),
-    "U1100": (86.0, 50.0, 90, "T"),
-    "Y1100": (81.0, 47.5, 0, "T"),
-
-    # ---- Wi-Fi on the back, socket beside U1 at the height of the SDIO balls, card over low parts
-    "J1300": (M2_XY[0], M2_XY[1], 90, "B"),
-    "H1300": (M2_XY[0] + M2_STANDOFF_DX, M2_XY[1], 0, "B"),
-
-    # ---- eMMC module on the back against U1's left edge (MMC0 balls), two plugs 13 mm apart
-    "J700": (EMMC_XY[0], EMMC_XY[1], 270, "B"),
-    "J701": (EMMC_XY[0] - 13.0, EMMC_XY[1], 270, "B"),
-
-    # ---- boot DIP above the BOOTMODE balls
-    "SW602": (57.0, 55.35, 90, "T"),
-
-    # ---- USB-C power input on the left edge: CC toward J100, VBUS and VSYS out of the top side
-    "J100": (3.185, 27.0, 270, "T"),
-    "U100": (13.5, 27.0, 90, "T"),
-    "C107": (18.6, 31.0, 0, "T"),
-    "C108": (18.6, 28.4, 0, "T"),
-
-    # ---- LM61460 3.3 V: SW down into L100, VIN caps on both sides of the part
-    "U101": (14.0, 18.4, 270, "T"),
-    "L100": (14.0, 11.0, 270, "T"),
-    "C109": (10.3, 18.4, 270, "T"),
-    "C111": (17.6, 19.1, 270, "T"),
-    "C117": (20.3, 7.7, 0, "T"),
-    "C118": (20.3, 10.25, 0, "T"),
-    "C119": (20.3, 12.8, 0, "T"),
-    "C120": (20.3, 15.35, 0, "T"),
-
-    # ---- TPS63070 5 V: inductor beside the L1/L2 pins, output caps under VOUT, input caps over VIN
-    "U102": (12.7, 38.0, 0, "T"),
-    "L101": (17.45, 38.0, 270, "T"),
-    "C125": (12.4, 34.4, 0, "T"),
-    "C126": (17.45, 33.6, 180, "T"),
-    "C127": (22.6, 34.0, 0, "T"),
-    "C121": (12.7, 41.4, 0, "T"),
-    "C122": (16.4, 42.2, 0, "T"),
-
-    # ---- PMIC at U1's lower-left corner: LX_B2/B3 down into L201/L202, LX_B1 right into L200
-    "U200": (29.0, 33.0, 180, "T"),
-    "L200": (33.7, 31.2, 270, "T"),
-    "L201": (30.6, 27.2, 270, "T"),
-    "L202": (27.2, 27.2, 270, "T"),
-    "U201": (23.5, 28.5, 0, "T"),
-
-    # ---- SiP clocks: 25 MHz oscillator and series R within 2 mm of ball G1, 32 kHz crystal at
-    # H1/H2. Top side; the MMC0 balls below them escape to the back, into J700.
-    "U600": (34.1, 46.7, 0, "T"),
-    "R600": (34.6, 44.25, 0, "T"),
-    "Y600": (33.5, 42.3, 180, "T"),
-    "U1601": (35.8, 50.5, 0, "T"),
-    "U601": (29.7, 47.5, 0, "T"),
-    "U1600": (23.0, 44.5, 0, "T"),
-
-    # ---- debug: USB-C on the left edge, FT4232 next to it, level shifters toward U1
-    "J1500": (3.185, 53.0, 270, "T"),
-    "U1500": (16.5, 54.3, 0, "T"),
-    "U1504": (29.5, 58.0, 0, "T"),
-    "U1505": (29.5, 52.0, 0, "T"),
-    "J1501": (29.0, 55.8, 0, "B"),
-
-    # ---- buttons and LEDs on the bottom edge, in the strip a HAT does not cover
-    "SW200": (4.85, 3.4, 0, "T"),
-    "SW600": (12.6, 3.4, 0, "T"),
-    "SW601": (20.4, 3.4, 0, "T"),
-    "LED1600": (51.0, 1.7, 0, "T"),
-    "LED1601": (55.2, 1.7, 0, "T"),
-    "LED1602": (59.0, 1.7, 0, "T"),
-    "LED1603": (62.3, 1.7, 0, "T"),
-
-    "C831": (86.2, 15.0, 90, "T"),
-}
-
-
-# Rectangles (x1, y1, x2, y2, side, why) where annealed parts may not go. Side
-# "T", "B" or "TB". Hand-placed parts are not checked against them.
-# Parts that hang off a high-speed or crystal net, placed for the shortest stub after the anneal (the annealer
-# scores them as wire, and left some 10-20 mm from the route; one load cap was 32 mm from its crystal). R900 and
-# R901 straddle the choke L900. C320 and TP1000 gave up their spots. docs/pcb-placement.md lists what is left.
-STUB_PARTS = {
-    "C320": (22.5, 40.5, 270, "T"), "C602": (28, 39, 180, "T"), "C603": (30.5, 42, 270, "T"),
-    "C800": (58, 28.5, 0, "T"), "C801": (58.5, 25, 0, "B"), "C1519": (9, 59.5, 180, "B"),
-    "C1520": (10, 58, 180, "B"), "C1600": (19, 28.5, 180, "B"), "R602": (29.5, 37.5, 0, "T"),
-    "R629": (77.5, 45.5, 90, "T"), "R630": (67.5, 43, 270, "B"), "R631": (65.5, 50.5, 270, "B"),
-    "R632": (69.5, 43, 0, "B"), "R633": (60, 50, 0, "B"), "R635": (74.5, 49, 270, "B"),
-    "R637": (76.5, 47, 180, "B"), "R639": (68, 45, 180, "B"), "R641": (70, 51.5, 270, "B"),
-    "R643": (70, 45.5, 90, "B"), "R701": (32, 31.5, 180, "B"), "R702": (29, 30.5, 180, "B"),
-    "R703": (32, 33, 180, "B"), "R704": (31.5, 30, 180, "B"), "R705": (24, 48.5, 270, "T"),
-    "R706": (31.5, 28.5, 180, "B"), "R707": (22.5, 34.5, 180, "B"), "R708": (35, 30, 270, "B"),
-    "R709": (37, 29.5, 0, "B"), "R712": (26.5, 34, 90, "B"), "R723": (65, 52, 0, "T"),
-    "R724": (68.5, 52.5, 0, "T"), "R725": (78.5, 54.5, 270, "B"), "R726": (63.5, 53.5, 270, "B"),
-    "R727": (72, 57, 180, "B"), "R728": (71, 52.5, 180, "T"), "R732": (71, 53.5, 180, "B"),
-    "R900": (18.3, 29.8, 180, "B"), "R901": (17.6, 33.2, 180, "B"), "R915": (38.5, 14, 180, "B"),
-    "R1305": (54.5, 55, 0, "B"), "R1306": (61.5, 53, 0, "B"), "R1308": (55, 35.5, 180, "B"),
-    "R1310": (57, 52, 270, "B"), "TP300": (16.3, 29, 0, "B"), "TP1000": (60.5, 25, 180, "B"),
-}
-FIXED.update(STUB_PARTS)
+# Mechanics fixed by the Raspberry Pi pattern, flagged in placement.csv. Every position is in blocks/ (see blocks.py).
+FIXED = {**{d: (x, y, 0, "T") for d, (x, y) in HOLES.items()}, "J1400": (HEADER[0], HEADER[1], 0, "T")}
 
 
 def keepouts() -> list[tuple]:
+    """Rectangles (x1, y1, x2, y2, side, why) kept clear of small parts, shown on the renders."""
     ux, uy = U1_XY
     ex, ey = EMMC_XY
     mx, my = M2_XY
     return [
-        # SiP fan-out: 1 mm around the 14 x 9 mm body, on both sides (the U1_SiP room)
-        (ux - 8.0, uy - 5.5, ux + 8.0, uy + 5.5, "TB", "U1 fan-out"),
         # eMMC module, 18 x 13 mm, 1 mm stack: nothing fits under it
         (ex - 15.5, ey - 6.5, ex + 2.5, ey + 6.5, "B", "eMMC module"),
-        # bus corridors on the top side: L1 stays free where a whole bus leaves U1
-        (ux + 8.0, 35.2, 57.0, 53.0, "T", "DPI, SD, AUD escape"),
-        (ux - 7.5, uy + 5.5, ux + 8.0, uy + 11.0, "T", "HDR, JTAG escape"),
-        (36.0, 22.7, 40.9, uy - 5.5, "T", "USB escape"),
-        (46.0, 32.65, 56.5, uy - 5.5, "T", "RGMII escape"),
-        (70.4, 20.0, 78.8, 44.2, "T", "TMDS"),
-        (48.0, 20.8, 78.0, 24.1, "T", "MDI"),
-        (57.0, 44.2, 71.0, 50.0, "T", "D12-D23, SD, AUD"),
         # standoff screw for the M.2 card, through the board
         (mx + M2_STANDOFF_DX - 3.0, my - 3.0, mx + M2_STANDOFF_DX + 3.0, my + 3.0, "TB", "M.2 standoff"),
     ]
@@ -291,25 +110,8 @@ def thermal_keepouts(parts, place) -> list[tuple]:
 
 
 
-# Parts that stay on one side when annealed (default: passives both, the rest top)
-TOP_ONLY_FOOTPRINTS = {"C1206", "CP_SMD_D6.3X5.8", "IND_MURATA_DFE252012F", "IND_SUNLORD_MWSA0402S",
-                       "IND_SUNLORD_MWSA0603S", "DIO_SMA", "SOT23-5", "SOT23-6",
-                       "SOIC8_3.9X4.9_P1.27", "TSSOP8_4.4X3.0_P0.65", "TSSOP16_4.4X5.0_P0.65",
-                       "XTAL_3225_4P", "OSC_3225_4P", "OSC_2520_4P", "XTAL_EPSON_FC-135", "LED0603", "LED0805"}
-BOTTOM_ONLY_FOOTPRINTS = {"TP_PAD_1.0"}
-# Power-stage parts stay beside their switcher on the top side: short loops
-TOP_ONLY_SHEETS = {"USB-C power input and main converters", "PMIC and power switches"}
 
-VIA_COST = 3.5                   # mm of extra wire a net pays for changing sides
 
-# Net weights, by name pattern (first match wins)
-NET_WEIGHTS = [
-    (re.compile(r"^(LM_SW|BB_L1|BB_L2|PMIC_LX_B\d)$"), 8.0),                # switch nodes: short loops
-    (re.compile(r"^(OSC_25M|OSC25M_SRC|LFOSC_.*|PHY_X.|HUB_X.|FT_OSC.|AUD_MCLK_OSC|LM_CBOOT|LM_RBOOT)$"), 6.0),
-    (re.compile(r"^J_HDR"), 6.0),                                           # series R at the header pin
-    (re.compile(r"^(ETH_MDI|HDMI_TX|CSI_|USB|HUB_P|USBA|USBC|DBG_USB)"), 2.5),
-    (re.compile(r"^(ETH_|PHY_|EMMC_|SD_|M2_SDIO|WL_SDIO|DPI_|TFP_IDCK)"), 2.0),
-]
 
 
 @dataclass
@@ -326,10 +128,6 @@ def _natural(d):
     return [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", d)]
 
 
-# A comment that says where a part sits: the net to that part scores 6 x wire length
-SITS_AT = [(re.compile(r"at SoC|near SoC|at the SoC ball|slew limiter"), "U1"), (re.compile(r"at PHY"), "U800"),
-           (re.compile(r"at the oscillator"), "U600"), (re.compile(r"at J1100"), "J1100"),
-           (re.compile(r"at Y1100"), "Y1100"), (re.compile(r"at J1200"), "J1200")]
 
 
 def load_parts() -> tuple[dict, dict]:
@@ -396,109 +194,18 @@ def is_rail(net, nodes):
     return net == "GND" or (len(nodes) > 12 and net not in LOCAL_NETS)
 
 
-def net_weight(net):
-    for rx, w in NET_WEIGHTS:
-        if rx.search(net):
-            return w
-    return 1.0
 
 
-def ball_positions():
-    """{ball name of symbol pin: [ball numbers]} for the SiP's power balls."""
-    from symbols import OSD6254
-    out = {}
-    for p in OSD6254.pins:
-        out.setdefault(p.name, []).append(p.number)
-    return out
 
 
-# 0R links feeding the IO-bank rails. Their pads are the only probe points on those rails,
-# so they sit by the bank's balls and caps, and stay out from under the M.2 card.
-BANK_LINKS = {f"R{n}" for n in range(303, 311)}
-
-# Decoupling parts whose pin is known from the schematic comments (sheet 02)
-ANCHOR_PIN = {"C200": ("U200", "4"), "C201": ("U200", "5"), "C202": ("U200", "30"), "C203": ("U200", "26"),
-              "C204": ("U200", "13"), "C205": ("U200", "6"), "C206": ("U200", "20"), "C207": ("U200", "22"),
-              "C209": ("U200", "13"), "C210": ("L200", "2"), "C211": ("L200", "2"), "C212": ("L201", "2"),
-              "C213": ("L201", "2"), "C214": ("L202", "2"), "C215": ("L202", "2")}
-
-COMMENT_BALL = re.compile(r"\((VDD\w*|VPP)[ ,)]")
 
 
-def bom_comments():
-    comments = {}
-    with open(OUT / "schematic_bom.csv", newline="", encoding="utf-8", errors="replace") as f:
-        for r in csv.DictReader(f):
-            comments.setdefault(r["designator"], r["comment"])
-    return comments
 
 
-def anchors(parts, nets, place):
-    """Decoupling caps on a big rail: the IC pin each one serves, one cap per pin
-    in turn. Returns {des: [(x, y, net)]} in board mm."""
-    comments = bom_comments()
-    balls = ball_positions()
-    out = {}
-    turn = {}
-    pads_of = {d: {p[4]: p for p in pt.pads if p[4]} for d, pt in parts.items()}
-
-    def pin_xy(d, name):
-        x, y, rot, side = place[d]
-        p = pads_of[d][name]
-        return xform(p[0], p[1], x, y, rot, side)
-
-    for d, pt in sorted(parts.items(), key=lambda kv: _natural(kv[0])):
-        named = [p for p in pt.pads if p[4]]
-        if d in place:
-            continue
-        if pt.sheet == "SiP power" and (d.startswith("C") or d in BANK_LINKS):
-            net = next((p[2] for p in named if p[2] and p[2] != "GND"
-                        and (d not in BANK_LINKS or p[2].startswith("VDDSHV"))), None)
-            ball_list = [nd.split(".", 1)[1] for nd in nets.get(net, []) if nd.startswith("U1.")]
-            if ball_list:
-                m = COMMENT_BALL.search(comments.get(d, ""))
-                wanted = [b for b in balls.get(m.group(1), []) if b in ball_list] if m else []
-                if wanted:
-                    ball_list = wanted
-                ball_list = sorted(ball_list, key=_natural)
-                i = turn.get(("SIP", net), 0)
-                turn[("SIP", net)] = i + 1
-                out[d] = (pin_xy("U1", ball_list[i % len(ball_list)]), net)
-                continue
-        signal = {p[2] for p in named if p[2] and p[2] not in ("GND", "NC")}
-        if len(signal) != 1:
-            continue                                         # not a plain decoupling or clamp part
-        net = next(iter(signal))
-        # candidates: IC and connector pins on that net in the same sheet, hand-placed parts only
-        cand = []
-        for nd in nets[net]:
-            od, pin = nd.split(".", 1)
-            if od in place and parts[od].sheet == pt.sheet and od != d and len(pads_of[od]) > 2:
-                cand.append((od, pin))
-        if not cand:
-            cand = [(nd.split(".", 1)) for nd in nets[net]
-                    if nd.split(".", 1)[0] in place and nd.split(".", 1)[0] != d]
-        if not cand:
-            continue
-        cand = sorted(cand, key=lambda c: (_natural(c[0]), _natural(c[1])))
-        key = (net, pt.sheet)
-        i = turn.get(key, 0)
-        turn[key] = i + 1
-        od, pin = ANCHOR_PIN.get(d) or cand[i % len(cand)]
-        out[d] = (pin_xy(od, pin), net)
-    return out
 
 
-def allowed_sides(pt: Part):
-    if pt.des in ("R820", "R821"):               # RGMII_RX straps: RGMII stays on L1 and L3 (README section 11)
-        return ("T",)
-    if pt.fp in BOTTOM_ONLY_FOOTPRINTS:
-        return ("B",)
-    if pt.fp in TOP_ONLY_FOOTPRINTS:
-        return ("T",)
-    if pt.sheet in TOP_ONLY_SHEETS and pt.fp not in ("R0402", "C0402", "SOD323", "X1SON2_DPY"):
-        return ("T",)
-    return ("T", "B")
+
+
 
 
 def read_csv():
@@ -560,354 +267,8 @@ class Grid:
         return None
 
 
-def fixed_obstacles(parts, place, grid):
-    """Courtyards of placed parts on their side, holes of THT parts on the other."""
-    n = 0
-    for d, (x, y, rot, side) in place.items():
-        pt = parts[d]
-        grid.add(("P", d), side, crt_rect(pt, x, y, rot, side))
-        other = "B" if side == "T" else "T"
-        for hole in pt.holes:
-            a = xform(hole[0], hole[1], x, y, rot, side)
-            b = xform(hole[2], hole[3], x, y, rot, side)
-            n += 1
-            grid.add(("H", n), other, (min(a[0], b[0]) - 0.25, min(a[1], b[1]) - 0.25,
-                                       max(a[0], b[0]) + 0.25, max(a[1], b[1]) + 0.25))
 
 
-def solve(parts, nets, seed_place, movable, steps=1_500_000, seed=1, t_start=4.0, t_end=0.02,
-          log=True, margin=MARGIN):
-    grow = margin
-    rng = random.Random(seed)
-    place = dict(seed_place)
-    fixed = {d: place[d] for d in place if d not in movable}
-    anc = anchors(parts, nets, fixed)
-
-    grid = Grid()
-    fixed_obstacles(parts, fixed, grid)
-    for i, k in enumerate(keepouts() + thermal_keepouts(parts, fixed)):
-        for s in k[4]:
-            grid.add(("K", i, s), s, (k[0], k[1], k[2], k[3]))
-
-    # nets that the annealer scores by HPWL: not rails, not GND
-    d_nets = {d: {} for d in parts}
-    for net, nodes in nets.items():
-        if net in ("NC",) or is_rail(net, nodes) or net.startswith("NC"):
-            continue
-        for nd in nodes:
-            od, pin = nd.split(".", 1)
-            if od in d_nets and not (od in anc and anc[od][1] == net):
-                d_nets[od].setdefault(net, []).append(pin)
-    net_pins = {}
-    for d, m in d_nets.items():
-        for net, pins in m.items():
-            net_pins.setdefault(net, []).append((d, pins))
-    pad_of = {d: {p[4]: p for p in pt.pads if p[4]} for d, pt in parts.items()}
-    weights = {n: net_weight(n) for n in net_pins}
-    comments = bom_comments()
-    for d in parts:
-        for rx, target in SITS_AT:
-            if rx.search(comments.get(d, "")):
-                for net in d_nets[d]:
-                    if any(od == target for od, _ in net_pins[net]):
-                        weights[net] = max(weights[net], 6.0)
-    # A slew limiter belongs at the ball: its far side (often a header net) must not pull it away
-    for d in parts:
-        if "slew limiter" in comments.get(d, ""):
-            for net in d_nets[d]:
-                if not any(od == "U1" for od, _ in net_pins[net]):
-                    weights[net] = 1.0
-    # A through-hole pin or a SiP ball (via in every pad) reaches both sides for free
-    neutral = {d for d, pt in parts.items() if pt.holes and len(pt.holes) >= len([q for q in pt.pads if q[4]])}
-    neutral.add("U1")
-
-    pad_xy = {}
-
-    def set_pads(d, x, y, rot, side):
-        pad_xy[d] = {name: xform(p[0], p[1], x, y, rot, side) for name, p in pad_of[d].items()}
-
-    for d, v in place.items():
-        set_pads(d, *v)
-
-    def net_cost(net):
-        xs, ys = [], []
-        sides = set()
-        for d, pins in net_pins[net]:
-            v = place.get(d)
-            if v is None:
-                continue
-            if d not in neutral:
-                sides.add(v[3])
-            xy = pad_xy[d]
-            for pin in pins:
-                px, py = xy[pin]
-                xs.append(px)
-                ys.append(py)
-        n = len(xs)
-        if n < 2:
-            return 0.0
-        cx, cy = sum(xs) / n, sum(ys) / n
-        star = sum(abs(q - cx) for q in xs) + sum(abs(q - cy) for q in ys)
-        return weights[net] * (star + (VIA_COST if len(sides) > 1 else 0.0))
-
-    def part_cost(d):
-        v = place[d]
-        c = 0.0
-        a = anc.get(d)
-        if a:
-            (ax, ay), net = a
-            for name, p in pad_of[d].items():
-                if p[2] == net:
-                    px, py = pad_xy[d][name]
-                    c += (3.0 if parts[d].sheet == "SiP power" else 1.5) * (abs(px - ax) + abs(py - ay))
-                    break
-        return c
-
-    def nets_of(d):
-        return list(d_nets[d].keys())
-
-    # start: any legal position near the part's nets
-    card = (M2_XY[0] - 2.0, M2_XY[1] - 11.5, M2_XY[0] + M2_STANDOFF_DX + 2.0, M2_XY[1] + 11.5)
-
-    def bounds_ok(r, pt):
-        if not (r[0] >= EDGE_CLR and r[1] >= EDGE_CLR and r[2] <= BOARD_W - EDGE_CLR and r[3] <= BOARD_H - EDGE_CLR):
-            return False
-        if (pt.fp == "TP_PAD_1.0" or pt.des in BANK_LINKS) and r[0] < card[2] and card[0] < r[2] and r[1] < card[3] and card[1] < r[3]:
-            return False
-        return True
-
-    unplaced = []
-
-    def target_of(d):
-        pts = []
-        for net in d_nets[d]:
-            for od, pins in net_pins[net]:
-                if od != d and od in place:
-                    pts += [pad_xy[od][p] for p in pins]
-        a = anc.get(d)
-        if a:
-            pts.append(a[0])
-        if pts:
-            return sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts)
-        return rng.uniform(5, BOARD_W - 5), rng.uniform(5, BOARD_H - 5)
-
-    def links(d):
-        n = 1 if d in anc else 0
-        for net in d_nets[d]:
-            if any(od in place for od, _ in net_pins[net]):
-                n += 1
-        return n
-
-    t0 = time.time()
-    waiting = set(movable)
-    while waiting:
-        d = max(waiting, key=lambda q: (links(q) > 0, (parts[q].crt[2] - parts[q].crt[0]) * (parts[q].crt[3] - parts[q].crt[1]) > 6,
-                                        links(q), parts[q].sheet == "SiP power", q))
-        waiting.discard(d)
-        pt = parts[d]
-        sides = allowed_sides(pt)
-        tx, ty = target_of(d)
-        done = False
-        for radius in [1, 2, 3, 4, 6, 8, 11, 15, 20, 30, 45, 70, 100]:
-            for _ in range(200):
-                x = round((tx + rng.uniform(-radius, radius)) / GRID) * GRID
-                y = round((ty + rng.uniform(-radius, radius)) / GRID) * GRID
-                rot = rng.choice((0, 90, 180, 270))
-                side = rng.choice(sides)
-                r = crt_rect(pt, x, y, rot, side, grow)
-                if bounds_ok(r, pt) and grid.hits(side, r) is None:
-                    place[d] = (x, y, rot, side)
-                    set_pads(d, x, y, rot, side)
-                    grid.add(("P", d), side, r)
-                    done = True
-                    break
-            if done:
-                break
-        if not done:                                         # scan the board, nearest first
-            best = None
-            for side in sides:
-                for rot in (0, 90):
-                    gx = EDGE_CLR
-                    while gx < BOARD_W:
-                        gy = EDGE_CLR
-                        while gy < BOARD_H:
-                            r = crt_rect(pt, gx, gy, rot, side, grow)
-                            if bounds_ok(r, pt) and grid.hits(side, r) is None:
-                                dist = abs(gx - tx) + abs(gy - ty)
-                                if best is None or dist < best[0]:
-                                    best = (dist, gx, gy, rot, side, r)
-                            gy += 0.5
-                        gx += 0.5
-            if best:
-                _, x, y, rot, side, r = best
-                place[d] = (x, y, rot, side)
-                set_pads(d, x, y, rot, side)
-                grid.add(("P", d), side, r)
-                done = True
-        if not done:
-            unplaced.append(d)
-    if unplaced:
-        print("could not start:", " ".join(unplaced))
-    movable = [d for d in movable if d in place]
-
-    net_c = {n: net_cost(n) for n in net_pins}
-    part_c = {d: part_cost(d) for d in movable}
-    total = sum(net_c.values()) + sum(part_c.values())
-    if log:
-        print(f"start cost {total:.0f}, {len(movable)} movable, {time.time() - t0:.1f} s")
-
-    same_fp = {}
-    for d in movable:
-        same_fp.setdefault(parts[d].fp, []).append(d)
-
-    t = t_start
-    alpha = (t_end / t_start) ** (1 / max(1, steps))
-    accepted = 0
-    t0 = time.time()
-    for step in range(steps):
-        t *= alpha
-        d = movable[rng.randrange(len(movable))]
-        pt = parts[d]
-        ox, oy, orot, oside = place[d]
-        kind = rng.random()
-        partner = None
-        if kind < 0.12 and len(same_fp[pt.fp]) > 1:
-            partner = same_fp[pt.fp][rng.randrange(len(same_fp[pt.fp]))]
-            if partner == d:
-                continue
-            nx, ny, nrot, nside = place[partner]
-            px, py, prot, pside = ox, oy, orot, oside
-            if nside not in allowed_sides(pt) or pside not in allowed_sides(parts[partner]):
-                continue
-        else:
-            radius = max(0.5, 18.0 * t / t_start)
-            if kind < 0.3:
-                nx, ny = ox, oy
-            elif kind < 0.5:
-                tx, ty = target_of(d)
-                nx = round((tx + rng.uniform(-3, 3)) / GRID) * GRID
-                ny = round((ty + rng.uniform(-3, 3)) / GRID) * GRID
-            else:
-                nx = round((ox + rng.uniform(-radius, radius)) / GRID) * GRID
-                ny = round((oy + rng.uniform(-radius, radius)) / GRID) * GRID
-            nrot = rng.choice((0, 90, 180, 270)) if kind < 0.75 else orot
-            sides = allowed_sides(pt)
-            nside = rng.choice(sides) if len(sides) > 1 and rng.random() < 0.15 else oside
-            if (nx, ny, nrot, nside) == (ox, oy, orot, oside):
-                continue
-        nr = crt_rect(pt, nx, ny, nrot, nside, grow)
-        if not bounds_ok(nr, pt):
-            continue
-        key = ("P", d)
-        if partner:
-            ppt = parts[partner]
-            pr = crt_rect(ppt, px, py, prot, pside, grow)
-            if not bounds_ok(pr, ppt):
-                continue
-            pkey = ("P", partner)
-            if grid.hits(nside, nr, ignore=(key, pkey)) is not None or grid.hits(pside, pr, ignore=(key, pkey)) is not None:
-                continue
-            if nr[0] < pr[2] and pr[0] < nr[2] and nr[1] < pr[3] and pr[1] < nr[3] and nside == pside:
-                continue
-            affected = set(nets_of(d)) | set(nets_of(partner))
-            old = sum(net_c[n] for n in affected) + part_c[d] + part_c[partner]
-            place[d] = (nx, ny, nrot, nside)
-            place[partner] = (px, py, prot, pside)
-            set_pads(d, nx, ny, nrot, nside)
-            set_pads(partner, px, py, prot, pside)
-            new_n = {n: net_cost(n) for n in affected}
-            new_pc, new_pp = part_cost(d), part_cost(partner)
-            delta = sum(new_n.values()) + new_pc + new_pp - old
-            if delta <= 0 or rng.random() < math.exp(-delta / t):
-                grid.remove(key)
-                grid.remove(pkey)
-                grid.add(key, nside, nr)
-                grid.add(pkey, pside, pr)
-                net_c.update(new_n)
-                part_c[d], part_c[partner] = new_pc, new_pp
-                total += delta
-                accepted += 1
-            else:
-                place[d] = (ox, oy, orot, oside)
-                place[partner] = (nx, ny, nrot, nside)
-                set_pads(d, ox, oy, orot, oside)
-                set_pads(partner, nx, ny, nrot, nside)
-            continue
-        if grid.hits(nside, nr, ignore=(key,)) is not None:
-            continue
-        affected = nets_of(d)
-        old = sum(net_c[n] for n in affected) + part_c[d]
-        place[d] = (nx, ny, nrot, nside)
-        set_pads(d, nx, ny, nrot, nside)
-        new_n = {n: net_cost(n) for n in affected}
-        new_pc = part_cost(d)
-        delta = sum(new_n.values()) + new_pc - old
-        if delta <= 0 or rng.random() < math.exp(-delta / t):
-            grid.remove(key)
-            grid.add(key, nside, nr)
-            net_c.update(new_n)
-            part_c[d] = new_pc
-            total += delta
-            accepted += 1
-        else:
-            place[d] = (ox, oy, orot, oside)
-            set_pads(d, ox, oy, orot, oside)
-        if log and step % 300000 == 0 and step:
-            print(f"  {step} T={t:.3f} cost={total:.0f} acc={accepted} {time.time() - t0:.0f} s", flush=True)
-    if log:
-        print(f"final cost {total:.0f}, accepted {accepted}, {time.time() - t0:.0f} s")
-
-    # Repair: a part still far from its connections gets the best free spot near them. The
-    # annealer rarely finds it at low temperature because the moves in between are blocked.
-    def own_cost(d):
-        return part_c[d] + sum(net_c[n] for n in nets_of(d))
-
-    moved = 0
-    for pass_no in range(2):
-        for d in movable:
-            pt = parts[d]
-            ox, oy, orot, oside = place[d]
-            key = ("P", d)
-            tx, ty = target_of(d)
-            tx, ty = round(tx / GRID) * GRID, round(ty / GRID) * GRID
-            grid.remove(key)
-            base = own_cost(d)
-            best = (base - 0.5, None)
-            tried = 0
-            for ring in range(0, 41):
-                r_mm = ring * GRID
-                cells = [(tx + i * GRID, ty + j * GRID) for i in range(-ring, ring + 1) for j in range(-ring, ring + 1)
-                         if max(abs(i), abs(j)) == ring]
-                for nx, ny in cells:
-                    for nside in allowed_sides(pt):
-                        for nrot in (0, 90, 180, 270):
-                            nr = crt_rect(pt, nx, ny, nrot, nside, grow)
-                            if not bounds_ok(nr, pt) or grid.hits(nside, nr) is not None:
-                                continue
-                            tried += 1
-                            place[d] = (nx, ny, nrot, nside)
-                            set_pads(d, nx, ny, nrot, nside)
-                            c = part_cost(d) + sum(net_cost(n) for n in nets_of(d))
-                            if c < best[0]:
-                                best = (c, (nx, ny, nrot, nside, nr))
-                if tried > 160:
-                    break
-            if best[1]:
-                nx, ny, nrot, nside, nr = best[1]
-                place[d] = (nx, ny, nrot, nside)
-                set_pads(d, nx, ny, nrot, nside)
-                grid.add(key, nside, nr)
-                for n in nets_of(d):
-                    net_c[n] = net_cost(n)
-                part_c[d] = part_cost(d)
-                moved += 1
-            else:
-                place[d] = (ox, oy, orot, oside)
-                set_pads(d, ox, oy, orot, oside)
-                grid.add(key, oside, crt_rect(pt, ox, oy, orot, oside, grow))
-    if log:
-        print(f"repair moved {moved}, cost {sum(net_c.values()) + sum(part_c.values()):.0f}, {time.time() - t0:.0f} s")
-    return place
 
 
 # ----------------------------------------------------------------- checks
@@ -975,6 +336,37 @@ def check(parts, place, quiet=False):
             if not outline_ok(px, py):
                 probs.append(f"{d} pad {p[4]} at ({px:.2f}, {py:.2f}) is outside the outline")
     return probs
+
+
+
+
+# The ComponentClearance rule is 10 mil = 0.254 mm. Altium measures to the courtyard's drawn line, which is
+# 0.05 mm wide, so a model gap of 0.30 mm reads as 9.84 mil and fails.
+CLEAR_GAP = 0.32
+
+
+def close_pairs(parts, place, gap=CLEAR_GAP):
+    """Same-side pairs whose courtyards are closer than gap (mm), with the gap."""
+    rects = {d: (place[d][3], crt_rect(parts[d], *place[d])) for d in place if d in parts}
+    out = []
+    names = sorted(rects, key=_natural)
+    for i, a in enumerate(names):
+        sa, ra = rects[a]
+        for b in names[i + 1:]:
+            sb, rb = rects[b]
+            if sa != sb:
+                continue
+            dx = max(ra[0] - rb[2], rb[0] - ra[2], 0.0)
+            dy = max(ra[1] - rb[3], rb[1] - ra[3], 0.0)
+            if dx == 0 and dy == 0:
+                g = max(ra[0] - rb[2], rb[0] - ra[2], ra[1] - rb[3], rb[1] - ra[3])
+            else:
+                g = math.hypot(dx, dy)
+            if g < gap - 1e-6:
+                out.append((round(g, 3), a, b))
+    return out
+
+
 
 
 def area_budget(parts):
@@ -1064,7 +456,7 @@ def render(parts, nets, place, path_top, path_bot, ppm=11, ratsnest=True):
 
 def congestion(parts, nets, place, cell=2.0):
     """Routing demand against capacity, RUDY style. Every signal net spreads its
-    half-perimeter wire over its bounding box. Capacity: L1, L3 and L6 at a 0.30 mm track
+    half-perimeter wire over its bounding box. Capacity: L1, L3, L6 and L8 at a 0.30 mm track
     pitch (0.15 / 0.15), 50 % usable. Returns totals and the worst cells."""
     nx, ny = int(BOARD_W / cell), int(BOARD_H / cell)
     grid = [[0.0] * ny for _ in range(nx)]
@@ -1097,7 +489,7 @@ def congestion(parts, nets, place, cell=2.0):
         for i in range(int(x1 / cell), min(nx, int((x1 + w) / cell) + 1)):
             for j in range(int(y1 / cell), min(ny, int((y1 + h) / cell) + 1)):
                 grid[i][j] += dens
-    cap = 3 * (1 / 0.30) * 0.5                   # mm of track per mm2: 5.0
+    cap = 4 * (1 / 0.30) * 0.5                   # mm of track per mm2: 6.67
     cells = sorted(((grid[i][j] / cap, (i + 0.5) * cell, (j + 0.5) * cell) for i in range(nx) for j in range(ny)),
                    reverse=True)
     area = BOARD_W * BOARD_H
@@ -1197,6 +589,10 @@ def run_place(proc, timeout=180):
                      f'^|ProcName="ApePlace>{proc}")', shell=True)
     start = time.time()
     while time.time() - start < timeout:
+        # every ApePlace procedure logs as it starts: no log means Altium's script engine is stuck, not busy
+        if time.time() - start > 30 and not log.exists() and not res.exists():
+            return False, {"error": "the script did not start within 30 s: Altium's script engine is stuck. "
+                                    "Run: python build.py unwedge"}
         if res.exists():
             time.sleep(0.3)
             data = json.loads(res.read_text(encoding="cp1252", errors="replace"))
@@ -1252,46 +648,7 @@ def apply_parts(parts, place, batch=150):
 def main(argv):
     parts, nets = load_parts()
     cmd = argv[0] if argv else "check"
-    if cmd == "solve":
-        steps = int(argv[1]) if len(argv) > 1 else 1_500_000
-        seed = int(argv[2]) if len(argv) > 2 else 1
-        place = {d: v for d, v in FIXED.items() if d in parts}
-        # the SiP's own caps and beads first, so they get the ring around it
-        comments = bom_comments()
-        at_soc = SITS_AT[0][0]
-        ball_nets = {n for n, nodes in nets.items() if n not in ("GND", "NC") and any(q.startswith("U1.") for q in nodes)}
-
-        def at_balls(p):
-            """A cap from a SiP signal to ground (slew and filter caps sheet 14 wants within 5 mm)."""
-            named = {q[2] for q in p.pads if q[4]}
-            return "GND" in named and len(named) == 2 and bool(named & ball_nets) and not is_rail(
-                next(iter(named - {"GND"})), nets.get(next(iter(named - {"GND"})), []))
-
-        first = sorted(d for d, p in parts.items() if d not in FIXED and p.fp != "TP_PAD_1.0"
-                       and (p.sheet == "SiP power" or at_soc.search(comments.get(d, "")) or at_balls(p)))
-        # slew parts first of all (sheet 14 wants the 47 pF and 62 R within 5 mm of the balls)
-        slew = re.compile(r"slew limiter|^47pF")
-        clock_series = ("R700", "R729", "R1000", "R1321", "R1520")     # at the SoC, per their comments
-        zero = [d for d in first if slew.search(comments.get(d, "")) or d in clock_series]
-        place = solve(parts, nets, place, zero, steps=60000, seed=seed, margin=0.25)
-        # then the SiP's own caps, beads and links, then the other parts that sit at a ball
-        own = [d for d in first if d not in place and parts[d].sheet == "SiP power"]
-        place = solve(parts, nets, place, own, steps=steps // 6, seed=seed, margin=0.25)
-        first = [d for d in first if d not in place]
-        place = solve(parts, nets, place, first, steps=steps // 6, seed=seed, margin=0.25)
-        movable = sorted(d for d in parts if d not in place)
-        place = solve(parts, nets, place, movable, steps=steps, seed=seed)
-        write_csv(place)
-    elif cmd == "add":
-        place = {d: v for d, v in read_csv().items() if d in parts}
-        place.update({d: v for d, v in FIXED.items() if d in parts})
-        movable = sorted(d for d in parts if d not in place)
-        print("new parts:", " ".join(movable) or "none")
-        if movable:
-            place = solve(parts, nets, place, movable, steps=int(argv[1]) if len(argv) > 1 else 40000 * len(movable),
-                          t_start=1.0)
-            write_csv(place)
-    elif cmd == "check":
+    if cmd == "check":
         place = read_csv()
         probs = check(parts, place)
         print("\n".join(probs) if probs else "no problems")

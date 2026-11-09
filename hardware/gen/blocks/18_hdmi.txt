@@ -1,0 +1,34 @@
+# TFP410 and TPD12S016. Nothing behind the TFP410's thermal land (8 x 8 mm).
+
+# DVDD
+near T U1000.33 C1004
+near B U1000.1 FB1000
+# PVDD and TVDD on the east side, behind the pins
+near B U1000.18 C1006 C1007 C1008 C1009 C1005 FB1001
+near B U1000.23 C1011 C1012
+near B U1000.29 C1013 C1014
+near B U1000.23 C1010 FB1002
+near T U1000.19 R1008
+
+# Straps in pin order south of the part
+near T U1000.6 R1014
+near T U1000.7 R1015
+near T U1000.8 R1016
+near T U1000.9 R1004 R1012
+near T U1000.10 R1006
+near T U1000.11 R1007
+near B U1000.11 TP1000
+near T U1000.13 R1001
+near T U1000.14 R1003
+near T U1000.15 R1002
+near T U1000.35 R1005 R1013
+
+# TPD12S016: west pins are DDC, HPD and power. Decoupling behind it.
+near B U1001.24 C1015 C1016
+near B U1001.11 C1017 C1018
+near B U1001.13 C1019 C1020
+near B U1001.12 R1009
+near B U1001.5 R1010
+near B U1001.4 R1011
+near B U1001.1 TP1001
+near T J1000.20 FB1003

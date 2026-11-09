@@ -133,8 +133,8 @@ SN74LVC2G17 = box("SN74LVC2G17_DBV", "Dual Schmitt-trigger buffer, SOT-23-6", [
     (5, "VCC", "pwr", "R"), (6, "1Y", "out", "R"), (4, "2Y", "out", "R"),
 ], footprint="SOT23-6")
 # TPD4E05U06 DQA (USON-10), ti.com/lit/ds/symlink/tpd4e05u06.pdf Table 4-2.
-# Four independent channels on pins 1/2/4/5; NC pins 6/7/9/10 are the
-# straight-through routing pads (leave unconnected).
+# Four independent channels on pins 1/2/4/5. Pins 6/7/9/10 are not connected inside, "used for optional straight-through
+# routing" (Table 4-2): this board ties each to the channel facing it (1-10, 2-9, 4-7, 5-6) and runs the signal through.
 TPD4E05U06 = box("TPD4E05U06_DQA", "4-channel 0.5 pF ESD array, USON-10", [
     (1, "D1+", "pas", "L"), (2, "D1-", "pas", "L"), (4, "D2+", "pas", "L"), (5, "D2-", "pas", "L"),
     (3, "GND", "pwr", "R"), (8, "GND", "pwr", "R"),

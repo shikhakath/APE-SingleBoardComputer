@@ -2,7 +2,9 @@
 
 References:
   * Octavo OSD62x-PM datasheet Rev 2.0 Table 4-3 (recommended external caps;
-    the SiP already contains CAP_VDDSx, RCALIB and part of the core/DDR decoupling)
+    the SiP already contains CAP_VDDSx, RCALIB and part of the core/DDR decoupling, Table 4-2).
+    Only Table 4-3's capacitors are fitted. C336-C338, C340-C357 and C361 (VDDA_TEMP, VDDS_OSC0,
+    the VDDSHV banks and the FB311 output) were deleted on 2026-11-06; their numbers stay unused.
   * TI SK-AM62B-P1 PROC142B p.15-17 (supply mapping, beads)
   * docs/research/am625-tps65219-constraints.md A.2 (rail grouping rules)
 
@@ -136,7 +138,7 @@ def build(sch_dir: str) -> Sheet:
                               "VDDA_1V8", "VDDS_OSC0_1V8", "VDDSHV5_SD", "VDD_1V0_PHY")):
         sh.add(f"TP{300 + i}", TESTPOINT, 3000, 7800 - i * 400, {"1": rail}, comment=rail)
 
-    # ---- decoupling, Octavo Table 4-3 (+ IO rails per TI/SK practice) ----
+    # ---- decoupling, Octavo Table 4-3. None marks a deleted capacitor: its number stays unused ----
     core = [("VDD_CORE_0V85", C10U)] + [("VDD_CORE_0V85", C100N)] * 6
     core += [("VDDA_CORE_USB_0V85", C4U7), ("VDDA_CORE_USB_0V85", C100N),
              ("VDDA_CORE_CSI_0V85", C4U7), ("VDDA_CORE_CSI_0V85", C100N),
@@ -149,15 +151,9 @@ def build(sch_dir: str) -> Sheet:
     for net in ("VDDA_1V8_CSI", "VDDA_1V8_USB"):
         analog += [(net, C4U7), (net, C100N)]
     analog += [("VDDA_1V8_OLDI", C1U), ("VDDA_1V8_OLDI", C100N),
-               ("VDDA_1V8_MCU", C100N + " (VDDA_TEMP ball)"),
-               ("VDDS_OSC0_1V8", C1U + " (VDDS_OSC0)"), ("VDDS_OSC0_1V8", C100N + " (VDDS_OSC0)"),
+               None, None, None,     # C336-C338
                ("VDDA_3P3_USB", C100N + " (VDDA_3P3_USB)")]
-    io = []
-    for rail, note in (("VDDSHV0", "VDDSHV0"), ("VDDSHV1", "VDDSHV1"), ("VDDSHV2", "VDDSHV2"),
-                       ("VDDSHV3", "VDDSHV3"), ("VDDSHV4", "VDDSHV4"), ("VDDSHV5_SD", "VDDSHV5"),
-                       ("VDDSHV6", "VDDSHV6"), ("VDDSHV_MCU", "VDDSHV_MCU"),
-                       ("VDDSHV_CANUART", "VDDSHV_CANUART")):
-        io += [(rail, f"{C1U} ({note})"), (rail, f"{C100N} ({note})")]
+    io = [None] * 18                 # C340-C357
     vpp = [("VPP_EFUSE_1V8", C1U + " (VPP, DNP)", {"DNP": "1"}),
            ("VPP_EFUSE_1V8", C1U + " (VPP, DNP)", {"DNP": "1"}),
            ("VPP_EFUSE_1V8", C100N + " (VPP, DNP)", {"DNP": "1"})]
@@ -168,13 +164,16 @@ def build(sch_dir: str) -> Sheet:
     for x, items in zip(xs, columns):
         entries = []
         for item in items:
+            if item is None:
+                n += 1
+                continue
             net, comment = item[0], item[1]
             params = item[2] if len(item) > 2 else {}
             entries.append((f"C{n}", CAP, net, "GND", comment, params))
             n += 1
-        sh.column(x, 15400, entries, pitch=400)
+        if entries:
+            sh.column(x, 15400, entries, pitch=400)
     assert n == 361, n
-    sh.column(20000, 14200, [("C361", CAP, "VDDA_3P3_USB", "GND", C1U + " (VDDA_3P3_USB, FB311 output)")])
 
     sh.note(12000, 16200, "Decoupling per OSD62x-PM DS Rev 2.0 Table 4-3. Caps may sit on either side; none needed under the BGA.")
     sh.note(12000, 16000, "VDD_CORE and VDDA_CORE_USB must stay within 1% - keep the beads and their traces low-resistance.")

@@ -1,0 +1,13 @@
+# Space kept for routing: "near" stays out. Rows and single parts may still sit here on purpose.
+keep B 43.5 37.7 59.8 49 the SiP's via field; only the listed spots under it
+keep B 36.8 40.4 43.7 44.6 eMMC bus from the SiP to J700
+keep T 47.5 8 57.8 35.5 CSI and USB1 channel
+keep B 47.5 8 57.8 29.9 CSI and USB1 channel
+keep T 59.7 34.8 70 48.6 DPI escape
+keep T 84 34 88.8 46 TMDS
+keep T 89 44.7 97.5 47.5 TMDS enters U1001 over its top end
+keep T 64 19.4 80 20.6 MDI
+keep T 44 48.9 61 52.9 header, JTAG and SD escape
+keep B 18.5 35.5 36.5 48.5 eMMC module, 1 mm stack
+keep B 97.4 61 103.4 67 M.2 standoff
+keep T 97.4 61 103.4 67 M.2 standoff screw

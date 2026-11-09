@@ -47,27 +47,31 @@ def outline_spec(pcb: Path) -> str:
 
 
 # -------------------------------------------------------------------- stack
-# JLC06161H-3313, TOP / GND / SIG / GND / PWR / BOT (section 2.2). Section 5
-# asks for the calculator's model in the Layer Stack Manager: Dk 4.3 for 3313
-# and the cores, 4.2 for 2116, outer copper T = 1.6 mil (1 oz finished, plated),
-# inner 0.6 mil (0.5 oz), solder mask 1.0 mil with Dk 3.8.
+# JLC08161H-3313, TOP / GND / SIG / PWR / PWR / SIG / GND / BOT (section 8 of the stackup doc). Every
+# signal layer sits 0.1 mm from GND, so splits on the power planes cut no return path. Section 5 asks
+# for the calculator's model in the Layer Stack Manager: Dk 4.3 for 3313 and the cores, 4.2 for 2116,
+# outer copper T = 1.6 mil (1 oz finished, plated), inner 0.6 mil (0.5 oz), solder mask 1.0 mil, Dk 3.8.
 # (name, V7 layer id, copper mil, placement 0/1 top/2 bottom, orientation 0 up / 1 down)
 COPPER = [
     ("L1_TOP", 16777217, 1.6, 1, 0),
     ("L2_GND", 16777218, 0.6, 0, 0),
     ("L3_SIG", 16777219, 0.6, 0, 1),
-    ("L4_GND", 16777220, 0.6, 0, 0),
+    ("L4_PWR", 16777220, 0.6, 0, 0),
     ("L5_PWR", 16777221, 0.6, 0, 1),
-    ("L6_BOT", 16842751, 1.6, 2, 1),
+    ("L6_SIG", 16777222, 0.6, 0, 0),
+    ("L7_GND", 16777223, 0.6, 0, 1),
+    ("L8_BOT", 16842751, 1.6, 2, 1),
 ]
 # dielectric below each copper layer but the last: (name, type 0 core / 2 prepreg,
 # material, height mm, Dk, loss tangent)
 DIELECTRIC = [
     ("PP 3313 L1-L2", 2, "3313 RC57%", 0.0994, 4.3, 0.02),
-    ("Core L2-L3", 0, "FR-4 core H/H", 0.55, 4.3, 0.02),
-    ("PP 2116 L3-L4", 2, "2116 RC54%", 0.1088, 4.2, 0.02),
-    ("Core L4-L5", 0, "FR-4 core H/H", 0.55, 4.3, 0.02),
-    ("PP 3313 L5-L6", 2, "3313 RC57%", 0.0994, 4.3, 0.02),
+    ("Core L2-L3", 0, "FR-4 core H/H", 0.10, 4.3, 0.02),
+    ("PP 2116x3 L3-L4", 2, "2116 RC54% x3", 0.3568, 4.2, 0.02),
+    ("Core L4-L5", 0, "FR-4 core H/H", 0.30, 4.3, 0.02),
+    ("PP 2116x3 L5-L6", 2, "2116 RC54% x3", 0.3568, 4.2, 0.02),
+    ("Core L6-L7", 0, "FR-4 core H/H", 0.10, 4.3, 0.02),
+    ("PP 3313 L7-L8", 2, "3313 RC57%", 0.0994, 4.3, 0.02),
 ]
 MASK_MIL, MASK_DK = 1.0, 3.8
 LAYER_IDS = {"Top Paste": 16973832, "Top Overlay": 16973830, "Top Solder": 16973834,
@@ -76,7 +80,7 @@ DIEL_ID0 = 17039361             # dielectric layer ids are 17039361 + n
 # The impedance profiles and the routing-layers rule are indexed by the old layer numbers (file
 # keys "TOP LAYER_V5", "MID LAYER 1_V5", ...). A new-style id from COPPER is ignored without an
 # error: every profile then had one entry on no layer (found by reading the file back, AD26).
-V5_LAYER = {"L1_TOP": 1, "L2_GND": 2, "L3_SIG": 3, "L4_GND": 4, "L5_PWR": 5, "L6_BOT": 32}
+V5_LAYER = {"L1_TOP": 1, "L2_GND": 2, "L3_SIG": 3, "L4_PWR": 4, "L5_PWR": 5, "L6_SIG": 6, "L7_GND": 7, "L8_BOT": 32}
 
 
 def read_board6(pcb: Path) -> dict:
@@ -153,16 +157,16 @@ def stack_spec(pcb: Path) -> str:
 
 
 # ------------------------------------------------------- impedance profiles
-# Section 3.1, JLCPCB calculator: width / gap in mil per routing layer.
-# L1 and L6 are microstrip (L6 referenced to L5 PWR); L3 is the asymmetric
-# stripline between L2 and L4 (both GND). L2, L4 and L5 carry no impedance traces.
+# Section 8, JLCPCB calculator: width / gap in mil per routing layer. L1 and L8 are microstrip over GND
+# (same geometry as the 6-layer board's L1); L3 and L6 are asymmetric stripline, 3.94 mil from GND and
+# 14.64 mil from the power plane. L2, L4, L5 and L7 carry no impedance traces.
 # (profile, ohms, diff, {layer: (width, gap)})
 IMPEDANCE = [
-    ("SE50", 50, False, {"L1_TOP": (5.94, 0), "L3_SIG": (5.59, 0), "L6_BOT": (5.94, 0)}),
-    ("DIFF90", 90, True, {"L1_TOP": (5.34, 6.0), "L3_SIG": (5.03, 6.0), "L6_BOT": (5.34, 6.0)}),
-    ("DIFF100", 100, True, {"L1_TOP": (4.69, 8.0), "L3_SIG": (4.33, 8.0), "L6_BOT": (4.69, 8.0)}),
+    ("SE50", 50, False, {"L1_TOP": (5.94, 0), "L3_SIG": (4.83, 0), "L6_SIG": (4.83, 0), "L8_BOT": (5.94, 0)}),
+    ("DIFF90", 90, True, {"L1_TOP": (5.34, 6.0), "L3_SIG": (4.65, 6.0), "L6_SIG": (4.65, 6.0), "L8_BOT": (5.34, 6.0)}),
+    ("DIFF100", 100, True, {"L1_TOP": (4.69, 8.0), "L3_SIG": (4.01, 8.0), "L6_SIG": (4.01, 8.0), "L8_BOT": (4.69, 8.0)}),
 ]
-REFS = {"L1_TOP": ("", "L2_GND"), "L3_SIG": ("L2_GND", "L4_GND"), "L6_BOT": ("L5_PWR", "")}
+REFS = {"L1_TOP": ("", "L2_GND"), "L3_SIG": ("L2_GND", "L4_PWR"), "L6_SIG": ("L5_PWR", "L7_GND"), "L8_BOT": ("L7_GND", "")}
 IMP_TOLERANCE = 10              # percent; JLCPCB impedance control is +/-10 %
 
 
@@ -173,7 +177,7 @@ def impedance_spec(pcb: Path) -> str:
         lines.append(f"IMP|{name}|{ohms}|{int(diff)}|{IMP_TOLERANCE}")
         for lname, (w, g) in layers.items():
             top, bot = REFS[lname]
-            outer = lname in ("L1_TOP", "L6_BOT")      # solder mask over the trace and between
+            outer = lname in ("L1_TOP", "L8_BOT")      # solder mask over the trace and between
             mask = f"{mil(0.6)}|{mil(MASK_MIL)}" if outer else "0|0"
             lines.append(f"TRACE|{ids[lname]}|{mil(w)}|{mil(g)}|{ids.get(top, 0)}|{ids.get(bot, 0)}|{mask}")
     return "\n".join(lines) + "\n"
@@ -385,12 +389,16 @@ def set_eco_levels(text: str) -> str:
 ROOM_W_MM, ROOM_H_MM = 16.6, 11.6
 SIP_ROOM = "U1_SiP"
 SIP = f"WithinRoom('{SIP_ROOM}')"
+# Where the high-speed pairs fan out from 0.5 mm balls to their 30 mil spacing: the SiP room plus this much on every side.
+# Pairs side by side need 1.20 mm centre to centre, against 0.50 mm at the balls, which takes about 2 mm of run at 45 degrees.
+ESCAPE_ROOM = "U1_Escape"
+ESCAPE_MM = 3.0
 
 
-def room_spec() -> str:
+def room_spec(name=SIP_ROOM, grow=0.0) -> str:
     cx, cy = BOARD_X0 + mm(placement.U1_XY[0]), BOARD_Y0 + mm(placement.U1_XY[1])
-    return (f"ROOM|{SIP_ROOM}|InComponent('U1')|{cx - mm(ROOM_W_MM / 2)}|{cy - mm(ROOM_H_MM / 2)}"
-            f"|{cx + mm(ROOM_W_MM / 2)}|{cy + mm(ROOM_H_MM / 2)}")
+    return (f"ROOM|{name}|InComponent('U1')|{cx - mm(ROOM_W_MM / 2 + grow)}|{cy - mm(ROOM_H_MM / 2 + grow)}"
+            f"|{cx + mm(ROOM_W_MM / 2 + grow)}|{cy + mm(ROOM_H_MM / 2 + grow)}")
 
 
 # ------------------------------------------------------------------ rules
@@ -411,7 +419,8 @@ def _dp_classes(names):
 
 
 V5_KEY = {"L1_TOP": "TOP LAYER_V5", "L2_GND": "MID LAYER 1_V5", "L3_SIG": "MID LAYER 2_V5",
-          "L4_GND": "MID LAYER 3_V5", "L5_PWR": "MID LAYER 4_V5", "L6_BOT": "BOTTOM LAYER_V5"}
+          "L4_PWR": "MID LAYER 3_V5", "L5_PWR": "MID LAYER 4_V5", "L6_SIG": "MID LAYER 5_V5",
+          "L7_GND": "MID LAYER 6_V5", "L8_BOT": "BOTTOM LAYER_V5"}
 
 
 def _layers(*allowed):
@@ -423,15 +432,22 @@ def hs_clearance_rules() -> list[list]:
     """TI SPRAAR7J Table A-7 (AM62x): differential pair to a clock or periodic signal 50 mil, to any
     other signal 30 mil; section 3.4 applies the 30 mil between pairs too. Track to track only, so that
     pads at a connector or IC pin don't count: TI scopes this "after package escape and before connector
-    termination". One rule per pair, so that the pair's own two nets are exempt. The SiP room's
-    higher-priority rule still applies inside the room."""
+    termination". One rule per pair, so that the pair's own two nets are exempt. GND tracks are exempt
+    too: the spacing is from other signals, and a GND stub beside a connector pin isn't one. The SiP room's
+    higher-priority rule still applies inside the room, and Clr_HS_Escape gives way to these only past
+    the escape room. A track crossing that room's edge counts as outside it unless the other track is
+    wholly inside, so end a fan-out segment before the edge if two pairs leave it close together."""
     all_dp = _dp_classes(DIFF_PAIRS)
     rows = [["CLEARANCE", "Clr_HS_DP_Periodic", f"InNetClass('HS_CLK') And IsTrack", f"{all_dp} And IsTrack", mm(50 * MIL_MM)]]
     for pairs in DIFF_PAIRS.values():
         for pair, _, _ in pairs:
             rows.append(["CLEARANCE", f"Clr_HS_{pair}", f"InDifferentialPair('{pair}') And IsTrack",
-                         f"(Not InDifferentialPair('{pair}')) And IsTrack", mm(30 * MIL_MM)])
+                         f"(Not InDifferentialPair('{pair}')) And IsTrack And (Not InNet('GND'))", mm(30 * MIL_MM)])
     return rows
+
+
+# All four signal layers reference GND at 0.1 mm, so any of them may carry a high-speed route
+SIGNAL_LAYERS = ("L1_TOP", "L3_SIG", "L6_SIG", "L8_BOT")
 
 
 def length_rules(pcb: Path) -> list[list]:
@@ -487,13 +503,13 @@ def length_rules(pcb: Path) -> list[list]:
         ["VIACOUNT", "V_CSI", "InDifferentialPairClass('CSI')", "", 2],
         ["VIACOUNT", "V_USB_Split", _dp_classes(("USB0", "USB1")), "", 2],
         ["VIACOUNT", "V_USB_DBG", "InDifferentialPairClass('USB_DBG')", "", 4],
-        # layers: L2, L4 and L5 are reference planes, so no impedance route goes there
+        # layers: L2, L4, L5 and L7 are planes, so no impedance route goes there
         ["LAYERS", "RL_TMDS", "InDifferentialPairClass('HDMI_TMDS')", "", _layers("L1_TOP")],
-        ["LAYERS", "RL_MDI_CSI", _dp_classes(("ETH_MDI", "CSI")), "", _layers("L1_TOP", "L3_SIG")],
+        ["LAYERS", "RL_MDI_CSI", _dp_classes(("ETH_MDI", "CSI")), "", _layers(*SIGNAL_LAYERS)],
         ["LAYERS", "RL_RGMII", "InNetClass('HS_RGMII_TX') Or InNetClass('HS_RGMII_RX')", "",
-         _layers("L1_TOP", "L3_SIG")],
+         _layers(*SIGNAL_LAYERS)],
         ["LAYERS", "RL_SE50_USB", "InNetClass('SE50') Or " + _dp_classes(("USB0", "USB1", "USB_DBG")), "",
-         _layers("L1_TOP", "L3_SIG", "L6_BOT")],
+         _layers(*SIGNAL_LAYERS)],
         ["LAYERS", "RoutingLayers", "All", "", _layers(*[name for name, *_ in COPPER])],
     ]
 
@@ -503,7 +519,7 @@ def rules(pcb: Path = None) -> list[list]:
     within a kind is the priority (first = highest). The template's polygon
     connect rules (relief 4 x 10 mil spokes, 10 mil gap; vias direct) already
     match section 5 and are kept."""
-    inner = "(OnLayer('L2_GND') Or OnLayer('L4_GND') Or OnLayer('L5_PWR'))"
+    inner = "(OnLayer('L2_GND') Or OnLayer('L4_PWR') Or OnLayer('L5_PWR') Or OnLayer('L7_GND'))"
     paste_query = footprints.paste_rule_query(footprints.all_footprints())
     dp90, dp100 = _or("InDifferentialPairClass", DP_90R), _or("InDifferentialPairClass", DP_100R)
     se50 = ";".join(v.rsplit(":", 1)[0] for v in _per_layer("SE50").split(";"))
@@ -511,8 +527,12 @@ def rules(pcb: Path = None) -> list[list]:
         # clearance: inner-layer pours 0.20 mm from holes (also under the SiP:
         # the 0.55 mm anti-pad of section 4), 0.09 mm (3.5 mil) in the SiP
         # fan-out, SMD pads 0.15 mm, 0.10 mm elsewhere
+        # SiP vias: pad 0.25 mm plus 0.15 mm is JLC's 0.20 mm from the 0.15 mm drill, the 0.55 mm anti-pad
+        ["CLEARANCE", "Clr_InnerPour_SiPVia", f"InPolygon And {inner}", "IsVia And WithinRoom('U1_SiP')", mm(0.15)],
         ["CLEARANCE", "Clr_InnerPour_Hole", f"InPolygon And {inner}", "IsVia Or IsPad", mm(0.20)],
         ["CLEARANCE", "Clr_SiP", SIP, "All", mm(0.09)],
+        # Ahead of the 30 mil rules: TI scopes those "after package escape". Track to track, as they are.
+        ["CLEARANCE", "Clr_HS_Escape", f"WithinRoom('{ESCAPE_ROOM}') And IsTrack", "IsTrack", mm(0.10)],
         *hs_clearance_rules(),
         ["CLEARANCE", "Clr_SMD_SMD", "IsSMTPin", "IsSMTPin", mm(0.15)],   # AD26 has no IsSMDPad
         ["CLEARANCE", "Clr_Default", "All", "All", mm(0.10)],
@@ -539,6 +559,9 @@ def rules(pcb: Path = None) -> list[list]:
         ["HOLE2HOLE", "HoleToHole_Pads", "IsPad", "IsPad", mm(0.45)],
         ["HOLE2HOLE", "HoleToHole", "All", "All", mm(0.20)],
         ["MASK", "Mask_SiP", "InComponent('U1')", "", 0],
+        # Vias tented on both sides. IsTenting_Top and _Bottom don't stick when set by script on AD26, and an opening
+        # beside every pad would break the mask sliver rule. Past the largest via's radius there is no opening.
+        ["MASK", "Mask_Via", "IsVia", "", -mm(0.30)],
         ["MASK", "Mask_Default", "All", "", mm(0.05)],
         ["PASTE", "Paste_Windowed", paste_query, "", -mm(2.5)],
         ["PASTE", "Paste_TagConnect", "HasFootprint('TC2070-NL')", "", -mm(2.5)],
@@ -554,7 +577,7 @@ def rules(pcb: Path = None) -> list[list]:
 
 
 def rules_spec(pcb: Path) -> str:
-    lines = [str(pcb), room_spec()]
+    lines = [str(pcb), room_spec(), room_spec(ESCAPE_ROOM, ESCAPE_MM)]
     for rule in rules(pcb):
         lines.append("RULE|" + "|".join(str(v) for v in rule))
     return "\n".join(lines) + "\n"
@@ -593,6 +616,17 @@ def read_classes(pcb: Path) -> dict:
                 members = [v for k, v in d.items() if re.fullmatch(r"M\d+", k)]
                 out[(d.get("KIND"), d.get("NAME"))] = members
     return out
+
+
+def read_drc_report(pcb: Path) -> list:
+    """(count, rule) for every rule with hits, from the HTML report beside the project."""
+    import html
+    report = pcb.parent / "Project Outputs for APE - Single Board Computer" / "Design Rule Check - PCB.html"
+    text = re.sub(r"<[^>]+>", " ", report.read_text(encoding="utf-8", errors="replace"))
+    text = re.sub(r"\s+", " ", html.unescape(text))
+    i = text.find("Rule Violations Count")
+    j = text.find("Total", i)
+    return [(int(c), r.strip()[:110]) for r, c in re.findall(r"(.+?\))\s+(\d+)(?=\s)", text[i + 21:j + 1]) if int(c)]
 
 
 def read_violations(pcb: Path) -> dict:
@@ -801,7 +835,10 @@ if __name__ == "__main__":
         import threading
         threading.Thread(target=press_drc_dialog, daemon=True).start()
         build.pcb_run("PcbDrc", "ape_pcb_report_in.txt", f"{pcb}\n", timeout=1800)
-        print(read_violations(pcb))
+        for count, rule in read_drc_report(pcb):
+            print(f"{count:6d}  {rule}")
+        build.pcb_run("PcbClearMarkers", "ape_pcb_report_in.txt", f"{pcb}\n", timeout=300)
+        print("markers on the board:", {k: v[0] for k, v in read_violations(pcb).items()} or "none")
     elif cmd == "verify":
         found = verify(pcb, build.pcb_nets())
         print("\n".join(found) if found else "stack, profiles, classes, pairs, xSignals and rules match this file")
