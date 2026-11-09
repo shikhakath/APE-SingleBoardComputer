@@ -328,7 +328,7 @@ All eight copper layers are signal layers in Altium, so L2, L4, L5 and L7 take p
 |---|---|
 | Clearance | `Clr_InnerPour_SiPVia` pours on L2/L4/L5/L7 to SiP vias 0.15 mm; `Clr_InnerPour_Hole` the same pours to other vias and pads 0.20 mm; `Clr_SiP` 0.09 mm in the room; `Clr_HS_Escape` 0.10 mm track to track in the `U1_Escape` room (the SiP room plus 3 mm); `Clr_HDMI_Escape` 0.10 mm from HDMI tracks in the `HDMI_Escape` room (U1000's TMDS pins to J1000's); `Clr_HS_DP_Periodic` 50 mil and 19 `Clr_HS_<pair>` 30 mil, tracks only, GND tracks exempt; `Clr_SMD_SMD` 0.15 mm; `Clr_Default` 0.10 mm |
 | Width | `W_SiP` 0.09 / 0.09 / 0.15 mm in the room; `W_SE50` from profile SE50; `W_PWR_HI` 0.20 / 1.00 / 3.0; `W_PWR` 0.15 / 0.40 / 3.0; `W_Default` 0.10 / 0.15 / 3.0 |
-| Differential pairs | `DP_90R_USB` (USB0, USB1, USB_DBG) from DIFF90; `DP_100R` (ETH_MDI, HDMI_TMDS, CSI) from DIFF100. Width and gap down to 0.09 mm for the SiP neck-down, 5 mm maximum uncoupled length |
+| Differential pairs | `DP_90R_USB` (USB0, USB1, USB_DBG) from DIFF90; `DP_100R` (ETH_MDI, HDMI_TMDS, CSI) from DIFF100. Width and gap down to 0.09 mm for the SiP neck-down, 5 mm maximum uncoupled length. `DP_100R_TMDS`, ahead of `DP_100R`, pins HDMI width to the L1 value, 0.119 mm (4.69 mil), gap preferred 0.203 mm |
 | Routing via | `Via_SiP` 0.15 / 0.25 mm in the room; `Via_PWR` (PWR and GND) 0.30 / 0.50 preferred; `Via_Default` 0.20 / 0.40 preferred, holes up to 0.50 mm for POFV |
 | Holes | Hole size 0.15–6.3 mm; annular ring 0.05 mm on vias and 0.15 mm on pads; hole to hole 0.45 mm between pads, 0.20 mm otherwise |
 | Masks | Solder mask 0 on U1 (1:1 on the NSMD lands), -0.30 mm on vias (`Mask_Via`: this tents them, because `IsTenting_Top` and `_Bottom` set by script do not stick on AD26), 0.05 mm elsewhere; paste −2.5 mm on the windowed exposed pads (the query `build.py footprints` prints) and on `TC2070-NL`, 0 elsewhere; mask sliver 0.10 mm; silk to mask 0.15 mm |
@@ -377,7 +377,7 @@ Sources: **SPRSP58C** is `datasheets/am625.pdf`. **SPRAAR7J** is TI's High-Speed
 | | Vias | ≤ 2 | `V_CSI` | SPRAAR7J Table A-7 | **At the limit:** one to leave ball row 3, one to come back to L1. `CSI_CLK` must also cross D0 and D1 (ball order D1, D0, CLK), which L1 and L3 allow |
 | Ethernet MDI | Impedance | 100 Ω | `DP_100R` | SNLS504G §9.2.2.2.1 | |
 | | Vias | ≤ 1 | `V_MDI` | Derived: SNLS504G asks for one layer, and J800's pin order forces one crossing. J800's through-hole pads take the second layer change | |
-| HDMI TMDS | Impedance | 90–110 Ω, built as 100 Ω | `DP_100R` | SPRAAR7J Table A-2. That table is AM57xx; it is the closest HDMI figure | |
+| HDMI TMDS | Impedance | 90–110 Ω, built as 100 Ω | `DP_100R_TMDS`: width fixed at 0.119 mm | SPRAAR7J Table A-2. That table is AM57xx; it is the closest HDMI figure | `DP_100R`'s 0.09–0.13 mm range let pairs come out at 0.09 mm (about 113 Ω) or 0.13 mm (about 96 Ω), depending on the router's width mode. TMDS is L1 only and needs no neck-down, so it has no range |
 | | Length | ≤ 50.8 mm (2 in) | `L_TMDS` | SLDS145D §7.4.1.2 p29 | About 19 mm via U1001 |
 | | Pair skew | 5 mil | `M_TMDS_Pair` | SPRAAR7J Table A-2 (AM57xx) | |
 | | Vias, layers | 0 vias, L1 only | `V_TMDS`, `RL_TMDS` | SLLSE96F §10.1 p21 and Figure 20 p22; SLDS145D §7.4.1.2; SPRAAR7J Table A-2 | Pair order is the same at U1000, U1001 and J1000, as in Figure 20. Pairs run under U1001's body and reach its pads from inside |

@@ -168,6 +168,7 @@ IMPEDANCE = [
 ]
 REFS = {"L1_TOP": ("", "L2_GND"), "L3_SIG": ("L2_GND", "L4_PWR"), "L6_SIG": ("L5_PWR", "L7_GND"), "L8_BOT": ("L7_GND", "")}
 IMP_TOLERANCE = 10              # percent; JLCPCB impedance control is +/-10 %
+TMDS_W_MIL, TMDS_GAP_MIL = next(p[3]["L1_TOP"] for p in IMPEDANCE if p[0] == "DIFF100")   # 4.69 / 8.0 mil
 
 
 def impedance_spec(pcb: Path) -> str:
@@ -561,6 +562,10 @@ def rules(pcb: Path = None) -> list[list]:
         # impedance profile, layer:preferred width:preferred gap;...
         ["DIFFPAIR", "DP_90R_USB", dp90, "", mm(0.09), mm(0.15), mm(0.09), mm(0.20), mm(5.0),
          "DIFF90", _per_layer("DIFF90")],
+        # TMDS is L1 only (RL_TMDS) with no neck-down, so its width is pinned to the L1 100 ohm value: with
+        # DP_100R's 0.09-0.13 mm the router took whichever end the routing width mode gave (0.09 mm is about 113 ohm).
+        ["DIFFPAIR", "DP_100R_TMDS", "InDifferentialPairClass('HDMI_TMDS')", "", mil(TMDS_W_MIL), mil(TMDS_W_MIL),
+         mm(0.09), mm(0.25), mm(5.0), "", ";".join(f"{V5_LAYER[n]}:{mil(TMDS_W_MIL)}:{mil(TMDS_GAP_MIL)}" for n, *_ in COPPER)],
         ["DIFFPAIR", "DP_100R", dp100, "", mm(0.09), mm(0.13), mm(0.09), mm(0.25), mm(5.0),
          "DIFF100", _per_layer("DIFF100")],
         # via style: hole min / preferred / max, diameter min / preferred / max
