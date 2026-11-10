@@ -54,7 +54,7 @@ ICS = {"U1": "U1 SiP", "U200": "U200 PMIC", "U800": "U800 PHY", "U900": "U900 hu
        "U1100": "U1100 codec", "U1500": "U1500 FT4232", "U1504": "U1504 shift", "U1505": "U1505 shift", "U100": "U100 PD",
        "U101": "U101 3V3", "L100": "L100", "U102": "U102 5V", "L101": "L101", "SW602": "SW602 boot DIP", "SW200": "SW200",
        "SW601": "SW601", "SW600": "SW600", "C907": "C907 bulk", "C911": "C911 bulk", "Y600": "Y600"}
-TINY = {"R602", "R603", "C602", "C603"}
+TINY = {"R603", "C602", "C603"}
 
 
 def font(size, bold=False):
@@ -570,10 +570,9 @@ def render(W, H):
          "One region per function; part sits by the pin it serves"),
         ("2 Decoupling within 3 / 5 mm; SiP caps median, worst", f"{st_now['dec_3']:.0f} / {st_now['dec_5']:.0f} %; {st_now['sip_median']:.1f}, {st_now['sip_worst']:.1f} mm",
          f"{st['dec_3']:.0f} / {st['dec_5']:.0f} %; {st['sip_median']:.1f}, {st['sip_worst']:.1f} mm", "21 caps under the SiP, the rest in a clear ring"),
-        ("2 C602 to Y600; R602 to Y600, to H2", f"{nm_now['C602 to Y600']:.1f}; {nm_now['R602 to Y600']:.1f}, {nm_now['R602 to ball H2']:.1f} mm",
-         f"{nm['C602 to Y600']:.1f}; {nm['R602 to Y600']:.1f}, {nm['R602 to ball H2']:.1f} mm", "Crystal group by hand at its balls"),
-        ("2 C339 to N7; R1300-04 to balls", f"{nm_now['C339 to ball N7']:.1f}; {nm_now['R1300-R1304 to balls'][0]:.1f}-{nm_now['R1300-R1304 to balls'][1]:.1f} mm",
-         f"{nm['C339 to ball N7']:.1f}; {nm['R1300-R1304 to balls'][0]:.1f}-{nm['R1300-R1304 to balls'][1]:.1f} mm", "Site under the SiP; series row north of the balls"),
+        ("2 C602 to Y600; Y600 to H2", f"{nm_now['C602 to Y600']:.1f}; {nm_now['Y600 to ball H2']:.1f} mm",
+         f"{nm['C602 to Y600']:.1f}; {nm['Y600 to ball H2']:.1f} mm", "Crystal group by hand at its balls"),
+        ("2 C339 to N7", f"{nm_now['C339 to ball N7']:.1f} mm", f"{nm['C339 to ball N7']:.1f} mm", "Site under the SiP"),
         ("3 eMMC length; meander", f"{fm('MMC0', b_now)} mm; {b_now['MMC0'][2]:.0f} mm", f"{fm('MMC0', b)} mm; {b['MMC0'][2]:.0f} mm", "Module moved out west, back side clear round the SiP"),
         ("4 Debug block", "Beside U1", "North-west corner", "FT4232 by J1500; 13 slow lines to the SiP"),
         ("5 SW602", "Mid-board", "South edge", "4 slow lines; straps stay on their balls' side"),

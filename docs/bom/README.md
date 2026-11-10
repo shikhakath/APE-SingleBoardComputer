@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Date priced | 2026-10-17 (prices and stock change daily; re-check before ordering) |
+| Date priced | 2026-10-17; five lines re-priced 2026-11-09 (see below). Prices and stock change daily; re-check before ordering. |
 | Price basis | Unit price at the break for **10 boards** (qty = 10 × per-board count) |
 | Sources | JLCPCB/LCSC parts library first, then Digi-Key, Mouser, vendor stores |
 | Stock rule | Every placed line must show stock ≥ 10 boards' worth at a real distributor (most show ≥ 50). The one exception is flagged below. |
@@ -15,25 +15,25 @@
 |---|---:|---|
 | Processor | 44.06 | OSD6254-1G-IPM SiP (Digi-Key; the only stock found anywhere) |
 | Power | 15.23 | TPS25730 USB-PD sink, LM61460 3.3 V buck, TPS63070 5 V buck-boost, TPS6521904**RSM** PMIC, TPS22965, TPS22996, TPS2051B ×2 |
-| Debug | 14.40 | FT4232HL quad USB-UART (as on the TI reference), isolation buffers, USB-C, Tag-Connect TC2070 footprint |
+| Debug | 14.87 | FT4232HL quad USB-UART (as on the TI reference), isolation buffers, USB-C, Tag-Connect TC2070 footprint |
 | Ethernet | 7.27 | DP83867**IS**RGZR GbE PHY, HanRun HR911130A RJ45 with magnetics |
 | HDMI | 5.88 | **TI TFP410** (DVI over the HDMI connector), TPD12S016, HDMI-A connector |
-| Clock + reset + boot | 2.80 | 25 MHz oscillator, 32.768 kHz crystal, reset logic, boot DIP switch, 3 buttons |
-| USB | 2.36 | WCH CH335F USB 2.0 hub, dual stacked USB-A, chokes, ESD |
-| Audio | 2.25 | TLV320AIC3104 codec, 12.288 MHz oscillator, 3.5 mm TRRS jack |
+| USB | 4.30 | WCH CH335F USB 2.0 hub, Würth dual stacked USB-A, chokes, ESD |
+| Audio | 3.02 | TLV320AIC3104 codec, 12.288 MHz oscillator, 3.5 mm TRRS jack |
+| Clock + reset + boot | 2.76 | 25 MHz oscillator, 32.768 kHz crystal, reset logic, boot DIP switch, 3 buttons |
 | Wireless (on board) | 1.27 | M.2 Key-E socket (LOTES), standoff, screw |
 | Storage (on board) | 1.11 | eMMC-module connector, microSD socket, ESD |
 | Misc | 1.06 | Board-ID EEPROM, TMP102, LEDs |
 | Camera | 1.01 | 15-pin Raspberry Pi camera FPC |
 | Passives (SiP + generic) | 0.91 | SiP decoupling per Octavo Table 4-3, pulls, filters |
 | Expansion | 0.34 | 2×20 header, HAT-ID EEPROM, series resistors |
-| **Board parts subtotal** | **99.95** | |
+| **Board parts subtotal** | **103.09** | |
 | eMMC module, 32 GB (plug-in) | 24.95 | PINE64 module (Hardkernel/Radxa-compatible connector) |
 | Wi-Fi 6 + BLE module (plug-in) | 55.00 | TI M2-CC3351 (TI.com, 74 in stock) |
-| **Parts total** | **179.90** | |
+| **Parts total** | **183.04** | |
 | PCB + JLCPCB assembly (qty 10) | 71.54 | 8-layer JLC08161H-3313, ENIG, impedance control, Standard PCBA, X-ray, SiP consignment. PCB quote 2026-11-05; assembly fees from 2026-10-17 |
-| **Total per board, qty 10** | **251.44** | **Under the $300 target** |
-| Total per board, qty 5 | ≈ 301.9 | PCB + assembly rises to $121.96 per board at qty 5 |
+| **Total per board, qty 10** | **254.57** | **Under the $300 target** |
+| Total per board, qty 5 | ≈ 305.0 | PCB + assembly rises to $121.96 per board at qty 5 |
 
 **Not included:** shipping, import duties or VAT, spare parts, the Tag-Connect TC2070 cable ($49, a tool), and the HDMI/USB-C cables and power supply.
 
@@ -128,6 +128,19 @@ The CSV still has these known differences from the schematic. The schematic is r
 
 Sheet 03 gains eight 0 Ω links `R303`-`R310` (0402WGF0000TCE, C17168, 6.79M at LCSC), bead `FB311` (BLM15PX121SN1D, C88970) and 1 µF `C361`, about $0.05 in all. The VMON divider is now `R301` 40.2 kΩ (0402WGF4022TCE, C25893, 145k at LCSC) and `R302` 4.87 kΩ (0402WGF4871TCE, C25902, 2000 at LCSC, the lowest stock of the group; stock read 2026-11-04). The line items below are not re-priced.
 
+### After the 2026-11-09 part swaps (Digi-Key/Mouser stock)
+
+Every fitted part should now be in stock at Digi-Key or Mouser, switching to a pin-identical part where the original isn't. Five lines changed. Each keeps its symbol pins and footprint, and the schematic and PCB were updated the same day:
+
+| Ref | Was | Now | Stock 2026-11-09 | $ @10 |
+|---|---|---|---|---:|
+| U601 | SN74LVC1G11DCKR (0 at Digi-Key and Mouser) | Nexperia 74LVC1G11GW,125 | JLC 27,882; Mouser 2,810 | 0.1089 |
+| Y1100 | SJK 3N12288G33YC | KYOCERA AVX MC3225Z12.2880C19XSH | Digi-Key 2,115 | 1.306 |
+| Y900, Y1500 | YXC X322512MSB4SI | Diodes FL1200074 (20 pF, ±20/±20 ppm) | Digi-Key 3,118 | 0.564 each |
+| J900 | Bossie BX-TYPE-A-MWC44 | Würth 61400826021 | Digi-Key 14,585; Mouser 12,279 | 1.769 |
+
+**Net effect: +$3.14 per board** (the totals above include it). Only the Nexperia gate is in JLC stock. The other four lines go through JLC Global Sourcing or are consigned, which may add a small markup that isn't priced here. TPS22996DRLR stays: Mouser has 21,771. The GB042 plug stays broker-only (see "Stock risk"), by choice.
+
 ## Line items (140 placed lines)
 
 Plug-in modules and PCB/assembly fees are included as lines. Prices are USD per unit at the 10-board break.
@@ -173,7 +186,7 @@ Plug-in modules and PCB/assembly fees are included as lines. Prices are USD per 
 | 37 | Clock+Reset+Boot | Reset AND gates: SoC_PORz/JTAG-nRST + peripheral resets AND… | 5 | SN74LVC1G08DBVR | Texas Instruments | LCSC/JLCPCB (C7666) | 0.0449 | 0.22 | 69792 |
 | 38 | Clock+Reset+Boot | Button debounce Schmitt buffers: RESET_REQz and USER button | 1 | SN74LVC2G17DBVR | Texas Instruments | LCSC/JLCPCB (C10429) | 0.2170 | 0.22 | 61719 |
 | 39 | Clock+Reset+Boot | WKUP_LFOSC0 32.768 kHz crystal (CL 6-12 pF) | 1 | Q13FC13500003 | Seiko Epson | LCSC/JLCPCB (C99010) | 0.2035 | 0.20 | 45939 |
-| 40 | Clock+Reset+Boot | MCU_PORz driver AND3 (PMIC nRSTOUT, JTAG nSRST, spare) in 1… | 1 | SN74LVC1G11DCKR | Texas Instruments | LCSC/JLCPCB (C529281) | 0.1546 | 0.15 | 6665 |
+| 40 | Clock+Reset+Boot | MCU_PORz driver AND3 (PMIC nRSTOUT, JTAG nSRST, spare) in 1… | 1 | 74LVC1G11GW,125 | Nexperia | JLCPCB/LCSC (C282348) | 0.1089 | 0.11 | JLC 27,882; Mouser 2,810 |
 | 41 | Clock+Reset+Boot | Button ESD (one per button, SK D12/D13/D15) | 3 | TPD1E10B06DPYR | Texas Instruments | LCSC/JLCPCB (C48260) | 0.0446 | 0.13 | 288846 |
 | 42 | Clock+Reset+Boot | Push buttons: POWER (PMIC PB), RESET (RESET_REQz), USER (MC… | 3 | TS-1187A-B-A-B | XKB Connection | LCSC/JLCPCB (C318884) | 0.0206 | 0.06 | 294963 |
 | 43 | Clock+Reset+Boot | BOOTMODE fixed straps (BOOTMODE[15:7] and [2:0]: 25 MHz=011… | 12 | 0402WGF1002TCE | UNI-ROYAL | LCSC/JLCPCB (C25744) | 0.0015 | 0.02 | 20292880 |
@@ -187,10 +200,10 @@ Plug-in modules and PCB/assembly fees are included as lines. Prices are USD per 
 | 51 | USB | USB 2.0 hub controller (USB1 -> 2 downstream used of 4) | 1 | CH335F | WCH (Jiangsu Qin Heng) | JLCPCB/LCSC (C5137013) | 0.9192 | 0.92 | 6199 |
 | 52 | USB | USB-A port ESD (D+/D-/VBUS per port) | 2 | USBLC6-2SC6 | STMicroelectronics | JLCPCB/LCSC (C7519) | 0.1774 | 0.35 | 34334 |
 | 53 | USB | USB0 D+/D- ESD | 1 | ESD122DMXR | Texas Instruments | JLCPCB/LCSC (C544474) | 0.3476 | 0.35 | 34664 |
-| 54 | USB | USB-A receptacle dual stacked (2 host ports) | 1 | BX-TYPE-A-MWC44 | Bossie | JLCPCB/LCSC (C18077688) | 0.2918 | 0.29 | 468 |
+| 54 | USB | USB-A receptacle dual stacked (2 host ports) | 1 | 61400826021 | Wurth Elektronik | Digi-Key (732-2107-ND) | 1.7690 | 1.77 | 14585 |
 | 55 | USB | USB passives (hub: 2x1uF, 3x0.1uF, 10uF, 2x10k PSELF/RESET;… | 13 | various 0402/0603/0805 | UNI-ROYAL / Samsung | JLCPCB/LCSC (various basic) | 0.0115 | 0.15 | >1M each |
 | 56 | USB | USB-A D+/D- common-mode choke (fit; 0R bypass footprint DNP) | 2 | SDCW2012-2-900TF | Sunlord | JLCPCB/LCSC (C54888) | 0.0593 | 0.12 | 65898 |
-| 57 | USB | Hub crystal 12 MHz (no external load caps; CH335 has ~16pF… | 1 | X322512MSB4SI | YXC | JLCPCB/LCSC (C9002) | 0.0952 | 0.10 | 234110 |
+| 57 | USB | Hub crystal 12 MHz (no external load caps; CH335 has ~16pF… | 1 | FL1200074 | Diodes Incorporated | Digi-Key (31-FL1200074CT-ND) | 0.5640 | 0.56 | 3118 |
 | 58 | USB | USB0 (USB-C device port) D+/D- common-mode choke | 1 | SDCW2012-2-900TF | Sunlord | JLCPCB/LCSC (C54888) | 0.0593 | 0.06 | 65898 |
 | 59 | USB | USB0_VBUS clamp zener 6.8V (AM62x DS Fig 8-4 divider) | 1 | LBZX84C6V8LT1G | LRC | JLCPCB/LCSC (C12746) | 0.0190 | 0.02 | 18902 |
 | 60 | Ethernet | Gigabit Ethernet PHY (RGMII1) | 1 | DP83867ISRGZR | Texas Instruments | JLCPCB/LCSC (C543036) | 4.5303 | 4.53 | 777 (LCSC 773) |
@@ -205,7 +218,7 @@ Plug-in modules and PCB/assembly fees are included as lines. Prices are USD per 
 | 69 | HDMI | HDMI type-A receptacle | 1 | HDMI-A-19F-S-D | XFCN | JLCPCB/LCSC (C5151728) | 0.1852 | 0.19 | JLC 3,436 / LCSC 3,060 |
 | 70 | HDMI | HDMI section passives (rough) | 1 | various | various | JLCPCB basic (C1525/C52923/C1…) | 0.1500 | 0.15 | JLC basic, >1M each |
 | 71 | Audio | Stereo audio codec (HP out + mic in), I2S + I2C | 1 | TLV320AIC3104IRHBR | Texas Instruments | JLCPCB/LCSC (C181753) | 1.2326 | 1.23 | JLC 769; TI.com 14,577 |
-| 72 | Audio | Audio MCLK 12.288 MHz oscillator | 1 | 3N12288G33YC | SJK (Shenzhen Crystal… | JLCPCB/LCSC (C252334) | 0.5371 | 0.54 | JLC 448 |
+| 72 | Audio | Audio MCLK 12.288 MHz oscillator | 1 | MC3225Z12.2880C19XSH | KYOCERA AVX | Digi-Key (478-MC3225Z12.2…) | 1.3060 | 1.31 | 2115 |
 | 73 | Audio | Audio passives (rough) | 1 | various | various | JLCPCB basic (C1525/C52923/C1…) | 0.3400 | 0.34 | JLC basic, >1M each |
 | 74 | Audio | 3.5 mm 4-pole TRRS jack (headphone + mic) | 1 | PJ-320DB-5A | Korean Hroparts Elec | JLCPCB/LCSC (C707225) | 0.1452 | 0.15 | JLC 412 |
 | 75 | Camera | 15-pin 1.0 mm CSI FPC (RPi camera pinout) | 1 | 1-1734248-5 | TE Connectivity | JLCPCB/LCSC (C2922285) | 0.9453 | 0.95 | JLC 3,324 |
@@ -225,7 +238,7 @@ Plug-in modules and PCB/assembly fees are included as lines. Prices are USD per 
 | 89 | Debug | 3.3 V LDO for FT4232 + buffer A-side, powered from debug US… | 1 | AP2112K-3.3TRG1 | Diodes Inc | LCSC/JLCPCB (C51118) | 0.1717 | 0.17 | 7645 |
 | 90 | Debug | JTAG ESD on Tag-Connect lines (TCK/TMS/TDI/TDO/TRSTn/EMU0/E… | 2 | TPD4E05U06DQAR | Texas Instruments | LCSC/JLCPCB (C138714) | 0.0830 | 0.17 | 215912 |
 | 91 | Debug | Debug USB D+/D- ESD | 1 | TPD2E001DRLR | Texas Instruments | LCSC/JLCPCB (C150526) | 0.1610 | 0.16 | 6370 |
-| 92 | Debug | FT4232 12 MHz crystal | 1 | X322512MSB4SI | YXC | LCSC/JLCPCB (C9002) | 0.0952 | 0.10 | 234140 |
+| 92 | Debug | FT4232 12 MHz crystal | 1 | FL1200074 | Diodes Incorporated | Digi-Key (31-FL1200074CT-ND) | 0.5640 | 0.56 | 3118 |
 | 93 | Debug | Debug VBUS ESD | 1 | TPD1E10B06DPYR | Texas Instruments | LCSC/JLCPCB (C48260) | 0.0446 | 0.04 | 288846 |
 | 94 | Debug | FT4232 VPHY/VPLL ferrite beads | 2 | BLM18PG121SN1D | Murata | LCSC/JLCPCB (C14709) | 0.0152 | 0.03 | 2705359 |
 | 95 | Debug | 12 MHz crystal load caps | 2 | 0402CG330J500NT | FH (Fenghua) | LCSC/JLCPCB (C1562) | 0.0032 | 0.01 | 1278855 |
@@ -274,3 +287,7 @@ Plug-in modules and PCB/assembly fees are included as lines. Prices are USD per 
 | 138 | PCB + Assembly | SMT stencil | 1 | Standard PCBA stencil, single… | JLCPCB | JLCPCB (Standard PCBA) | 0.8210 | 0.82 | n/a |
 | 139 | PCB + Assembly | MSL bake of SiP (MSL 4) | 1 | 48 h bake service | JLCPCB | JLCPCB (Bake service) | 0.8000 | 0.80 | n/a |
 | 140 | PCB + Assembly | Packing + confirm parts placement | 1 | packing $0.50 + area; placeme… | JLCPCB | JLCPCB (Standard PCBA) | 0.0950 | 0.10 | n/a |
+
+### After the 2026-11-10 0R removal (660 placed parts)
+
+Every 0R link is gone: 25 fitted (22 in 0402, the three 0603 ones `R300`, `R842`, `R918`) and 10 DNP (`R207`, the six CMC bypasses `R900`, `R901`, `R914`-`R917`, `R1203`, `R1314`, `R1506`). The fitted ones were all 0402WGF0000TCE (C17168) or the 0603 equivalent, about $0.03 a board in all, so the estimate barely moves. 38 parts are DNP now. The R0603 footprint is no longer used. The CSV lines that named the links say so; the rough per-section passive counts were not re-counted.

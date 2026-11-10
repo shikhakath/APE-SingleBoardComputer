@@ -30,7 +30,7 @@ Priority: **A** = must resolve before layout, **B** = confirm at footprint/PCB s
 | A12 | 14, 12 | Checklist 62_ALL_7 asks for ESD protection on off-board connectors. The 28 header signals have only their 33 Ω series resistors, and the camera FPC has none. The Raspberry Pi has none on its header either. Header protection would take 7 × TPD4E05U06. | None |
 | A13 | 07 | The SD card is not power-cycled on a warm or watchdog reset. RESETSTATz is low for about 162 µs, but card VDD takes about 0.53 ms to discharge, so it only dips to about 2.4 V. A UHS-I card left in 1.8 V signalling then fails ROM SD boot. The SK has the same topology. Fixes: reboot through the Linux vmmc regulator (software), route watchdog/ESM resets to the PMIC as a cold reset, or delay the SD power enable. | Software fix (vmmc); sheet note |
 | A14 | 08 | HR911130A ties all four PHY-side centre taps together inside the jack. TI DP83867 Fig 9-2 wants them separate, each with its own 0.1 µF. Most MagJack designs accept this. The alternative is a jack or discrete magnetics with separate taps, as on the DP83867 EVM. | Accept |
-| A15 | 02, 03 | `VDDSHV_CANUART` is on the switched 3.3 V rail, and `R207` (`PMIC_LPM_EN0` to MODE/STBY) stays open. 62_CONFIG_9 assumes an always-on rail, as on the SK and OSD62-PM-BRK. This board has no Partial-IO, and AM625 DS Table 6-5 note 3 allows any valid IO source in that case. Moving the rail alone would break the rule that all rails discharge before a power-up (only Partial-IO with VDD_CANUART also always-on is exempt), so it would also need a 0.85 V always-on LDO for VDD_CANUART. Fitting `R207` as things stand is unsafe: if STBY drops `VCC_3V3_SYS`, the pull-ups lose power and MODE/STBY cannot return high. | Switched rail, `R207` open, no SoC low-power mode through the PMIC |
+| A15 | 02, 03 | `VDDSHV_CANUART` is on the switched 3.3 V rail, and there is no link from `PMIC_LPM_EN0` to MODE/STBY (the DNP 0R `R207` was dropped on 2026-11-10). 62_CONFIG_9 assumes an always-on rail, as on the SK and OSD62-PM-BRK. This board has no Partial-IO, and AM625 DS Table 6-5 note 3 allows any valid IO source in that case. Moving the rail alone would break the rule that all rails discharge before a power-up (only Partial-IO with VDD_CANUART also always-on is exempt), so it would also need a 0.85 V always-on LDO for VDD_CANUART. Adding that link as things stand would be unsafe: if STBY drops `VCC_3V3_SYS`, the pull-ups lose power and MODE/STBY cannot return high. | Switched rail, no LPM_EN0 link, no SoC low-power mode through the PMIC |
 | B1 | 11 | Headphone coupling caps: 47 µF gives a 211 Hz corner into 16 Ω. Fit 100–220 µF? | 47 µF |
 
 ## Footprint checks
@@ -69,7 +69,7 @@ The footprints are in `hardware/gen/fplib/`. Section 10 of `hardware/gen/README.
 | B18 | 01/09 | Total capacitance on VCC_5V0, including 2 × 150 µF USB-A bulk, must be ≤ 470 µF effective for the TPS63070 |
 | B19 | 03/08 | Capacitance on the LDO4 (DDR4_VPP_2V5) rail must be ≤ 30 µF including the SiP's internal caps. About 14.5 µF is on the board. |
 | C1 | 06/07/08 | Measure RESET_N with its ~9 k internal pull-up: about 0.47 V with the pad low, 1.6–1.9 V before the pad is driven. Also check VDD_SD_3V3 for a short pulse in early power-up. |
-| C2 | 15 | The FT4232 consoles go Hi-Z while the USB host suspends the bridge (PWREN# drives the buffers' OE# through R1530). For always-on consoles, remove R1530 and fit R1506. |
+| C2 | 15 | The FT4232 consoles go Hi-Z while the USB host suspends the bridge (PWREN# drives the buffers' OE# directly). The always-on option (R1530 out, R1506 in) went with the 0R links on 2026-11-10. |
 | C3 | 14 | The 5 V header pins stay live while the SoC is off. Only the 33 Ω resistors limit back-drive from a HAT into SoC pads. |
 | C5 | 02 | Optional upgrades: a Buck1 inductor rated ≥ 7.4 A (TI recommendation; DFE252012F-R47M is 6.7 A, the SK uses 4.5 A), and a VMON divider of 40.2 k / 4.87 k (trip 3.97–4.47 V instead of 4.33–4.79 V). |
 | C6 | 02/06 | nRSTOUT rises through 2.2 k (R201) into U601, which is slow for its input. Fit 1 k if the gate output chatters. |
@@ -91,9 +91,9 @@ Closed in this review: **A7** (TI SLVUCL1A confirms the TPS6521904 rail map, seq
 | 09 | R913 fitted (USB1_DRVVBUS pull-down) | TPS2051B EN floated while the SoC IO rail is off |
 | 10 | R1012–R1016 de-skew straps (DNP) | See B14 |
 | 11 | D1100–D1102 ESD at the jack | 62_ALL_7 |
-| 13 | R1321 SDIO CLK series link, R1322/R1323 BT UART pull-ups | Octavo checklist |
+| 13 | R1322/R1323 BT UART pull-ups (the R1321 SDIO CLK series link was dropped on 2026-11-10) | Octavo checklist |
 | 14 | R1433 47 k UART5 RX pull-up | 62_UART_2 |
-| 15 | R1530 links PWREN# to OE#; C1506 10 µF | PWREN# is a driven output (R1506 alone would short it); VREGOUT needs ≥ 3.3 µF effective |
+| 15 | PWREN# drives OE# directly (R1530 dropped 2026-11-10); C1506 10 µF | VREGOUT needs ≥ 3.3 µF effective |
 | Footprints | QFN28 (CH335F) paste windows; silk clearance 0.20 mm; SiP paste rule | IPC-7525, JLC silk-to-mask rule |
 
 ## Fixed in the 2026-11-03 update
@@ -112,7 +112,7 @@ Every checklist item that names a supply was checked against the netlist. Each S
 
 | Sheet | Change | Reason |
 |---|---|---|
-| 03 | `R303`-`R310` (0 Ω) feed new nets `VDDSHV0`, `VDDSHV1`, `VDDSHV2`, `VDDSHV3`, `VDDSHV4`, `VDDSHV6`, `VDDSHV_MCU` and `VDDSHV_CANUART` from `VCC_3V3_SYS` or `VDD_1V8` | The checklist names pull-up rails by bank. All banks shared two nets, so a pull-up to `VCC_3V3_SYS` could not be told apart from a pull-up to the right bank. Voltages and sources do not change. |
+| 03 | `R303`-`R310` (0 Ω) feed new nets `VDDSHV0`, `VDDSHV1`, `VDDSHV2`, `VDDSHV3`, `VDDSHV4`, `VDDSHV6`, `VDDSHV_MCU` and `VDDSHV_CANUART` from `VCC_3V3_SYS` or `VDD_1V8` | The checklist names pull-up rails by bank. All banks shared two nets, so a pull-up to `VCC_3V3_SYS` could not be told apart from a pull-up to the right bank. Voltages and sources do not change. **2026-11-10: the links were dropped with every other 0R link, so the bank nets are `VCC_3V3_SYS` and `VDD_1V8` again (`schgen.MERGED_NETS`); the sheets still name the bank behind each pull-up.** |
 | All | 110 parts moved to the net of their bank: pull-ups, decoupling, `J700` VCCQ, `U800` VDDIO, `U602`, `U703`, `U1504`, `U1505` | 62_CONFIG_4, 62_CONFIG_5, 62_CONFIG_9, 62_RESET_4, 62_RESET_6, 62_BOOT_1, 62_I2C_1, 62_I2C_3, 62_UART_2, 62_EMMC_3, 62_EMMC_8, 62_SD_7, 62_DPI_3, 62_ETH_1, 62_ETH_2 |
 | 03 | `R301` 40.2 kΩ, `R302` 4.87 kΩ (were 10 kΩ, 1.1 kΩ) | 62_CONFIG_6 figure is 40.2 kΩ / 4.81 kΩ. The old values could trip as high as 4.79 V, only 4 % under a 5 V rail. Now 3.97-4.47 V. |
 | 03 | `FB311` gives `VDDA_3P3_USB` its own bead; `VDDA_TEMP` joins `VDDA_1V8_MCU`. `C361`, added here on the bead output, was deleted on 2026-11-06 with the other capacitors not in OSD62x-PM Table 4-3. | 62_POWER_4 groups 5 and 3 |
@@ -127,13 +127,13 @@ Divider details, using the AM625 DS 8.2.4 method (0.45 V ±3 %, 1 % resistors, 2
 | 62_POWER_4 | Filtered groups 1-5 | `VDDA_1V8_OLDI`, `VDDA_1V8_CSI`, `VDDS_OSC0_1V8`, `VDDA_1V8_MCU` (with VDDA_TEMP), `VDDA_1V8_PLL0/1/2`, `VDDA_1V8_USB`, `VDDA_3P3_USB` | `FB303`-`FB311` | Met; each 1.8 V group split further than asked |
 | 62_POWER_5 | VPP unconnected unless programming | `VPP_EFUSE_1V8` | `U202` DNP | Met |
 | 62_POWER_7 | Partial IO needs always-on rails | `VDD_CORE_0V85`, `VDDSHV_CANUART` (switched) | | Not used; see A15 |
-| 62_POWER_8, 62_POWER_10 | VDDR_CORE with VDD_CORE, 0.85 V at 1.4 GHz | `VDDR_CORE_0V85`, `VDD_CORE_0V85` | `R300` | Met |
+| 62_POWER_8, 62_POWER_10 | VDDR_CORE with VDD_CORE, 0.85 V at 1.4 GHz | `VDD_CORE_0V85` (one net since `R300` was dropped on 2026-11-10) | Direct | Met |
 | 62_CONFIG_2, 62_RESET_1 | MCU_ERRORn and MCU_PORz in VDDS_OSC0 | `VDDS_OSC0_1V8` | `U601`, `R605` | Met |
 | 62_CONFIG_4, 62_RESET_4 | 10 k or 47 k to VDDSHV_MCU | `VDDSHV_MCU` | `R610`, `R1523`-`R1527`, all 10 k | Met |
 | 62_CONFIG_5 | Separate pull-ups to VDDSHV_MCU | `VDDSHV_MCU` | `R1428`-`R1431` | Met |
 | 62_CONFIG_6 | VSYS divider | `VCC_5V0`, `VMON_VSYS` | `R301`, `R302`, `C300` 22 pF | Met |
 | 62_CONFIG_8 | VMON pins on their rails | `VDD_1V8`, `VCC_3V3_SYS` | | Met (the sources, per DS Table 6-5 note 4) |
-| 62_CONFIG_9 | Pull-up to the VDDSHV_CANUART source | `VDDSHV_CANUART` | `R210`; `R207` open | Met, but the rail is not always-on; see A15 |
+| 62_CONFIG_9 | Pull-up to the VDDSHV_CANUART source | `VDDSHV_CANUART` | `R210`; no LPM_EN0 link | Met, but the rail is not always-on; see A15 |
 | 62_RESET_6 | 10 k or 47 k to VDDSHV0 | `VDDSHV0` | `R609`, `U602` | Met |
 | 62_CLOCK_2 | Oscillator on the VDDS_OSC0 rail | `VDDS_OSC0_1V8` | `U600` | Met |
 | 62_I2C_1 | 4.7 k to VDDSHV_MCU | `VDDSHV_MCU` | `R1428`, `R1429` 1.8 k; `R1430`, `R1431` 3.9 k | Rail met; values kept for HAT compatibility (62_CONFIG_5 allows choosing) |
@@ -146,9 +146,9 @@ Divider details, using the AM625 DS 8.2.4 method (0.45 V ±3 %, 1 % resistors, 2
 | 62_SD_3, 62_SD_4, 62_SD_8 | Switchable VDDSHV5, pull-ups on it | `VDDSHV5_SD` | `U700` ch2, `R723`-`R727` | Met |
 | 62_SD_5 | Fixed 3.3 V card VDD | `VDD_SD_3V3` | `U700` ch1 | Met |
 | 62_SD_7 | SDCD in VDDSHV0 | `VDDSHV0` | `R731` | Met |
-| 62_OSPI_1 | VDDSHV1 and the attached IO on one source | `VDDSHV1`, `VDD_1V8_M2`, both from `VDD_1V8` | `R304`, `R1320` | Met; OSPI balls used as UART6 and GPIO |
+| 62_OSPI_1 | VDDSHV1 and the attached IO on one source | `VDD_1V8` (one net since `R304` and `R1320` were dropped) | Direct | Met; OSPI balls used as UART6 and GPIO |
 | 62_ETH_1, 62_ETH_2 | PHY IO on the VDDSHV2 source, MDIO pulled up | `VDDSHV2` | `U800`, `R813` | Met |
-| 62_ALL_2 | Test points on rails | No test point on the new bank nets | `R303`-`R310` pads | Caveat: probe the link pads; board space was kept |
+| 62_ALL_2 | Test points on rails | The bank rails are `VCC_3V3_SYS` and `VDD_1V8` (links dropped 2026-11-10) | `TP303`, `TP308` | Probe the two system rails |
 
 `J1400` I2C path, checked ball to pin. Each signal goes ball, 47 pF to GND, 62 Ω, bus with pull-up, header pin:
 - `MCU_I2C0_SDA` (B7): `C1400`, `R1424`, `R1428`, pin 3 (SDA1).

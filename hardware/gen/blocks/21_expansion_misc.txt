@@ -52,7 +52,7 @@ near B U1600.5 TP1602
 # Camera: filter and pull-ups on the back of the connector
 near B J1200.15 C1202 C1201 C1200 FB1200 C1203
 near B J1200.11 R1202
-near B J1200.12 R1203
+# (0R links dropped 2026-11-10) near B J1200.12 R1203
 
 # Buttons on the west edge: debounce and ESD behind them, on the back
 near B 55,66.5 U602
@@ -75,11 +75,11 @@ near T LED1603.1 R1610
 near B U102.13 TP300
 near B R301.1 TP301
 near B R209.1 TP302
-near B R303.1 TP303
+at B 180 63.925 33.75 TP303    # was near R303.1; the 0R link was dropped, so its spot on the board as placed
 near B C305.1 TP304
 near B L202.2 TP306
 near T FB302.2 TP307
-near B R304.1 TP308
+at B 180 65.925 33.7 TP308     # was near R304.1; the 0R link was dropped, so its spot on the board as placed
 near T 52,32 TP309
 near B C604.1 TP310
 near B R725.1 TP311

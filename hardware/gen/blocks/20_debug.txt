@@ -3,7 +3,7 @@
 # USB-C side
 near T J1500.A5 R1500
 near T J1500.B5 R1501
-near T J1500.S1 R1502
+# (0R links dropped 2026-11-10) near T J1500.S1 R1502
 near T J1500.A6 U1501
 near T U1501.1 C1502
 near T J1500.A4B9 D1500 C1500 C1501
@@ -42,8 +42,8 @@ near T U1504.1 C1522
 near T U1504.16 C1523
 near T U1505.1 C1524
 near T U1505.16 C1525
-near T U1504.15 R1505 R1506
-near B U1500.60 R1530
+near T U1504.15 R1505
+# (0R links dropped 2026-11-10) near B U1500.60 R1530
 
 # JTAG: ESD and pull-ups around the Tag-Connect
 at T 0 36.6 59.2 U1510

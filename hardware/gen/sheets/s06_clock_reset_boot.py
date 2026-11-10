@@ -79,7 +79,7 @@ def build(sch_dir: str) -> Sheet:
            comment="32.768kHz 9pF 20ppm Q13FC13500003", MPN="Q13FC13500003",
            Manufacturer="Seiko Epson")
     sh.column(9600, 15600, [
-        ("R602", RES, "LFOSC_XO_X", "LFOSC_XO", "0R 0402 (Rd, DS Fig 6-21)"),
+        # Rd (DS Fig 6-21) was a 0R link, R602: dropped, the crystal pin joins LFOSC_XO (schgen.MERGED_NETS)
         ("C602", CAP, "LFOSC_XI", "GND", "18pF 50V C0G 0402 (Cf1)"),
         ("C603", CAP, "LFOSC_XO_X", "GND", "18pF 50V C0G 0402 (Cf2)"),
         ("R603", RES, "LFOSC_XI", "LFOSC_XO", "10M 1% 0402 (Rbias option, DS Fig 6-21 gives no value)", DNP),
@@ -87,10 +87,14 @@ def build(sch_dir: str) -> Sheet:
     sh.note(8000, 16700, "32 kHz: CL 9 pF with 2x18 pF. ESR 70k max -> Cshunt (C0 + PCB) <= 2-3 pF: short, guarded traces. LFXOSC_TRIM i_mult per CL.")
 
     # ---- MCU_PORz: AND3 in the 1.8 V VDDS_OSC0 domain (SK U72) --------------
+    # Fitted part: Nexperia 74LVC1G11GW,125 (SOT363 = SC70-6), stocked at Mouser and
+    # JLC (TI DCKR out at Digi-Key/Mouser, 2026-11-09). Nexperia 74LVC1G11 Table 3:
+    # A1 GND2 B3 Y4 VCC5 C6, the TI DCK pinout; inputs 5.5 V tolerant, IOFF.
     sh.add("U601", SN74LVC1G11, 1800, 12600, {
         "1": "PMIC_PGOOD", "3": "JTAG_SRST_N", "6": "PORZ_MAN_N", "2": "GND",
         "5": "VDDS_OSC0_1V8", "4": "MCU_PORZ",
-    }, comment="SN74LVC1G11DCKR", MPN="SN74LVC1G11DCKR", Manufacturer="Texas Instruments")
+    }, comment="74LVC1G11GW,125", MPN="74LVC1G11GW,125", Manufacturer="Nexperia",
+        LCSC="C282348", Supplier="Mouser 771-LVC1G11GW125")
     sh.column(5600, 12600, [
         ("C604", CAP, "VDDS_OSC0_1V8", "GND", C100N + " (U601 VCC)"),
         ("R604", RES, "VDDSHV_MCU", "JTAG_SRST_N", R10K + " (gate enabled with no debugger)"),

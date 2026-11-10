@@ -4,8 +4,8 @@
 near T J100.A6 D900
 at T 0 11 39 L900
 # The DNP bypass straddles the choke: the eMMC module is behind it, so these stay on top
-at T 0 11 40.7 R900
-at T 0 11 37.3 R901
+# (0R links dropped 2026-11-10) at T 0 11 40.7 R900
+# (0R links dropped 2026-11-10) at T 0 11 37.3 R901
 near T J100.B4A9 D100 C101 C100
 near T J100.A4B9 D103
 near T J100.A5 D101
@@ -45,7 +45,7 @@ at T 0 10.3 4.7 C119
 at T 0 15.4 4.7 C120
 near T U101.2 C113
 near T U101.1 C114
-near T U101.14 C115 R116
+near T U101.14 C115
 near T U101.4 R117 R118 C116 R119
 near T U101.7 R113 R114
 near T U101.6 R115

@@ -3,8 +3,8 @@
 # Common-mode chokes in line with each port, one on each side of the board
 at T 0 46 15.4 L901
 at B 0 46 15.4 L902
-near B L901.1 R914 R915
-near B L902.1 R916 R917
+# (0R links dropped 2026-11-10) near B L901.1 R914 R915
+# (0R links dropped 2026-11-10) near B L902.1 R916 R917
 # ESD at the connector, on the back so it sits between the choke and the through-hole pins
 near B J900.1 D904
 near B J900.5 D905
@@ -35,4 +35,4 @@ near B U1.U11 R912 R911
 near B R911.1 R910
 
 # Shield
-near B J900.10 R918 C913
+near B J900.10 C913

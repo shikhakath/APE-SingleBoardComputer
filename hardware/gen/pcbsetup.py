@@ -202,7 +202,7 @@ DP_100R = ("ETH_MDI", "HDMI_TMDS", "CSI")
 # 50 ohm single-ended: RGMII, eMMC / SD / SDIO, DPI and the reference clocks
 SE50_RE = re.compile(r"^(ETH_(TD\d|RD\d|TXC|RXC|TX_CTL|RX_CTL)|PHY_(TX_D\d|RX_D\d|TX_CTRL|RX_CTRL|GTX_CLK"
                      r"|RX_CLK)|EMMC_(CLK|CMD|D\d|MOD_CLK|MOD_DS)|SD_(CLK|CMD|D\d|SOCK_CLK)"
-                     r"|M2_SDIO_(CLK|CMD|D\d)|WL_SDIO_(CLK|CMD|D\d)|DPI_.*|TFP_IDCK|OSC_25M|OSC25M_SRC"
+                     r"|WL_SDIO_(CLK|CMD|D\d)|DPI_.*|TFP_IDCK|OSC_25M|OSC25M_SRC"
                      r"|AUD_MCLK|AUD_MCLK_OSC)$")
 
 # ---- High-speed interfaces: limits are in the constraint table, README section 11.
@@ -217,15 +217,15 @@ BUSES = {
                  + [("ETH_RXC", "PHY_RX_CLK"), ("ETH_RX_CTL", "PHY_RX_CTRL")]),
     "MMC0": ("J700", [("EMMC_CLK", "EMMC_MOD_CLK"), ("EMMC_CMD", "EMMC_CMD")]
              + [(f"EMMC_D{i}", f"EMMC_D{i}") for i in range(8)]),
-    "MMC1": ("J702", [("SD_CLK", "SD_SOCK_CLK"), ("SD_CMD", "SD_CMD")] + [(f"SD_D{i}", f"SD_D{i}") for i in range(4)]),
-    "MMC2": ("J1300", [("WL_SDIO_CLK", "M2_SDIO_CLK"), ("WL_SDIO_CMD", "M2_SDIO_CMD")]
-             + [(f"WL_SDIO_D{i}", f"M2_SDIO_D{i}") for i in range(4)]),
+    # SD_CLK and the SDIO nets lost their 0R series links on 2026-11-10, so each is one net end to end
+    "MMC1": ("J702", [("SD_CLK", "SD_CLK"), ("SD_CMD", "SD_CMD")] + [(f"SD_D{i}", f"SD_D{i}") for i in range(4)]),
+    "MMC2": ("J1300", [(f"WL_SDIO_{s}", f"WL_SDIO_{s}") for s in ("CLK", "CMD", "D0", "D1", "D2", "D3")]),
     "DPI": ("U1000", _DPI),
 }
 MCASP_NETS = ["AUD_BCLK", "AUD_FSYNC", "AUD_DIN", "AUD_DOUT"]
 # Clocks and other periodic signals: differential pairs keep 50 mil from these
 PERIODIC_RE = re.compile(r"^(OSC_25M|OSC25M_SRC|AUD_MCLK|AUD_MCLK_OSC|AUD_BCLK|ETH_TXC|PHY_GTX_CLK|ETH_RXC|PHY_RX_CLK"
-                         r"|EMMC_CLK|EMMC_MOD_CLK|SD_CLK|SD_SOCK_CLK|WL_SDIO_CLK|M2_SDIO_CLK|DPI_PCLK|TFP_IDCK"
+                         r"|EMMC_CLK|EMMC_MOD_CLK|SD_CLK|WL_SDIO_CLK|DPI_PCLK|TFP_IDCK"
                          r"|PHY_X.|HUB_X.|FT_OSC.|LFOSC_.*)$")
 
 # Propagation delay used to turn the datasheets' ps into mm. L3 stripline: sqrt(4.25) / c =
@@ -322,10 +322,34 @@ def xsignal_pins(bus, nets=None):
     return [(_pin_on(nets, a, "U1"), _pin_on(nets, b, load)) for a, b in pairs]
 
 
+class _PinSets(dict):
+    """xSignal names by pin set. Altium writes either the two end pins or, after some saves, every pin along the
+    path (series parts too, e.g. R802-1,R802-2,U1-U25,U800-28), so a lookup by the two end pins also finds a
+    record that holds them."""
+    def _find(self, pins):
+        pins = frozenset(pins)
+        if dict.__contains__(self, pins):
+            return dict.__getitem__(self, pins)
+        return next((v for k, v in self.items() if pins <= k), None)
+
+    def __getitem__(self, pins):
+        v = self._find(pins)
+        if v is None:
+            raise KeyError(pins)
+        return v
+
+    def __contains__(self, pins):
+        return self._find(pins) is not None
+
+    def get(self, pins, default=None):
+        v = self._find(pins)
+        return default if v is None else v
+
+
 def xsignal_names(pcb: Path) -> dict:
     """{frozenset of pin descriptors: xSignal name} read back from the PcbDoc's Board6."""
     b6 = read_board6(pcb)
-    out = {}
+    out = _PinSets()
     for i in range(int(b6.get("PINPAIRCOUNT", 0))):
         pins = b6.get(f"PINPAIRPINS{i}", "")
         out[frozenset(pins.split(","))] = b6.get(f"PINPAIRNAME{i}", "")
@@ -401,6 +425,29 @@ ESCAPE_MM = 3.0
 # placed by hand on 2026-11-09: their TMDS pads and the routes over and under U1001's ends. Move it with them.
 HDMI_ROOM = "HDMI_Escape"
 HDMI_ROOM_MM = (81.9, 32.9, 101.5, 46.75)       # x1, y1, x2, y2
+# MDI at U800's 0.5 mm pins: each MDI pin sits next to a power or bias pin (VDDA_2V5 on 3 and 9, VDD_1V0 on 6,
+# RBIAS on 12) whose track is 0.3-0.4 mm away, so the 30 mil stops every pair 0.5 mm short of the PHY. Pair to
+# pair is 1.0 mm there and meets 30 mil. Package escape (SPRAAR7J §3.4): U800's body, at (69.2, 25.3) as placed
+# on 2026-11-09, plus 2 mm on every side (1.8 mm past the MDI pins' outer ends). Move it with U800.
+ETH_ROOM = "U800_Escape"
+ETH_ROOM_MM = (63.7, 19.8, 74.7, 30.8)
+# Debug USB-C, connector termination: CC1 (A5) sits 0.5 mm from DBG_USB_DM (B7), so no CC1 track could leave its pin.
+# J1500 at (3.19, 60.0) as placed on 2026-11-09, its pins plus 2 mm, and up to R1500 (CC1's Rd). Move it with J1500.
+USBDBG_ROOM = "J1500_Escape"
+USBDBG_ROOM_MM = (-2.0, 54.5, 9.5, 67.5)
+# Hub escape: U900's 0.4 mm pins put USB1_DM (pin 20) 0.4 mm from the VCC_3V3_SYS link on pins 18-19, and HUB_P1 / HUB_P2
+# 0.63 mm apart at the corner (pins 7, 8). U900 at (45.5, 20.0) as placed on 2026-11-09, plus 2 mm. Move it with U900.
+HUB_ROOM = "U900_Escape"
+HUB_ROOM_MM = (41.5, 16.0, 49.5, 24.0)
+# name, part it must hold, board mm box, pair class it relaxes, Clearance rule, what it is for
+PART_ROOMS = [
+    (HDMI_ROOM, "U1001", HDMI_ROOM_MM, "HDMI_TMDS", "Clr_HDMI_Escape",
+     "HDMI escape and connector termination (gen/pcbsetup.py); move it with U1000, U1001, J1000"),
+    (ETH_ROOM, "U800", ETH_ROOM_MM, "ETH_MDI", "Clr_ETH_Escape", "MDI escape at the PHY (gen/pcbsetup.py); move it with U800"),
+    (USBDBG_ROOM, "J1500", USBDBG_ROOM_MM, "USB_DBG", "Clr_USBDBG_Escape",
+     "Debug USB-C termination (gen/pcbsetup.py); move it with J1500"),
+    (HUB_ROOM, "U900", HUB_ROOM_MM, "USB1", "Clr_USB1_Escape", "USB hub escape (gen/pcbsetup.py); move it with U900"),
+]
 
 
 def room_spec(name=SIP_ROOM, grow=0.0) -> str:
@@ -409,10 +456,21 @@ def room_spec(name=SIP_ROOM, grow=0.0) -> str:
             f"|{cx + mm(ROOM_W_MM / 2 + grow)}|{cy + mm(ROOM_H_MM / 2 + grow)}")
 
 
-def hdmi_room_spec() -> str:
-    x1, y1, x2, y2 = HDMI_ROOM_MM
-    return (f"ROOM|{HDMI_ROOM}|InComponent('U1001')|{BOARD_X0 + mm(x1)}|{BOARD_Y0 + mm(y1)}|{BOARD_X0 + mm(x2)}"
-            f"|{BOARD_Y0 + mm(y2)}|HDMI escape and connector termination (gen/pcbsetup.py); move it with U1000, U1001, J1000")
+def part_room_specs() -> list[str]:
+    return [f"ROOM|{name}|InComponent('{part}')|{BOARD_X0 + mm(x1)}|{BOARD_Y0 + mm(y1)}|{BOARD_X0 + mm(x2)}"
+            f"|{BOARD_Y0 + mm(y2)}|{note}" for name, part, (x1, y1, x2, y2), _, _, note in PART_ROOMS]
+
+
+def part_room_rules() -> list[list]:
+    """0.10 mm between a pair of that class and any track, ahead of the 30 mil rules, when either track is wholly
+    inside the room: the pair's (first rule) or the other one (second). A long pair segment leaving the room then
+    no longer holds a short track at a neighbouring pin to 30 mil."""
+    rows = []
+    for name, _, _, cls, rule, _ in PART_ROOMS:
+        pair = f"InDifferentialPairClass('{cls}') And IsTrack"
+        rows.append(["CLEARANCE", rule, f"WithinRoom('{name}') And {pair}", "IsTrack", mm(0.10)])
+        rows.append(["CLEARANCE", f"{rule}_Other", f"WithinRoom('{name}') And IsTrack", pair, mm(0.10)])
+    return rows
 
 
 # ------------------------------------------------------------------ rules
@@ -547,8 +605,7 @@ def rules(pcb: Path = None) -> list[list]:
         ["CLEARANCE", "Clr_SiP", SIP, "All", mm(0.09)],
         # Ahead of the 30 mil rules: TI scopes those "after package escape". Track to track, as they are.
         ["CLEARANCE", "Clr_HS_Escape", f"WithinRoom('{ESCAPE_ROOM}') And IsTrack", "IsTrack", mm(0.10)],
-        ["CLEARANCE", "Clr_HDMI_Escape", f"WithinRoom('{HDMI_ROOM}') And InDifferentialPairClass('HDMI_TMDS') And IsTrack",
-         "IsTrack", mm(0.10)],
+        *part_room_rules(),
         *hs_clearance_rules(),
         ["CLEARANCE", "Clr_SMD_SMD", "IsSMTPin", "IsSMTPin", mm(0.15)],   # AD26 has no IsSMDPad
         ["CLEARANCE", "Clr_Default", "All", "All", mm(0.10)],
@@ -597,7 +654,7 @@ def rules(pcb: Path = None) -> list[list]:
 
 
 def rules_spec(pcb: Path) -> str:
-    lines = [str(pcb), room_spec(), room_spec(ESCAPE_ROOM, ESCAPE_MM), hdmi_room_spec()]
+    lines = [str(pcb), room_spec(), room_spec(ESCAPE_ROOM, ESCAPE_MM), *part_room_specs()]
     for rule in rules(pcb):
         lines.append("RULE|" + "|".join(str(v) for v in rule))
     return "\n".join(lines) + "\n"

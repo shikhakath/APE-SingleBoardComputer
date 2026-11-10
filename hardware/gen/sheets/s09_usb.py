@@ -47,7 +47,6 @@ P_C10U_IN = {"MPN": "CL21A106KAYNNNE", "Manufacturer": "Samsung", "LCSC": "C1585
 P_150U = {"MPN": "RYHV10V150UF6*5", "Manufacturer": "Honor Elec", "LCSC": "C48970647"}
 P_CMC = {"MPN": "SDCW2012-2-900TF", "Manufacturer": "Sunlord", "LCSC": "C54888"}
 P_ZENER = {"MPN": "LBZX84C6V8LT1G", "Manufacturer": "LRC", "LCSC": "C12746"}
-P_BYPASS = {"DNP": "1", "MPN": "0402WGF0000TCE", "Manufacturer": "UNI-ROYAL", "LCSC": "C17168"}
 
 
 def build(sch_dir: str) -> Sheet:
@@ -58,13 +57,9 @@ def build(sch_dir: str) -> Sheet:
     sh.add("L900", SDCW2012_CMC, 2500, 16000, {
         "1": "USBC1_DP", "2": "USB0_DP", "4": "USBC1_DM", "3": "USB0_DM",
     }, comment="SDCW2012-2-900TF 90R@100MHz", **P_CMC)
-    sh.column(3300, 15300, [
-        ("R900", RES, "USBC1_DP", "USB0_DP", "0R 0402 DNP (CMC bypass)", P_BYPASS),
-        ("R901", RES, "USBC1_DM", "USB0_DM", "0R 0402 DNP (CMC bypass)", P_BYPASS),
-    ])
     sh.add("D900", ESD122_DMX, 2500, 14300, {"2": "USBC1_DP", "3": "USBC1_DM", "1": "GND"},
            comment="ESD122DMXR", MPN="ESD122DMXR", Manufacturer="Texas Instruments", LCSC="C544474")
-    sh.note(1000, 13700, "Order from the USB-C pads: ESD122 -> CMC (R900/R901 0R footprints stacked on L900) -> SoC.")
+    sh.note(1000, 13700, "Order from the USB-C pads: ESD122 -> CMC L900 -> SoC (no 0R bypass: dropped 2026-11-10).")
     sh.note(1000, 13500, "90 Ohm diff, no other series parts on USB0_DP/DM (AM62x / Octavo checklist).")
 
     # ---- USB0_VBUS: AM62x DS Fig 8-4 divider + 6.8 V clamp ----
@@ -96,9 +91,12 @@ def build(sch_dir: str) -> Sheet:
     sh.note(6300, 13700, "PSELF floats high (internal pull-up) = self-powered. LED3/LED4 float (no EEPROM, no LEDs).")
     sh.note(6300, 13500, "PWREN1..4# unused (port power follows USB1_DRVVBUS). Ports 3/4: DP/DM open, OVCUR3/4# tied high.")
 
+    # Fitted crystal: Diodes FL1200074 (FL series, 3.2 x 2.5 mm, 12 MHz 20 pF, +/-20 ppm
+    # tol / +/-20 ppm stab, -40..85 C), Digi-Key. FL datasheet DS40067: pins 1/3 Xtal,
+    # 2/4 Case, same corners as the YXC part, so the symbol and XTAL_3225_4P stay.
     sh.add("Y900", XTAL_YSX321SL, 7300, 12900, {"1": "HUB_XI", "3": "HUB_XO", "2": "GND", "4": "GND"},
-           comment="X322512MSB4SI 12MHz 20pF 10ppm", MPN="X322512MSB4SI", Manufacturer="YXC",
-           LCSC="C9002")
+           comment="FL1200074 12MHz 20pF 20ppm", MPN="FL1200074", Manufacturer="Diodes Incorporated",
+           Supplier="Digi-Key FL1200074")
     sh.note(6300, 12100, "No load caps on Y900: XI/XO have ~16 pF built in (WCH DS 6.1).")
 
     sh.column(7300, 11400, [
@@ -154,31 +152,32 @@ def build(sch_dir: str) -> Sheet:
     # ================================================================ USB-A data paths
     for i, y in enumerate((10600, 7600)):
         port = i + 1
-        cmc, rb, esd = f"L{901 + i}", 914 + 2 * i, f"D{904 + i}"
+        cmc, esd = f"L{901 + i}", f"D{904 + i}"
         sh.add(cmc, SDCW2012_CMC, 13300, y, {
             "1": f"HUB_P{port}_DP", "2": f"USBA{port}_DP",
             "4": f"HUB_P{port}_DM", "3": f"USBA{port}_DM",
         }, comment="SDCW2012-2-900TF 90R@100MHz", **P_CMC)
-        sh.column(14100, y - 700, [
-            (f"R{rb}", RES, f"HUB_P{port}_DP", f"USBA{port}_DP", "0R 0402 DNP (CMC bypass)", P_BYPASS),
-            (f"R{rb + 1}", RES, f"HUB_P{port}_DM", f"USBA{port}_DM", "0R 0402 DNP (CMC bypass)", P_BYPASS),
-        ])
         sh.add(esd, USBLC6_2SC6, 16200, y, {
             "1": f"USBA{port}_DP", "6": f"USBA{port}_DP", "3": f"USBA{port}_DM", "4": f"USBA{port}_DM",
             "2": "GND", "5": f"VBUS_USBA{port}",
         }, comment="USBLC6-2SC6", MPN="USBLC6-2SC6", Manufacturer="STMicroelectronics", LCSC="C7519")
 
+    # J900 fitted part: Wurth 61400826021 (WR-COM dual stacked USB 2.0 A, THT R/A), on the
+    # USBA_2X_BX-TYPE-A-MWC44 land: KiCad USB_A_Wuerth_61400826021_Horizontal_Stacked has
+    # the same 13.14 x 5.68 peg grid, 0.35 rear-row offset and 2.0/2.5 contact pitch; its
+    # front contact row sits 0.09 mm from ours (holes 0.90 mm). Body 14.5 x 17.0 mm.
     sh.add("J900", BX_TYPE_A_MWC44, 19300, 10700, {
         "1": "VBUS_USBA1", "2": "USBA1_DM", "3": "USBA1_DP", "4": "GND",
         "5": "VBUS_USBA2", "6": "USBA2_DM", "7": "USBA2_DP", "8": "GND",
         "9": "USBA_SHIELD", "10": "USBA_SHIELD", "11": "USBA_SHIELD", "12": "USBA_SHIELD",
-    }, comment="BX-TYPE-A-MWC44", MPN="BX-TYPE-A-MWC44", Manufacturer="Bossie", LCSC="C18077688")
+    }, comment="61400826021", MPN="61400826021", Manufacturer="Wurth Elektronik",
+        Supplier="Mouser 710-61400826021")
+    # The shell pegs go straight to GND (the R918 0R link was dropped), so C913 has GND on both pins
     sh.column(19900, 8900, [
-        ("R918", RES, "USBA_SHIELD", "GND", "0R 0603 (shield to GND, SK R418)"),
         ("C913", CAP, "USBA_SHIELD", "GND", "4.7nF 2kV X7R 1206 DNP (SK C372 option)", DNP),
     ])
     sh.note(12300, 5900, "J900 pad numbers are defined by the symbol (the Bossie drawing has none):")
     sh.note(12300, 5700, "  1-4 lower port VBUS/D-/D+/GND = port 1, 5-8 upper port = port 2, 9-12 shell pegs.")
-    sh.note(12300, 5500, "USBLC6 at the connector pins, then CMC (R914-R917 0R footprints stacked on L901/L902).")
+    sh.note(12300, 5500, "USBLC6 at the connector pins, then CMC L901/L902 (no 0R bypass).")
     sh.note(12300, 5300, "Hub port k -> USB-A port k. 90 Ohm diff; keep DP/DM pairs away from the 5 V switch nodes.")
     return sh

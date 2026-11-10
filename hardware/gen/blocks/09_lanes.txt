@@ -7,11 +7,11 @@ keep T 58.6 30.7 66.5 39.8 RGMII series rows
 keep B 56.5 53 62.6 64 M.2 bus
 keep B 61.4 52 66.6 55.6 SD bus
 # 0R links: where their rail's plane region meets the rail that feeds it, away from the RGMII rows
-near B 70.4,31.2 R305
-near B 72.6,48.4 R306
-near B 64.4,58 R304
-near B 63.6,58.6 R303
-near B 65.2,62.5 R308
+# (0R links dropped 2026-11-10) near B 70.4,31.2 R305
+# (0R links dropped 2026-11-10) near B 72.6,48.4 R306
+# (0R links dropped 2026-11-10) near B 64.4,58 R304
+# (0R links dropped 2026-11-10) near B 63.6,58.6 R303
+# (0R links dropped 2026-11-10) near B 65.2,62.5 R308
 # Filter caps and the pull-up off the M.2 bus, VMON's filter cap off the SD stubs
 near B 49,59 R203 C220 C609
 at T 0 51.4 51.6 C300

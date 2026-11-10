@@ -8,7 +8,7 @@ shift 10 -8
 at B 0 34.8 48.55 C339     # VDDA_3P3_USB
 at B 0 39.8 48.55 C302     # VDD_CORE
 at B 0 42.3 48.55 C303     # VDD_CORE
-at B 0 45.6 48.62 R300    # VDD_CORE to VDDR_CORE: 150 mA, 0.81 V minimum, so it sits on both rails
+# (0R links dropped 2026-11-10) at B 0 45.6 48.62 R300    # VDD_CORE to VDDR_CORE: 150 mA, 0.81 V minimum, so it sits on both rails
 # west edge
 at B 0 34.8 50.05 C318     # VDDS_DDR
 at B 0 34.8 53.05 C320     # VDDS_DDR
@@ -50,8 +50,8 @@ row B 90 34 62.4 1.45 0 C307 C605 C306 C1403 R1620 R1621 R1520 C305 R1310
 near B 50,54 C304
 row B 90 36.9 64.8 1.45 0 R302 R301 C328 FB310 FB306
 shift 0 0
-at B 0 50.7 59.2 R309
-near B 43.5,49.7 R310
+# (0R links dropped 2026-11-10) at B 0 50.7 59.2 R309
+# (0R links dropped 2026-11-10) near B 43.5,49.7 R310
 # Debug pull-ups on the UART lines, and the header's idle pull-up
 # Sorted by rail: CANUART in its region west of the MCU lane, VDDSHV0 east of the 3.3 V lane
 row B 90 34 67.2 1.45 0 R1515 R1516 R1517 R1518

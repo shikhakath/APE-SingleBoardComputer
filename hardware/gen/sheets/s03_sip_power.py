@@ -22,10 +22,11 @@ Rail decisions:
     same rail; 62_POWER_4 group 2).
   * VDDA_TEMP shares the VDDA_MCU bead and VDDA_3P3_USB has its own bead from VCC_3V3_SYS
     (Octavo 62_POWER_4 groups 3 and 5).
-  * Every VDDSHV bank is a named net, fed through a 0 Ohm link (R303-R310) from VCC_3V3_SYS
-    or VDD_1V8. Pull-ups and IO supplies on the other sheets go to the net of the bank that
-    powers the SoC ball, as the Octavo checklist words it (for example 62_CONFIG_4: MCU_RESETz
-    to VDDSHV_MCU). The link pads double as the rail probe points of 62_ALL_2.
+  * Every VDDSHV bank is fed straight from VCC_3V3_SYS or VDD_1V8. The 0R links R303-R310
+    were dropped on 2026-11-10, so the bank names (VDDSHV0 ... VDDSHV_CANUART) are merged into
+    those rails by schgen.MERGED_NETS. The sheets still name the bank behind each pull-up, as
+    the Octavo checklist words it (for example 62_CONFIG_4: MCU_RESETz to VDDSHV_MCU).
+    VDDR_CORE likewise joins VDD_CORE directly (R300 dropped).
   * VDDSHV_CANUART stays on the switched 3.3 V rail: no Partial-IO, so AM625 DS Table 6-5
     note 3 asks only for a valid IO source that ramps with the other 3.3 V supplies. An
     always-on feed (as on the SK) would also need an always-on VDD_CANUART, because rails
@@ -40,7 +41,6 @@ C100N = "100nF 16V X7R 0402"
 C1U = "1uF 10V X5R 0402"
 C4U7 = "4.7uF 10V X5R 0402"
 C10U = "10uF 10V X5R 0603"
-R0_P = {"MPN": "0402WGF0000TCE", "Manufacturer": "UNI-ROYAL", "LCSC": "C17168"}
 BEAD_A = "BLM15PX121SN1D 120R@100MHz 2A"
 BEAD_C = "BLM18SG260TN1D 26R@100MHz 6A"
 
@@ -93,7 +93,6 @@ def build(sch_dir: str) -> Sheet:
 
     # ---- feed links and beads -------------------------------------------
     sh.column(3000, 15400, [
-        ("R300", RES, "VDD_CORE_0V85", "VDDR_CORE_0V85", "0R 0603 (VDDR_CORE from VDD_CORE)"),
         ("FB300", FB, "VDD_CORE_0V85", "VDDA_CORE_USB_0V85", BEAD_C),
         ("FB301", FB, "VDD_CORE_0V85", "VDDA_CORE_CSI_0V85", BEAD_C),
         ("FB302", FB, "DDR4_VPP_2V5", "DDR4_VPP_2V5_SIP", BEAD_A),
@@ -107,17 +106,9 @@ def build(sch_dir: str) -> Sheet:
         ("FB310", FB, "VDDA_1V8", "VDDS_OSC0_1V8", BEAD_A + " (VDDS_OSC0, 25 MHz osc, PORz gate)"),
     ])
 
-    # ---- IO-domain rails: one named net per VDDSHV bank (see the module docstring) ----
-    sh.note(6200, 9900, "IO-domain rails: pull-ups go to the net of the bank that powers the ball.")
+    # ---- IO-domain rails: each VDDSHV bank is VCC_3V3_SYS or VDD_1V8 (see the module docstring) ----
+    sh.note(6200, 9900, "IO banks: VDDSHV0/2/3/MCU/CANUART = VCC_3V3_SYS, VDDSHV1/4/6 = VDD_1V8 (no links).")
     sh.column(8500, 9500, [
-        ("R303", RES, "VCC_3V3_SYS", "VDDSHV0", "0R 0402 (UART0/1, I2C0/1, resets, SDCD)", R0_P),
-        ("R304", RES, "VDD_1V8", "VDDSHV1", "0R 0402 (OSPI balls: BT UART, eMMC GPIO)", R0_P),
-        ("R305", RES, "VCC_3V3_SYS", "VDDSHV2", "0R 0402 (RGMII, MDIO, PHY VDDIO)", R0_P),
-        ("R306", RES, "VCC_3V3_SYS", "VDDSHV3", "0R 0402 (DPI, GPMC, BOOTMODE)", R0_P),
-        ("R307", RES, "VDD_1V8", "VDDSHV4", "0R 0402 (MMC0, eMMC VCCQ)", R0_P),
-        ("R308", RES, "VDD_1V8", "VDDSHV6", "0R 0402 (MMC2, M.2 SDIO)", R0_P),
-        ("R309", RES, "VCC_3V3_SYS", "VDDSHV_MCU", "0R 0402 (MCU_RESETz, JTAG, MCU/WKUP_I2C0)", R0_P),
-        ("R310", RES, "VCC_3V3_SYS", "VDDSHV_CANUART", "0R 0402 (MCU/WKUP_UART0, PMIC_LPM_EN0)", R0_P),
         ("FB311", FB, "VCC_3V3_SYS", "VDDA_3P3_USB", BEAD_A + " (62_POWER_4 group 5)"),
     ])
 

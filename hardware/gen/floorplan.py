@@ -160,7 +160,7 @@ TO_USBC = {"D900", "L900", "R900", "R901", "R902", "R903", "R904", "R905", "D901
 TO_BOOT = {"R1607", "R1608", "R1609", "R1610"}
 TO_BUTTON = {"U602", "C606", "C607", "D600", "D601", "R607", "R608", "D200", "R200"}
 TO_EMMC = {f"C{n}" for n in range(700, 706)} | {f"R{n}" for n in range(700, 714)} | {"U703"}
-TO_SDIO = {"R1300", "R1301", "R1302", "R1303", "R1304"}
+TO_SDIO = set()     # the SDIO series links R1300-R1304 were dropped on 2026-11-10
 
 
 def function_of(parts):
@@ -672,11 +672,9 @@ def named(parts, nets, place):
         pa, pb = pads_on(parts, a, net, place), pads_on(parts, b, net, place)
         return min(math.hypot(x[0] - y[0], x[1] - y[1]) for x in pa for y in pb)
 
-    out = {"C602 to Y600": between("C602", "LFOSC_XI", "Y600"), "R602 to Y600": between("R602", "LFOSC_XO_X", "Y600"),
-           "R602 to ball H2": between("R602", "LFOSC_XO", "U1"), "C339 to ball N7": between("C339", "VDDA_3P3_USB", "U1")}
-    series = [between(f"R130{i}", n, "U1") for i, n in enumerate(("WL_SDIO_CMD", "WL_SDIO_D0", "WL_SDIO_D1", "WL_SDIO_D2", "WL_SDIO_D3"))]
-    out["R1300-R1304 to balls"] = (min(series), max(series))
-    return out
+    # R602 (crystal Rd) and R1300-R1304 (SDIO series) were 0R links, dropped on 2026-11-10
+    return {"C602 to Y600": between("C602", "LFOSC_XI", "Y600"), "Y600 to ball H2": between("Y600", "LFOSC_XO", "U1"),
+            "C339 to ball N7": between("C339", "VDDA_3P3_USB", "U1")}
 
 
 def checks(parts, plan):

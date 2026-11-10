@@ -143,7 +143,6 @@ def build(sch_dir: str) -> Sheet:
         ("R727", RES, "VDDSHV5_SD", "SD_D3", "47k 0402"),
         ("R728", RES, "VDDSHV5_SD", "SD_SOCK_CLK", "47k 0402 (DNP)", DNP),
         ("R732", RES, "SD_SOCK_CLK", "GND", "10k 0402 (CLK pull-down, Octavo 62_SD_10)"),
-        ("R729", RES, "SD_CLK", "SD_SOCK_CLK", "0R 0402 (at SoC; 22R option)"),
         ("R730", RES, "SD_SOCK_CD_N", "SD_CD_N", "100R 0402 (SDCD series)"),
         ("R731", RES, "VDDSHV0", "SD_SOCK_CD_N", "47k 0402 (SDCD pull-up)"),
     ])
@@ -175,7 +174,7 @@ def build(sch_dir: str) -> Sheet:
         "SD_CD_N: 100R series + 47k to VDDSHV0 (Octavo 62_SD_7); card present = LOW.",
         "  Verify on a TF-01A sample that the Cd spring closes to the shell on insertion.",
         "ESD U701/U702 at the socket, flow-through: pads 6/7/9/10 carry the channel facing them (1-10, 2-9, 4-7, 5-6).",
-        "SD CLK: R729 0R at the SoC, R732 10k pull-down (Octavo 62_SD_10), R728 pull-up DNP (SK).",
+        "SD CLK: straight from the SoC (no series link), R732 10k pull-down (Octavo 62_SD_10), R728 pull-up DNP (SK).",
     ]):
         sh.note(nx, ny - i * 200, t)
     return sh

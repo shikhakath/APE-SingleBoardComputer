@@ -21,7 +21,7 @@ near B 58,62 R202
 near T U200.17 R205
 near T U200.18 R201
 near T U200.28 R209
-near T U200.31 R207
+# (0R links dropped 2026-11-10) near T U200.31 R207
 near B 44.5,57 R210 R208
 near B U200.28 TP200
 near B U200.31 TP201

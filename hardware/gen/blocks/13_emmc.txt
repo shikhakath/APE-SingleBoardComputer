@@ -14,4 +14,4 @@ near B J700.8 R712
 near B J700.12 R711
 near B J700.15 R713
 at B 0 29.5 60.2 U703
-near B C705.1 R307
+# (0R links dropped 2026-11-10) near B C705.1 R307

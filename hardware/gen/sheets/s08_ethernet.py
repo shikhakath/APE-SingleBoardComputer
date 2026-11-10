@@ -135,7 +135,6 @@ def build(sch_dir: str) -> Sheet:
         ("R840", RES, "PHY_LED0", "ETH_LED_GRN", "470R 0402 (green = LED_0 link)"),
         ("R841", RES, "PHY_LED1", "ETH_LED_YEL", "470R 0402 (yellow = LED_1 1000M)"),
         ("C830", CAP, "ETH_MDI_CT", "GND", C100N + " (centre tap)"),
-        ("R842", RES, "ETH_SHIELD", "GND", "0R 0603 (shield/Bob-Smith to GND)"),
         ("C831", CAP, "ETH_SHIELD", "GND", "1nF 2kV X7R 1206 (DNP, AC-coupled shield option)", DNP),
     ])
 
@@ -169,8 +168,8 @@ def build(sch_dir: str) -> Sheet:
         "VDDA1P8 (13, 48): no connection (two-supply mode). RBIAS 11k 1% (C802 DNP per SK).",
         "Crystal CL 12 pF: 15 pF caps assume 4.5 pF stray; 18 pF if the PCB is tighter.",
         "MDI: 100R differential pairs, no termination or CT bias (voltage-mode PHY).",
-        "Shield: tabs + Bob-Smith P10 -> ETH_SHIELD -> R842 0R to GND (board has one GND).",
-        "  For a chassis-earth product fit C831 1nF/2kV instead of R842.",
+        "Shield: tabs + Bob-Smith P10 straight to GND (board has one GND; the R842 0R link was dropped).",
+        "  C831 now has GND on both pins: a chassis-earth product needs ETH_SHIELD split from GND again.",
         "VDDA_2V5_PHY total C 12.2 uF behind FB800; LDO4 rail budget <= 30 uF (sheet 02).",
     ]
     for i, t in enumerate(notes):

@@ -1,5 +1,5 @@
 # microSD, top side south of the socket
-at T 0 56.2 51.6 R729
+# (0R links dropped 2026-11-10) at T 0 56.2 51.6 R729
 at T 90 85 61.5 U701
 at T 270 79.6 61.5 U702
 near T J702.1 R726
@@ -21,7 +21,7 @@ near T U700.4 R722
 near T U1.T23 R720
 
 # M.2 SDIO series at the balls, in the order of the socket pins, so the lines fan out towards J1300 without crossing
-row B 90 54.1 50 1.32 0 R1321 R1300 R1301 R1302 R1303 R1304
+# (0R links dropped 2026-11-10) row B 90 54.1 50 1.32 0 R1321 R1300 R1301 R1302 R1303 R1304
 
 # M.2 parts, back side west of the socket and at its pins
 near B J1300.11 R1305
@@ -30,14 +30,14 @@ near B J1300.15 R1307
 near B J1300.17 R1308
 near B J1300.19 R1309
 near B J1300.21 R1311
-near B J1300.56 R1312 R1313
-near B J1300.62 R1314
+near B J1300.56 R1312
+# (0R links dropped 2026-11-10) near B J1300.62 R1314
 near B J1300.54 R1315
 near B J1300.32 R1316
 near B J1300.20 R1317 TP1300
-near B J1300.50 R1318
+# (0R links dropped 2026-11-10) near B J1300.50 R1318
 near B J1300.18 R1319 TP1301
-near B J1300.64 R1320 C1305
+near B J1300.64 C1305
 near B J1300.2 C1302 C1301
 near B J1300.72 C1304
 

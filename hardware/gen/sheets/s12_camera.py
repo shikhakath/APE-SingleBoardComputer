@@ -38,7 +38,7 @@ def build(sch_dir: str) -> Sheet:
         ("R1200", RES, "VDDSHV3", "CAM_I2C_SCL", "2.2k 0402 (I2C2 pull-up)"),
         ("R1201", RES, "VDDSHV3", "CAM_I2C_SDA", "2.2k 0402 (I2C2 pull-up)"),
         ("R1202", RES, "CAM_IO0", "GND", "10k 0402 (camera off in reset)"),
-        ("R1203", RES, "CAM_IO1", "CAM_FPC_IO1", "0R 0402 DNP (fit for camera LED control)", {"DNP": "1"}),
+        # R1203 (CAM_IO1 to the camera LED pin, DNP 0R) dropped: CAM_FPC_IO1 is left open
     ], pitch=300)
 
     notes = [

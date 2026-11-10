@@ -34,7 +34,6 @@ C22U = "22uF 25V X5R 0805"
 DNP = {"DNP": "1"}
 P_C100N = {"MPN": "CL05B104KO5NNNC", "Manufacturer": "Samsung", "LCSC": "C1525"}
 P_C22U = {"MPN": "CL21A226MAQNNNE", "Manufacturer": "Samsung", "LCSC": "C45783"}
-P_R0 = {"MPN": "0402WGF0000TCE", "Manufacturer": "UNI-ROYAL", "LCSC": "C17168"}
 P_R47K = {"MPN": "0402WGF4702TCE", "Manufacturer": "UNI-ROYAL", "LCSC": "C25792"}
 P_R10K = {"MPN": "0402WGF1002TCE", "Manufacturer": "UNI-ROYAL", "LCSC": "C25744"}
 
@@ -64,19 +63,11 @@ def build(sch_dir: str) -> Sheet:
     sh.note(8300, 16300, "M.2 2230 Key-E socket for TI M2-CC3351 (SDIO Wi-Fi 6 + UART BLE). Pin names = card view (M.2 Rev 5.0 Table 3-12).")
     sh.note(8300, 16100, "Pin 22 UART_TXD is the card output -> SoC RXD; pin 32 UART_RXD is the card input <- SoC TXD (TI SWAU133, SK p.19).")
 
-    # ---- SDIO: optional series links at the SoC, 47k pull-ups at the socket ----
-    # R1321 on CLK: Octavo OSD62x-PM checklist 62_SD_9 and SK p.20 ("0E provision
-    # on MMC2_CLK") - the clock is the line that most needs the series option.
-    sh.column(5300, 15800, [
-        ("R1321", RES, "WL_SDIO_CLK", "M2_SDIO_CLK", "0R 0402 (CLK series option, place at SoC; 22R)", P_R0),
-    ] + [
-        (f"R{1300 + i}", RES, f"WL_SDIO_{s}", f"M2_SDIO_{s}", "0R 0402 (series option, place at SoC)", P_R0)
-        for i, s in enumerate(SDIO)
-    ] + [
-        ("R1313", RES, "WLAN_EN", "M2_SDIO_RESET_N", "0R 0402 (also drive SDIO_RESET#, card R9 option)", P_R0),
-        ("R1314", RES, "M2_ALERT_N", "WLAN_IRQ", "0R 0402 DNP (card R10 option: IRQ on ALERT#)",
-         {"DNP": "1", **P_R0}),
-    ])
+    # ---- SDIO: straight from the SoC to the socket, 47k pull-ups at the socket ----
+    # The 0R links were dropped on 2026-11-10 (schgen.MERGED_NETS): R1321 (CLK, Octavo 62_SD_9 /
+    # SK p.20 "0E provision on MMC2_CLK") and R1300-R1304 (CMD, D0-D3), so the M2_SDIO_* pins
+    # below are on the WL_SDIO_* nets; R1313 (WLAN_EN also on SDIO_RESET#) is now a direct
+    # connection; R1314 (DNP, IRQ on ALERT#) is gone and ALERT# is left open.
     sh.column(2200, 15400, [
         (f"R{1305 + i}", RES, "VDDSHV6", f"M2_SDIO_{s}", "47k 0402 (SDIO pull-up)", P_R47K)
         for i, s in enumerate(SDIO)
@@ -88,16 +79,15 @@ def build(sch_dir: str) -> Sheet:
     sh.note(1000, 11600, "WLAN_EN -> W_DISABLE1# = card HOST_nRESET. The card pulls it to its 1.8 V with 10k into an LVC1G17;")
     sh.note(1000, 11400, "2.2k keeps the node at 0.33 V (< VT- min) while the SoC pads are off, so the card stays in reset.")
     sh.note(1000, 11200, "SDIO 1.8 V (VDDSHV6): 50 Ohm single-ended, CLK-to-data mismatch per AM62x MMC2 limits (8 ps HS/SDR104).")
-    sh.note(1000, 11000, "R1321 (CLK) and R1300-R1304 at the SoC balls: 0R fitted, 22R option after SI check (Octavo 62_SD_9).")
+    sh.note(1000, 11000, "No series links on SDIO (0R links dropped 2026-11-10): no 22R option. WLAN_EN also drives SDIO_RESET#.")
 
     # ---- UART, wake, slow clock, sideband ----
     sh.column(15000, 15400, [
         ("R1316", RES, "BT_UART_TXD", "M2_UART_RXD", "33R 0402 (SK R24)"),
         ("R1315", RES, "BT_EN", "GND", "10k 0402 (W_DISABLE2#: BT off by default)", P_R10K),
         ("R1317", RES, "VDD_1V8", "M2_UART_WAKE_N", "10k 0402 (card IRQ_BLE open drain)", P_R10K),
-        ("R1318", RES, "M2_SUSCLK_32K", "M2_SUSCLK", "0R 0402 (SK R7)", P_R0),
         ("R1319", RES, "VDD_1V8", "M2_VIO_CFG", "100k 0402 (VIO_CFG weak pull-up, M.2 3.1.15)"),
-        ("R1320", RES, "VDD_1V8", "VDD_1V8_M2", "0R 0402 (VIO 1.8 V supply, M.2 3.1.1)", P_R0),
+        # SUSCLK (R1318, SK R7) and VIO 1.8 V (R1320, M.2 3.1.1) were 0R links: now direct
         ("C1305", CAP, "VDD_1V8_M2", "GND", C100N + " (pin 64)", P_C100N),
         # Octavo checklist 62_UART_2: pull-up on the SoC UART RX input (and CTS) so
         # they do not float when no card is fitted or the card is unpowered.

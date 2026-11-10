@@ -360,6 +360,205 @@ begin
     Board.BoardIterator_Destroy(It);
 end;
 
+// ------------------------------------------------------------- MergeNets
+// ape_merge.txt: the board's path, then old|new per line. Every pad, track, arc, via, fill, region and polygon on net
+// old moves to net new (which must exist), then net old is removed. Used before an ECO that merges nets, so routed
+// copper keeps a net instead of going to No Net. Nothing moves, nothing is repoured and nothing is saved.
+procedure MergeNets;
+var
+    Spec : TStringList;
+    Path, OldName, NewName : String;
+    Board : IPCB_Board;
+    Doc : IServerDocument;
+    It : IPCB_BoardIterator;
+    Obj, NewNet, OldNet : IDispatch;
+    Moved, Gone : TInterfaceList;
+    i, k, Total, Missing : Integer;
+begin
+    LogLines := TStringList.Create;
+    PlaceLog('MergeNets start');
+    Spec := TStringList.Create;
+    Spec.LoadFromFile(BRIDGE + 'ape_merge.txt');
+    Path := Trim(Spec[0]);
+    Doc := OpenDoc(Path);
+    Client.ShowDocument(Doc);
+    Board := PCBServer.GetPCBBoardByPath(Path);
+    Total := 0;
+    Missing := 0;
+    Gone := TInterfaceList.Create;
+    for k := 1 to Spec.Count - 1 do
+    begin
+        OldName := Field(Trim(Spec[k]), 0);
+        NewName := Field(Trim(Spec[k]), 1);
+        NewNet := nil;
+        if (OldName <> '') and (NewName <> '') then NewNet := NetByName(Board, NewName);
+        if (NewNet = nil) then
+        begin
+            if (OldName <> '') then Missing := Missing + 1;
+        end
+        else
+        begin
+            Moved := TInterfaceList.Create;
+            It := Board.BoardIterator_Create;
+            It.AddFilter_ObjectSet(MkSet(ePadObject, eTrackObject, eArcObject, eViaObject, eFillObject, eRegionObject, ePolyObject));
+            It.AddFilter_LayerSet(AllLayers);
+            It.AddFilter_Method(eProcessAll);
+            Obj := It.FirstPCBObject;
+            while (Obj <> nil) do
+            begin
+                if (Obj.Net <> nil) then
+                    if (Obj.Net.Name = OldName) then Moved.Add(Obj);
+                Obj := It.NextPCBObject;
+            end;
+            Board.BoardIterator_Destroy(It);
+            PCBServer.PreProcess;
+            for i := 0 to Moved.Count - 1 do
+                Moved.Items[i].Net := NewNet;
+            PCBServer.PostProcess;
+            Total := Total + Moved.Count;
+            OldNet := NetByName(Board, OldName);
+            if (OldNet <> nil) then Gone.Add(OldNet);
+            PlaceLog(OldName + ' -> ' + NewName + ': ' + IntToStr(Moved.Count));
+        end;
+    end;
+    PCBServer.PreProcess;
+    for i := 0 to Gone.Count - 1 do
+        Board.RemovePCBObject(Gone.Items[i]);
+    PCBServer.PostProcess;
+    Board.ViewManager_FullUpdate;
+    Doc.Modified := True;
+    PlaceFinish('{"success": true, "objects": ' + IntToStr(Total) + ', "nets_removed": ' + IntToStr(Gone.Count) +
+                ', "missing_targets": ' + IntToStr(Missing) + '}');
+end;
+
+// ------------------------------------------------------------- SetNets
+// ape_setnets.txt: the board's path, then TRK|layer|x1|y1|x2|y2|net, VIA|x|y|net and ARC|layer|xc|yc|r|net (free copper, matched exactly,
+// coordinates from the board origin). Gives each listed object that net. Nothing moves and nothing is saved.
+procedure SetNets;
+var
+    Spec, Keys : TStringList;
+    Path, Key : String;
+    Board : IPCB_Board;
+    Doc : IServerDocument;
+    It : IPCB_BoardIterator;
+    Obj, Net : IDispatch;
+    i, k, X0, Y0, Done, Missing : Integer;
+begin
+    LogLines := TStringList.Create;
+    PlaceLog('SetNets start');
+    Spec := TStringList.Create;
+    Spec.LoadFromFile(BRIDGE + 'ape_setnets.txt');
+    Path := Trim(Spec[0]);
+    Doc := OpenDoc(Path);
+    Client.ShowDocument(Doc);
+    Board := PCBServer.GetPCBBoardByPath(Path);
+    X0 := Board.XOrigin;
+    Y0 := Board.YOrigin;
+    Keys := TStringList.Create;
+    for i := 1 to Spec.Count - 1 do
+        if (Trim(Spec[i]) <> '') then Keys.Add(Trim(Spec[i]));
+    Done := 0;
+    Missing := 0;
+    PCBServer.PreProcess;
+    It := Board.BoardIterator_Create;
+    It.AddFilter_ObjectSet(MkSet(eViaObject, eTrackObject, eArcObject));
+    It.AddFilter_LayerSet(AllLayers);
+    It.AddFilter_Method(eProcessAll);
+    Obj := It.FirstPCBObject;
+    while (Obj <> nil) do
+    begin
+        if (not Obj.InComponent) and (not Obj.InPolygon) then
+        begin
+            if (Obj.ObjectId = eViaObject) then
+                Key := 'VIA|' + IntToStr(Obj.x - X0) + '|' + IntToStr(Obj.y - Y0)
+            else if (Obj.ObjectId = eArcObject) then
+                Key := 'ARC|' + IntToStr(Obj.Layer) + '|' + IntToStr(Obj.XCenter - X0) + '|' + IntToStr(Obj.YCenter - Y0) +
+                       '|' + IntToStr(Obj.Radius)
+            else
+                Key := 'TRK|' + IntToStr(Obj.Layer) + '|' + IntToStr(Obj.x1 - X0) + '|' + IntToStr(Obj.y1 - Y0) +
+                       '|' + IntToStr(Obj.x2 - X0) + '|' + IntToStr(Obj.y2 - Y0);
+            for k := 0 to Keys.Count - 1 do
+                if (Copy(Keys[k], 1, Length(Key) + 1) = Key + '|') then
+                begin
+                    Net := NetByName(Board, Copy(Keys[k], Length(Key) + 2, Length(Keys[k])));
+                    if (Net <> nil) then
+                    begin
+                        // Obj.Net := Net alone shows in Altium but is saved as No Net: the net has to hold the object
+                        PCBServer.SendMessageToRobots(Obj.I_ObjectAddress, c_Broadcast, PCBM_BeginModify, c_NoEventData);
+                        Net.AddPCBObject(Obj);
+                        PCBServer.SendMessageToRobots(Obj.I_ObjectAddress, c_Broadcast, PCBM_EndModify, c_NoEventData);
+                        Done := Done + 1;
+                    end
+                    else
+                        Missing := Missing + 1;
+                end;
+        end;
+        Obj := It.NextPCBObject;
+    end;
+    Board.BoardIterator_Destroy(It);
+    PCBServer.PostProcess;
+    Board.ViewManager_FullUpdate;
+    Doc.Modified := True;
+    PlaceLog('set ' + IntToStr(Done) + ' of ' + IntToStr(Keys.Count));
+    PlaceFinish('{"success": true, "listed": ' + IntToStr(Keys.Count) + ', "set": ' + IntToStr(Done) +
+                ', "missing_nets": ' + IntToStr(Missing) + '}');
+end;
+
+// ------------------------------------------------------------- AddTracks
+// ape_addtracks.txt: the board's path, then ADD|TRK|layer|x1|y1|x2|y2|width|net (coordinates from the board origin).
+// Adds the tracks and nothing else: no polygon is repoured and nothing is saved.
+procedure AddTracks;
+var
+    Spec : TStringList;
+    Path, Rec : String;
+    Board : IPCB_Board;
+    Doc : IServerDocument;
+    Net : IDispatch;
+    Trk : IPCB_Track;
+    i, X0, Y0, Tracks, Missing : Integer;
+begin
+    LogLines := TStringList.Create;
+    PlaceLog('AddTracks start');
+    Spec := TStringList.Create;
+    Spec.LoadFromFile(BRIDGE + 'ape_addtracks.txt');
+    Path := Trim(Spec[0]);
+    Doc := OpenDoc(Path);
+    Client.ShowDocument(Doc);
+    Board := PCBServer.GetPCBBoardByPath(Path);
+    X0 := Board.XOrigin;
+    Y0 := Board.YOrigin;
+    Tracks := 0;
+    Missing := 0;
+    PCBServer.PreProcess;
+    for i := 1 to Spec.Count - 1 do
+    begin
+        Rec := Trim(Spec[i]);
+        if (Field(Rec, 0) = 'ADD') and (Field(Rec, 1) = 'TRK') then
+        begin
+            Net := NetByName(Board, Field(Rec, 8));
+            if (Net = nil) then
+                Missing := Missing + 1
+            else
+            begin
+                Trk := PCBServer.PCBObjectFactory(eTrackObject, eNoDimension, eCreate_Default);
+                Trk.Layer := StrToInt(Field(Rec, 2));
+                Trk.x1 := X0 + StrToInt(Field(Rec, 3));
+                Trk.y1 := Y0 + StrToInt(Field(Rec, 4));
+                Trk.x2 := X0 + StrToInt(Field(Rec, 5));
+                Trk.y2 := Y0 + StrToInt(Field(Rec, 6));
+                Trk.Width := StrToInt(Field(Rec, 7));
+                Trk.Net := Net;
+                Board.AddPCBObject(Trk);
+                Tracks := Tracks + 1;
+            end;
+        end;
+    end;
+    PCBServer.PostProcess;
+    Board.ViewManager_FullUpdate;
+    Doc.Modified := True;
+    PlaceFinish('{"success": true, "tracks": ' + IntToStr(Tracks) + ', "missing_nets": ' + IntToStr(Missing) + '}');
+end;
+
 // ------------------------------------------------------------- ApplyChange
 // ape_change.txt: the board's path, then DEL|TRK|layer|x1|y1|x2|y2 and DEL|VIA|x|y (free copper, matched exactly), then
 // ADD|VIA|x|y|hole|dia|net and ADD|TRK|layer|x1|y1|x2|y2|width|net. Coordinates from the board origin. Rebuilds every

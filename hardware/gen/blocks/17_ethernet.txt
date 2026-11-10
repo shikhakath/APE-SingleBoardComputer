@@ -35,5 +35,5 @@ near T U800.47 R840
 
 # RJ45
 near T J800.1 C830
-near T J800.15 R842
+# (0R links dropped 2026-11-10) near T J800.15 R842
 near T J800.16 C831

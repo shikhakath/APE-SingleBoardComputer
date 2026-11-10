@@ -6,7 +6,7 @@ References:
     headphones), section 12 (supply sequencing), 10.5.1 (I2C address 0x18)
   * TI SK-AM62B-P1 PROC142B p.42 (AIC3106 hookup: 47 uF HP caps, 2.2k MICBIAS,
     0.47 uF mic cap, MCLK 10k pull-down D-note, reset pull-down) and p.44 (47R I2C series)
-  * SJK 3N12288G33YC spec (pad 1 OE high/open = run), Hroparts PJ-320DB drawing
+  * KYOCERA MC-Z series sheet (MC3225Z: pad 1 stand-by, open/H = active), Hroparts PJ-320DB drawing
   * docs/research/bom/hdmi-audio-camera-wireless-expansion.md section 2
 
 MCLK: the oscillator Y1100 is the only driver of AUD_MCLK. It clocks the codec and
@@ -100,9 +100,13 @@ def build(sch_dir: str) -> Sheet:
     ], pitch=300)
 
     # ---- 12.288 MHz MCLK oscillator ---------------------------------------------
+    # Fitted part: KYOCERA AVX MC3225Z12.2880C19XSH (MC-Z, 3.2 x 2.5 mm, 1.71-3.63 V,
+    # +/-30 ppm, -40..125 C), Digi-Key. Pads: 1 stand-by (open/H = active, L = Hi-Z),
+    # 2 GND, 3 OUT, 4 VCC, same corners as the SJK part; R1106 keeps pad 1 high.
     sh.add("Y1100", OSC_3225, 3000, 10500, {
         "4": "VCC_3V3_SYS", "1": "AUD_OSC_OE", "2": "GND", "3": "AUD_MCLK_OSC",
-    }, comment="3N12288G33YC 12.288MHz", MPN="3N12288G33YC", Manufacturer="SJK")
+    }, comment="MC3225Z12.2880C19XSH 12.288MHz", MPN="MC3225Z12.2880C19XSH", Manufacturer="KYOCERA AVX",
+        Supplier="Digi-Key MC3225Z12.2880C19XSH")
     sh.column(7600, 10400, [
         ("R1104", RES, "AUD_MCLK_OSC", "AUD_MCLK", "22R 0402 (source series, at Y1100)"),
         ("R1106", RES, "VCC_3V3_SYS", "AUD_OSC_OE", "10k 0402 (OE high = run, SK R425)"),

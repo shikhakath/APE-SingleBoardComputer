@@ -173,6 +173,37 @@ def two_pin(name, description, graphics, prefix, pin_names=("1", "2"), kind="pas
 
 # ---------------------------------------------------------------- sheets
 
+# Every 0R link was dropped on 2026-11-10 (DNP ones simply removed). A fitted link joined two nets, which are one net now:
+# old name -> the name kept. Applied to every pin as it is placed, so the sheets can still say the old name.
+MERGED_NETS = {
+    "LM_RBOOT": "LM_CBOOT",                 # R116, buck boot resistor
+    "VDDR_CORE_0V85": "VDD_CORE_0V85",      # R300
+    "VDDSHV0": "VCC_3V3_SYS",               # R303-R310: the IO-bank rail links
+    "VDDSHV1": "VDD_1V8",
+    "VDDSHV2": "VCC_3V3_SYS",
+    "VDDSHV3": "VCC_3V3_SYS",
+    "VDDSHV4": "VDD_1V8",
+    "VDDSHV6": "VDD_1V8",
+    "VDDSHV_MCU": "VCC_3V3_SYS",
+    "VDDSHV_CANUART": "VCC_3V3_SYS",
+    "LFOSC_XO_X": "LFOSC_XO",               # R602, crystal Rd
+    "SD_SOCK_CLK": "SD_CLK",                # R729
+    "ETH_SHIELD": "GND",                    # R842
+    "USBA_SHIELD": "GND",                   # R918
+    "M2_SDIO_CLK": "WL_SDIO_CLK",           # R1321, R1300-R1304: SDIO series links
+    "M2_SDIO_CMD": "WL_SDIO_CMD",
+    "M2_SDIO_D0": "WL_SDIO_D0",
+    "M2_SDIO_D1": "WL_SDIO_D1",
+    "M2_SDIO_D2": "WL_SDIO_D2",
+    "M2_SDIO_D3": "WL_SDIO_D3",
+    "M2_SDIO_RESET_N": "WLAN_EN",           # R1313
+    "M2_SUSCLK": "M2_SUSCLK_32K",           # R1318
+    "VDD_1V8_M2": "VDD_1V8",                # R1320
+    "DBG_USB_SHIELD": "GND",                # R1502
+    "DBG_BUF_OE_N": "FT_PWREN_N",           # R1530
+}
+
+
 @dataclass
 class Placed:
     designator: str
@@ -200,6 +231,7 @@ class Sheet:
         missing = [n for n in nets if n not in {p.number for p in symbol.pins}]
         if missing:
             raise KeyError(f"{designator}: unknown pins {missing}")
+        nets = {num: MERGED_NETS.get(net, net) for num, net in nets.items()}
         self.placed.append(Placed(designator, symbol, part, x, y, dict(nets), comment, params,
                                   footprint))
         self._dy = None

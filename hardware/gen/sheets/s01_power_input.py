@@ -163,7 +163,7 @@ def build(sch_dir: str) -> Sheet:
         ("C113", CAP, "LM_VCC", "GND", C1U_25 + " (VCC)"),
         ("C114", CAP, "VCC_3V3_MAIN", "GND", C100N_16 + " (at BIAS pin)"),
         ("C115", CAP, "LM_SW", "LM_CBOOT", C100N_16 + " (CBOOT)"),
-        ("R116", RES, "LM_RBOOT", "LM_CBOOT", "0R 0402 (RBOOT; 100R option for EMI)"),
+        # RBOOT (pin 13) joins CBOOT directly: the 0R link R116 was dropped (schgen.MERGED_NETS)
     ])
     sh.column(10300, 10800, [
         ("L100", IND, "LM_SW", "VCC_3V3_MAIN", "4.7uH MWSA0603S-4R7MT (Isat 9A, 33mOhm)",

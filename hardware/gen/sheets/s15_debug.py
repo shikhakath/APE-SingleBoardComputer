@@ -55,7 +55,6 @@ def build(sch_dir: str) -> Sheet:
     sh.column(5900, 20400, [
         ("R1500", RES, "DBG_USB_CC1", "GND", "5.1k 1% 0402 (Rd, UFP)"),
         ("R1501", RES, "DBG_USB_CC2", "GND", "5.1k 1% 0402 (Rd, UFP)"),
-        ("R1502", RES, "DBG_USB_SHIELD", "GND", "0R 0402 (shield link)"),
         ("D1500", TVS_BI, "VBUS_DBG", "GND", "TPD1E10B06DPYR",
          {"MPN": "TPD1E10B06DPYR", "Manufacturer": "Texas Instruments"}),
         ("C1500", CAP, "VBUS_DBG", "GND", "4.7uF 10V X5R 0603 (VBUS; total <= 10uF)"),
@@ -124,17 +123,17 @@ def build(sch_dir: str) -> Sheet:
         ("R1503", RES, "FT_REF", "GND", "12k 1% 0402 (REF)"),
         ("R1504", RES, "VCC_3V3_DBG", "FT_RESET_N", "1k 1% 0402 (RESET# pull-up)"),
         ("R1505", RES, "VCC_3V3_DBG", "DBG_BUF_OE_N", "10k 1% 0402 (OE# pull-up)"),
-        # PWREN# is a driven output (high until configured / in suspend): the always-on
-        # option must open R1530 first, or R1506 would short PWREN# high to GND.
-        ("R1530", RES, "FT_PWREN_N", "DBG_BUF_OE_N", "0R 0402 (PWREN# to OE#; remove for always-on)"),
-        ("R1506", RES, "DBG_BUF_OE_N", "GND", "0R 0402 DNP (OE# always on; only with R1530 removed)",
-         {"DNP": "1"}),
+        # OE# is PWREN# directly: the 0R link R1530 and the DNP always-on link R1506 were dropped
         ("C1519", CAP, "FT_OSCI", "GND", "33pF 50V C0G 0402 (CL 20pF crystal)"),
         ("C1520", CAP, "FT_OSCO", "GND", "33pF 50V C0G 0402 (CL 20pF crystal)"),
     ])
+    # Fitted crystal: Diodes FL1200074 (12 MHz 20 pF, +/-20 ppm tol / +/-20 ppm stab,
+    # -40..85 C, 3.2 x 2.5 mm), Digi-Key; pins 1/3 Xtal, 2/4 Case as the YXC part, so
+    # the symbol, XTAL_3225_4P and the 33 pF load caps (CL 20 pF) stay.
     sh.add("Y1500", X322512MSB4SI, 11800, 14400, {
         "1": "FT_OSCI", "2": "GND", "3": "FT_OSCO", "4": "GND",
-    }, comment="12MHz X322512MSB4SI", MPN="X322512MSB4SI", Manufacturer="YXC")
+    }, comment="12MHz FL1200074", MPN="FL1200074", Manufacturer="Diodes Incorporated",
+        Supplier="Digi-Key FL1200074")
     sh.note(13000, 21500, "FT4232HL per FTDI DS_FT4232H Fig 6.1 (bus powered): 1.8 V core from its own "
                           "VREGOUT, VPHY/VPLL through 120R beads.")
     sh.note(13000, 21300, "Unused xDBUS2-7 (RTS/CTS/DTR/DSR/DCD/RI) and SUSPEND# stay open as in Fig 6.1 "
@@ -186,7 +185,7 @@ def build(sch_dir: str) -> Sheet:
     sh.note(20000, 15400, "so a powered debug cable never drives an unpowered SoC pad and vice versa. "
                           "OE# = FT4232 PWREN#: high (Hi-Z) until the host configures the FT4232,")
     sh.note(20000, 15200, "and pulled up to VCCA by R1505 during cable plug-in. B outputs swing to VCCB, "
-                          "the same rail as the SoC pads. Always-on: remove R1530, fit R1506.")
+                          "the same rail as the SoC pads. No always-on option (0R links dropped).")
 
     # ---- JTAG: Tag-Connect TC2070 (TI 14-pin) ------------------------------
     sh.add("J1501", TC2070, 22500, 11500, {
