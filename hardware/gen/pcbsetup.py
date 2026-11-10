@@ -753,6 +753,17 @@ def press_drc_dialog(stop_at=100000, timeout=120):
     user32.SendMessageW(spin[0], 0x000C, 0, ctypes.c_wchar_p(str(stop_at)))     # WM_SETTEXT
     button = build.dialog_buttons(dlg)["Run Design Rule Check..."]
     user32.PostMessageW(user32.GetParent(button), 0x0111, user32.GetDlgCtrlID(button) & 0xFFFF, button)
+    # With a modified (or shelved) polygon on the board Altium then asks "Run DRC / Repour Polygons and Run DRC /
+    # Cancel", and the run waits for ever. Answer Run DRC: the check must not change any copper.
+    start = time.time()
+    while time.time() - start < 60:
+        for h in build.x2_windows("Design Rule Check"):
+            buttons = build.dialog_buttons(h)
+            if "Run DRC" in buttons:
+                b = buttons["Run DRC"]
+                user32.PostMessageW(user32.GetParent(b), 0x0111, user32.GetDlgCtrlID(b) & 0xFFFF, b)
+                return
+        time.sleep(1)
 
 
 def _mil(text):

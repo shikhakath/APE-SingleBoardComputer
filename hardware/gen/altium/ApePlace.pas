@@ -559,6 +559,56 @@ begin
     PlaceFinish('{"success": true, "tracks": ' + IntToStr(Tracks) + ', "missing_nets": ' + IntToStr(Missing) + '}');
 end;
 
+// ------------------------------------------------------------- DeletePolys
+// ape_delpolys.txt: the board's path, then POLY|layer|pour index|net per polygon to delete. Nothing else changes and
+// nothing is saved (ApplyChange after it repours and saves).
+procedure DeletePolys;
+var
+    Spec, Keys : TStringList;
+    Path, Key : String;
+    Board : IPCB_Board;
+    Doc : IServerDocument;
+    It : IPCB_BoardIterator;
+    Obj : IDispatch;
+    DelList : TInterfaceList;
+    i : Integer;
+begin
+    LogLines := TStringList.Create;
+    PlaceLog('DeletePolys start');
+    Spec := TStringList.Create;
+    Spec.LoadFromFile(BRIDGE + 'ape_delpolys.txt');
+    Path := Trim(Spec[0]);
+    Doc := OpenDoc(Path);
+    Client.ShowDocument(Doc);
+    Board := PCBServer.GetPCBBoardByPath(Path);
+    Keys := TStringList.Create;
+    for i := 1 to Spec.Count - 1 do
+        if (Trim(Spec[i]) <> '') then Keys.Add(Trim(Spec[i]));
+    DelList := TInterfaceList.Create;
+    It := Board.BoardIterator_Create;
+    It.AddFilter_ObjectSet(MkSet(ePolyObject));
+    It.AddFilter_LayerSet(AllLayers);
+    It.AddFilter_Method(eProcessAll);
+    Obj := It.FirstPCBObject;
+    while (Obj <> nil) do
+    begin
+        if (Obj.Net <> nil) then
+        begin
+            Key := 'POLY|' + IntToStr(Obj.Layer) + '|' + IntToStr(Obj.PourIndex) + '|' + Obj.Net.Name;
+            if (Keys.IndexOf(Key) >= 0) then DelList.Add(Obj);
+        end;
+        Obj := It.NextPCBObject;
+    end;
+    Board.BoardIterator_Destroy(It);
+    PCBServer.PreProcess;
+    for i := 0 to DelList.Count - 1 do
+        Board.RemovePCBObject(DelList.Items[i]);
+    PCBServer.PostProcess;
+    Board.ViewManager_FullUpdate;
+    Doc.Modified := True;
+    PlaceFinish('{"success": true, "listed": ' + IntToStr(Keys.Count) + ', "deleted": ' + IntToStr(DelList.Count) + '}');
+end;
+
 // ------------------------------------------------------------- ApplyChange
 // ape_change.txt: the board's path, then DEL|TRK|layer|x1|y1|x2|y2 and DEL|VIA|x|y (free copper, matched exactly), then
 // ADD|VIA|x|y|hole|dia|net and ADD|TRK|layer|x1|y1|x2|y2|width|net. Coordinates from the board origin. Rebuilds every
