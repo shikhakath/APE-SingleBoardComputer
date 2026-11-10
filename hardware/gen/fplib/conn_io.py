@@ -35,20 +35,25 @@ def vslot(name, x, y, w, h, hole, length):
 #     front leg 2.60 = 6.78 - 4.18, consistent); rear = -6.78 + 7.35 = +0.57. The
 #     PCB edge is drawn 5.79 below the hole centres (y = -6.29), so the shell
 #     overhangs the board edge by 0.49.
+# Shell slot names: the LCSC/EasyEDA footprint for C165948 (the LCSC "PCB" image)
+# numbers the shell pads 1 rear right, 2 front right, 3 front left, 4 rear left;
+# S1-S4 follow that order (all four are one net on both sheets). Design review
+# 2026-11-09 item: "S1,2,3,4 are mislabeled".
 USB_C = Footprint(
     "USB-C_HRO_TYPE-C-31-M-12",
     "HRO TYPE-C-31-M-12 USB 2.0 Type-C receptacle, SMD + 4 plated shell slots",
     [smd("A1B12", -3.20, 0.57, 0.60, 1.14), smd("A4B9", -2.40, 0.57, 0.60, 1.14)]
     + row(["B8", "A5", "B7", "A6", "A7", "B6", "A8", "B5"], -1.75, 0.57, 0.50, 0, 0.30, 1.14)
     + [smd("B4A9", 2.40, 0.57, 0.60, 1.14), smd("B1A12", 3.20, 0.57, 0.60, 1.14),
-       vslot("S1", -4.325, -4.18, 0.90, 1.70, 0.60, 1.40),
+       vslot("S1", 4.325, 0.0, 0.90, 2.00, 0.60, 1.70),
        vslot("S2", 4.325, -4.18, 0.90, 1.70, 0.60, 1.40),
-       vslot("S3", -4.325, 0.0, 0.90, 2.00, 0.60, 1.70),
-       vslot("S4", 4.325, 0.0, 0.90, 2.00, 0.60, 1.70),
+       vslot("S3", -4.325, -4.18, 0.90, 1.70, 0.60, 1.40),
+       vslot("S4", -4.325, 0.0, 0.90, 2.00, 0.60, 1.70),
        npth(-2.89, -0.50, 0.60), npth(2.89, -0.50, 0.60)],
     body=(-4.47, -6.78, 4.47, 0.57), marker_pad="A1B12",
-    assumed="The shell slots are unnumbered on the drawing: S1/S2 = front (board-edge, 0.6 x 1.4) "
-            "slots left/right, S3/S4 = rear (0.6 x 1.7) slots left/right.")
+    assumed="The shell slots are unnumbered on the drawing: S1-S4 follow the LCSC/EasyEDA footprint's "
+            "shell pads 1-4 (C165948): S1 rear right, S2 front right, S3 front left, S4 rear left "
+            "(rear 0.6 x 1.7, front 0.6 x 1.4).")
 
 # ---------------------------------------------------------------------- HDMI
 # XFCN HDMI-A-19F-S-D, HDMI type-A receptacle "HDMI A 19P/F SMT+DIP", rev A1,
@@ -108,17 +113,20 @@ HDMI_A = Footprint(
 # Cross-check: the LCSC EasyEDA footprint for C91145 has the same pad order but
 # puts every tab and post 0.10 mm further left of the contacts (Cd to rear-left tab
 # 1.20). The drawing's "1.10" runs to the tab centre, so the drawing values stay.
+# Tab names follow that footprint (design review 2026-11-09, "pads 11-13 are
+# labeled differently"): 10 rear left, 11 front left, 12 front right, 13 rear
+# right, counter-clockwise. All four are one net (GND) on sheet 07.
 TF_01A = Footprint(
     "MICROSD_HRO_TF-01A",
     "HRO TF-01A push-push microSD socket with card detect, SMD",
     row(range(1, 9), 0.0, 0.0, -1.10, 0, 0.70, 1.30)
     + [smd(9, -8.80, 0.0, 0.70, 1.30),
-       smd(10, -9.90, -0.85, 1.20, 1.40), smd(11, 4.78, -0.85, 1.20, 1.40),
-       smd(12, -9.90, -10.55, 1.20, 2.00), smd(13, 5.62, -10.55, 1.20, 2.00),
+       smd(10, -9.90, -0.85, 1.20, 1.40), smd(13, 4.78, -0.85, 1.20, 1.40),
+       smd(11, -9.90, -10.55, 1.20, 2.00), smd(12, 5.62, -10.55, 1.20, 2.00),
        npth(-7.09, -10.84, 1.00), npth(0.91, -10.84, 1.00)],
     body=(-9.59, -14.85, 5.20, -0.35),
-    assumed="'Cd' is pad 9; the unnumbered shell tabs are 10 rear-left and 11 rear-right (1.40 mm), "
-            "12 front-left and 13 front-right (2.00 mm).")
+    assumed="'Cd' is pad 9; the unnumbered shell tabs follow the LCSC/EasyEDA footprint (C91145): "
+            "10 rear-left, 11 front-left, 12 front-right, 13 rear-right.")
 
 # ---------------------------------------------------------------- audio jack
 # Korean Hroparts PJ-320DB (variant -A = 4 contacts + dummy), 3.5 mm SMD jack,

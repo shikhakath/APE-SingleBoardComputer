@@ -98,11 +98,12 @@ RJ45_HANRUN_HR911130A = Footprint(
 #   The EasyEDA footprint puts the contact rows 2.62 apart; the Bossie drawing
 #   (dimension and geometry) gives 2.71, used here.
 #   9-12 = shell pegs: 9 front left, 10 front right, 11 rear left, 12 rear right.
-# Pads: ø0.90 -> 1.5, ø2.30 -> 3.0.
+# Pads: ø0.90 -> 1.5, ø2.30 -> 3.0. VBUS of each port (pads 1 and 5) is square,
+# as the two pin-1 pads of the LCSC/EasyEDA footprint (design review 2026-11-09).
 USBA_2X_BX_TYPE_A_MWC44 = Footprint(
     "USBA_2X_BX-TYPE-A-MWC44",
     "Bossie BX-TYPE-A-MWC44 dual stacked USB 2.0 Type-A receptacle, THT right angle",
-    [tht(n, x, y, 1.5, hole=0.90)
+    [tht(n, x, y, 1.5, hole=0.90, shape="rect" if n in (1, 5) else "round")
      for row, y in (((1, 2, 3, 4), 2.62), ((5, 6, 7, 8), 5.33))
      for n, x in zip(row, (-3.5, -1.0, 1.0, 3.5))]
     + [tht(9, -6.57, 0, 3.0, hole=2.30), tht(10, 6.57, 0, 3.0, hole=2.30),
@@ -218,9 +219,9 @@ SW_TACT_5_1X5_1_SMD4 = Footprint(
 #     column on the pad-row centre line, two at 10.16 (0.400") from it,
 #     +-1.016 (0.040") off the centre line (1.27 right of the pad-7 column).
 # Frame: left hole at (0, 0). The pads are SMD with NO SOLDER PASTE (note 3):
-# footprints.py cannot drop paste per pad, so the board needs a paste rule
-# that removes paste from this footprint's pads (e.g. paste expansion -1 mm,
-# InComponent of TC2070-NL). Layout notes 1-2 and sheet 3: no tracks or vias
+# each pad carries paste "none" (applied by altium/ApeFootprints.pas), so the
+# footprint no longer depends on the board's Paste_TagConnect rule. Layout
+# notes 1-2 and sheet 3: no tracks or vias
 # in the KEEP OUT area = the rectangle between the pad centres, x 1.27..8.89,
 # y -0.635..+0.635 (a via <= 0.3 mm finished hole is allowed in a pad centre
 # or between four pads); no other track within 0.020" (0.51 mm) of a pad.
@@ -233,6 +234,9 @@ TC2070_NL = Footprint(
     + [smd(15 - k, 1.27 * k, 0.635, 0.787, 0.787, "round") for k in range(1, 8)]
     + [npth(0, 0, 0.99), npth(10.16, 1.016, 0.99), npth(10.16, -1.016, 0.99)],
     body=(5.08 - 8.25, -3.0, 5.08 + 8.25, 3.0))
+for _p in TC2070_NL.pads:
+    if _p.name:
+        _p.paste = "none"
 
 # ------------------------------------------------------------ mechanical
 # Wurth WA-SMSI 9774015243R, SMT steel spacer, M2 internal thread, L = 1.5 mm

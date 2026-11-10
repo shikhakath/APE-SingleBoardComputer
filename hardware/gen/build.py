@@ -9,10 +9,12 @@ Run from anywhere (paths are resolved from this file's location):
   python build.py variant           mark the DNP parts Not Fitted in the project variant
   python build.py smoke             build gen/out/smoke.SchDoc: proves the toolchain end to end
   python build.py lib               create the symbols in lib/APE-SBC.SchLib and save it
-  python build.py footprints [--fresh] [NAME ...]
-                                    create the footprints in lib/APE-SBC.PcbLib and save it
+  python build.py footprints [--fresh] [--replace] [NAME ...]
+                                    create the footprints in lib/APE-SBC.PcbLib, set their
+                                    per-pad paste/mask (ApeFootprints) and save it
                                     (--fresh: delete and regenerate the whole library;
-                                    NAME: add only these footprints to an existing one)
+                                    NAME: add only these footprints to an existing one;
+                                    --replace NAME...: delete those first, then recreate)
   python build.py sheet 02_PMIC     build one or more sheets by name
   python build.py sheets            build every sheet
 
@@ -376,7 +378,11 @@ def cmd_lib(names=None):
 def cmd_footprints(args):
     """Create the footprints in lib/APE-SBC.PcbLib (see README section 5)."""
     fresh = "--fresh" in args
+    replace = "--replace" in args
     names = [a for a in args if not a.startswith("--")]
+    if replace and not names:
+        print("--replace needs the footprint names to replace")
+        return False
     fps = footprints.all_footprints()
     if names:
         unknown = sorted(set(names) - {fp.name for fp in fps})
@@ -409,10 +415,21 @@ def cmd_footprints(args):
     OUT.mkdir(exist_ok=True)
     spec = OUT / "footprints_spec.txt"
     spec.write_text(footprints.library_spec(fps, PCBLIB_PATH), encoding="cp1252", errors="replace")
+    if replace and PCBLIB_PATH.exists():
+        ok, rm = footprints.run_fp("RemoveFootprints", f"FPLIB|{PCBLIB_PATH}\n"
+                                   + "".join(f"REMOVE|{fp.name}\n" for fp in fps))
+        print("  RemoveFootprints: " + json.dumps(rm))
+        if not ok:
+            return False
     print(f"creating {len(fps)} footprints in {PCBLIB_PATH}")
     res = mcp("create_footprints_batch", {"spec_file": str(spec)})
     print(json.dumps(res, indent=2)[:2000])
     if not save_docs([("PcbLib", str(PCBLIB_PATH))]):
+        return False
+    # per-pad paste / solder mask (PADMASK records), which the batch tool skips
+    ok, masks = footprints.run_fp("PadMasks", footprints.library_spec(fps, PCBLIB_PATH))
+    print("  PadMasks: " + json.dumps(masks))
+    if not ok:
         return False
     if not names:
         # a new library starts with an empty PCBComponent_1

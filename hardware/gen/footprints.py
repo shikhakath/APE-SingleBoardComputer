@@ -23,12 +23,17 @@ Conventions
   Mechanical 15 (0.05 mm), ``courtyard`` mm around body and pads (default
   0.25); silkscreen on Top Overlay (0.15 mm lines, kept 0.15 mm from copper,
   JLCPCB legend rules) with a pin-1 / cathode / plus marker.
-* Solder mask and paste: the batch tool has no per-pad mask fields, so mask
-  and paste come from the board rules (mask +0.05 mm, SiP lands 0, paste 0;
-  docs/research/bom/jlcpcb-stackup-and-cost.md section 5). Exposed pads whose
-  datasheet shows a windowed stencil carry the windows as fills on Top Paste;
-  the board needs a paste-mask rule that removes those pads' own paste
-  (``paste_rule_query()`` prints the query).
+* Solder mask and paste: by default they come from the board rules (mask
+  +0.05 mm, SiP lands 0, paste 0; docs/research/bom/jlcpcb-stackup-and-cost.md
+  section 5). A pad can override them (``Pad.paste`` / ``Pad.mask``: "none" or
+  a manual expansion in mm). Exposed pads whose datasheet shows a windowed
+  stencil carry the windows as fills on Top Paste, and every pad under such
+  a window gets paste "none" automatically, so the footprint prints the
+  windows on its own, in the library and on any board. create_footprints_batch
+  has no field for these overrides: they are emitted as PADMASK records (which
+  it ignores) and applied by altium/ApeFootprints.pas (``build.py footprints``).
+* Thermal vias: ``Footprint.vias`` (x, y, drill, diameter), through vias
+  inside an exposed pad where the datasheet's example layout shows them.
 
 Altium enums used in the spec (TShape / TExtendedHoleType):
   shape 1 = eRounded (round or oval), 2 = eRectangular, 3 = eOctagonal,
@@ -76,6 +81,8 @@ class Pad:
     slot_rot: float = 0.0      # slot direction (0 = along x)
     plated: bool = True
     corner: int = 50           # roundrect corner radius, % of HALF the shorter side (Altium; 100 = round ends)
+    paste: object = None       # None = board rule, "none" = no paste, float = manual expansion (mm)
+    mask: object = None        # None = board rule, float = manual solder mask expansion (mm)
 
     def bbox(self):
         """Axis-aligned extent of the copper (and hole), any rotation."""
@@ -94,7 +101,7 @@ class Pad:
 
     def moved(self, dx, dy) -> "Pad":
         return Pad(self.name, self.x + dx, self.y + dy, self.w, self.h, self.shape, self.rot,
-                   self.hole, self.slot, self.slot_rot, self.plated, self.corner)
+                   self.hole, self.slot, self.slot_rot, self.plated, self.corner, self.paste, self.mask)
 
 
 @dataclass
@@ -108,6 +115,7 @@ class Footprint:
     marker_at: tuple | None = None  # explicit (x, y) for the dot, authoring frame
     courtyard: float | tuple = 0.25  # margin, or (x1, y1, x2, y2) in the authoring frame
     paste: list = field(default_factory=list)   # (cx, cy, w, h) windows on Top Paste
+    vias: list = field(default_factory=list)    # (x, y, drill, diameter) thermal vias, through
     silk: bool = True
     silk_offset: float = 0.0       # draw the silk outline this far outside the body
     joined: tuple = ()             # groups of pad names that are one piece of package metal
@@ -133,6 +141,18 @@ class Footprint:
 
     def pad_names(self) -> set[str]:
         return {p.name for p in self.pads if p.name}
+
+    def pad_masks(self) -> dict:
+        """{pad name: (paste, mask)} for pads that override the board rules.
+        A pad under a Top Paste window gets paste "none" unless it says otherwise."""
+        windowed = {p.name for p in self.pads for cx, cy, w, h in self.paste
+                    if p.name and p.bbox()[0] <= cx <= p.bbox()[2] and p.bbox()[1] <= cy <= p.bbox()[3]}
+        out = {}
+        for p in self.pads:
+            paste = p.paste if p.paste is not None else ("none" if p.name in windowed else None)
+            if p.name and (paste is not None or p.mask is not None):
+                out.setdefault(p.name, (paste, p.mask))
+        return out
 
     def courtyard_rect(self):
         if isinstance(self.courtyard, tuple):
@@ -278,6 +298,32 @@ class Footprint:
                     break
         if not named:
             out.append("no named pads")
+        masks = self.pad_masks()
+        for p in self.pads:
+            paste = p.paste if p.paste is not None else masks.get(p.name, (None, None))[0]
+            if p.name in masks and (paste, p.mask) != masks[p.name]:
+                out.append(f"pads named {p.name} have different paste/mask settings (applied per name)")
+            for v in (p.paste, p.mask):
+                if v is not None and v != "none" and not isinstance(v, (int, float)):
+                    out.append(f"pad {p.name}: paste/mask must be None, 'none' or mm, not {v!r}")
+        for i, (vx, vy, drill, dia) in enumerate(self.vias):
+            if drill < 0.15 or dia - drill < 0.1 - 1e-9:
+                out.append(f"via {i} at ({vx},{vy}): drill {drill} / pad {dia} below 0.15 / ring 0.05 mm")
+            home = [p for p in self.pads if p.name and not p.hole
+                    and p.bbox()[0] <= vx - dia / 2 and vx + dia / 2 <= p.bbox()[2]
+                    and p.bbox()[1] <= vy - dia / 2 and vy + dia / 2 <= p.bbox()[3]]
+            if not home:
+                out.append(f"via {i} at ({vx},{vy}) is not inside a named SMD pad")
+            for p in self.pads:
+                if p in home:
+                    continue
+                a, b, c, d = p.bbox()
+                gx, gy = max(a - vx, vx - c, 0), max(b - vy, vy - d, 0)
+                if math.hypot(gx, gy) < dia / 2 + 0.1:
+                    out.append(f"via {i} at ({vx},{vy}) is within 0.1 mm of pad {p.name or '(mech)'}")
+            for j, (wx, wy, _, wd) in enumerate(self.vias[i + 1:], i + 1):
+                if math.hypot(vx - wx, vy - wy) < (dia + wd) / 2 + 0.1:
+                    out.append(f"vias {i} and {j} overlap")
         for text in [self.name, self.description] + [p.name for p in self.pads]:
             if "|" in text or not text.isascii():
                 out.append(f"'{text}' must be ASCII without '|' (spec file field)")
@@ -315,8 +361,23 @@ class Footprint:
         for cx, cy, w, h in self.paste:
             out.append(f"FILL|{f(cx - w / 2 - ox)}|{f(cy - h / 2 - oy)}|{f(cx + w / 2 - ox)}|"
                        f"{f(cy + h / 2 - oy)}|0|{L_PASTE}")
+        for vx, vy, drill, dia in self.vias:
+            out.append(f"VIA|{f(vx - ox)}|{f(vy - oy)}|{f(dia)}|{f(drill)}|Bottom Layer|Top Layer")
         out += self.extra
+        # Per-pad paste / mask overrides: create_footprints_batch skips this
+        # record kind; altium/ApeFootprints.pas (PadMasks) applies it. Values in
+        # Altium coordinate units (1 mil = 10000), integers: no decimal parsing.
+        for name, (paste, mask) in self.pad_masks().items():
+            out.append(f"PADMASK|{name}|{_mask_mode(paste)}|{_coord(paste)}|{_mask_mode(mask)}|{_coord(mask)}")
         return out
+
+
+def _coord(v) -> int:
+    return round(v * MIL_PER_MM * 10000) if isinstance(v, (int, float)) else 0
+
+
+def _mask_mode(v) -> str:
+    return "RULE" if v is None else "NONE" if v == "none" else "MANUAL"
 
 
 def _num(v: float) -> str:
@@ -461,6 +522,44 @@ def library_spec(fps, lib_path) -> str:
     return "\n".join(lines) + "\n"
 
 
+def run_fp(proc, job: str, timeout=300):
+    """Run ApeFootprints>proc (altium/ApeFootprints.pas) in the running Altium
+    with ``job`` as ape_fp_job.txt; returns (ok, result dict)."""
+    import json
+    import subprocess
+    import time
+    import build
+    bridge = build.BRIDGE
+    bridge.mkdir(parents=True, exist_ok=True)
+    (bridge / "ape_fp_job.txt").write_text(job, encoding="cp1252", errors="replace")
+    log, res = bridge / "ape_log.txt", bridge / "ape_result.json"
+    for f in (log, res):
+        if f.exists():
+            f.unlink()
+    prj = GEN / "altium" / "ApeFootprints.PrjScr"
+    subprocess.Popen(f'"{build.altium_exe()}" -RScriptingSystem:RunScript(ProjectName="{prj}"'
+                     f'^|ProcName="ApeFootprints>{proc}")', shell=True)
+    start = time.time()
+    while time.time() - start < timeout:
+        # every procedure logs as it starts: no log means the script engine is stuck
+        if time.time() - start > 30 and not log.exists() and not res.exists():
+            return False, {"error": "the script did not start within 30 s (compile error, modal dialog "
+                                    "or stuck script engine): python build.py unwedge",
+                           "dialogs": build.altium_dialogs()}
+        if res.exists():
+            time.sleep(0.3)
+            text = res.read_text(encoding="cp1252", errors="replace")
+            try:
+                data = json.loads(text)
+            except ValueError:
+                return False, {"error": "unreadable result", "raw": text}
+            return bool(data.get("success")), data
+        time.sleep(0.5)
+    last = log.read_text(encoding="cp1252", errors="replace").splitlines()[-1:] if log.exists() else []
+    return False, {"error": f"no result after {timeout} s", "last_log_line": last,
+                   "dialogs": build.altium_dialogs()}
+
+
 def paste_rule_query(fps) -> str:
     """Altium query for the pads whose paste comes from Top Paste windows."""
     terms = []
@@ -597,6 +696,9 @@ def render_png(fp: Footprint, path, scale=None):
             fs = max(8, min(c - a, d - b) * s * 0.5)
             el.append(f'<text x="{X(p.x):.1f}" y="{Y(p.y) + fs / 3:.1f}" font-size="{fs:.0f}" '
                       f'text-anchor="middle" fill="#c00" font-family="Arial">{p.name}</text>')
+    for vx, vy, drill, dia in fp.vias:
+        el.append(f'<circle cx="{X(vx):.1f}" cy="{Y(vy):.1f}" r="{dia * s / 2:.1f}" fill="#555"/>')
+        el.append(f'<circle cx="{X(vx):.1f}" cy="{Y(vy):.1f}" r="{drill * s / 2:.1f}" fill="#fff"/>')
     for pcx, pcy, pw, ph in fp.paste:
         el.append(f'<rect x="{X(pcx - pw / 2):.1f}" y="{Y(pcy + ph / 2):.1f}" width="{pw * s:.1f}" '
                   f'height="{ph * s:.1f}" fill="none" stroke="#f80" stroke-width="2"/>')

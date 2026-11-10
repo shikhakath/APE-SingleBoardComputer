@@ -11,7 +11,10 @@ datasheet's pinout figure: pin 1 top left, counter-clockwise.
 
 TI draws lead corners "(R0.05) TYP"; ``_r05`` sets each lead's roundrect
 corner radius to 0.05 mm (footprints.with_radius).
-Exposed pads are plain rectangles.
+Exposed pads are plain rectangles. Their thermal vias are the "(0.2) TYP VIA"
+positions of each example board layout: 0.2 mm drill, 0.4 mm pad (the board's
+VIA_SIG style), filled and capped by the fab (JLCPCB POFV). The pads under the
+stencil windows print no paste of their own (footprints.Pad.paste).
 """
 from footprints import Footprint, dual, quad, smd, window_grid, with_radius
 
@@ -31,6 +34,11 @@ def _r05(pads):
     return with_radius(pads, R_LEAD)
 
 
+def _vias(*pts, drill=0.2, dia=0.4):
+    """Thermal vias at the example layout's (x, y) positions (package frame)."""
+    return [(x, y, drill, dia) for x, y in pts]
+
+
 # ---------------------------------------------------------------- TPS65219 RSM
 # TI TPS65219 PMIC, RSM0032B VQFN-32 4 x 4 mm, 0.4 mm pitch, exposed pad = 33.
 # Datasheet SLVSGA0D (May 2022, rev. April 2026), repo datasheets/tps65219.pdf,
@@ -41,11 +49,13 @@ def _r05(pads):
 #   ways -> lead centres at +/-1.925; exposed pad (2.8) square.
 # Paste: "RSM0032B EXAMPLE STENCIL DESIGN", p.159: EP 33 as 4X (1.23) square
 #   windows centred (0.715) off both centre lines (77 % coverage); leads 1:1.
+# Vias (p.158): 5X (0.2) at the centre and (1.15) off it on both centre lines.
 VQFN32_RSM_4X4 = Footprint(
     "VQFN32_RSM_4X4", "TI RSM0032B VQFN-32 4x4 mm, 0.4 mm pitch, 2.8 mm exposed pad (TPS65219)",
     _r05(quad(8, 8, 0.4, 3.85, 3.85, 0.55, 0.2)) + [_ep("33", 0, 0, 2.8, 2.8)],
     body=(4.0, 4.0),
-    paste=window_grid(0, 0, 1.23, 1.23, 1.43, 1.43, 2, 2))
+    paste=window_grid(0, 0, 1.23, 1.23, 1.43, 1.43, 2, 2),
+    vias=_vias((0, 0), (0, 1.15), (0, -1.15), (-1.15, 0), (1.15, 0)))
 
 # ---------------------------------------------------------------- TPS25730D REF
 # TI TPS25730D USB-PD sink, REF0038A WQFN-38 6 x 4 mm, two thermal pads.
@@ -75,6 +85,9 @@ VQFN32_RSM_4X4 = Footprint(
 #   windows at x -0.965 +/- 0.695 (= (1.66) / (0.27) from PKG), y +/-(0.69)
 #   (0.685 from the vectors), 78 %; EP 40 2X (1.4) x (1.17) at x (1.56),
 #   y +/-0.685, 80 %. U / E terminals and leads 1:1.
+# Vias (p.65, "(0.2) TYP VIA"): EP 39 five in a cross, x -(2.075), -(0.965),
+#   +(0.145) on SYMM and x -(0.965) at y +/-(1.075); EP 40 three at x (1.56),
+#   y 0 and +/-(1.075).
 _REF = ([_lead(n, -2.925, 1.0 - 0.4 * i, 0.55, 0.2) for i, n in enumerate(range(1, 7))]
         + [_lead(n, -2.4 + 0.4 * i, -1.925, 0.2, 0.55) for i, n in enumerate(range(7, 20))]
         + [_lead(n, 2.925, y, 0.55, 0.2)
@@ -87,6 +100,8 @@ WQFN38_REF_4X6 = Footprint(
     "WQFN38_REF_4X6", "TI REF0038A WQFN-38 6x4 mm, 0.4 mm pitch, GND + DRAIN thermal pads (TPS25730D)",
     _REF, body=(6.0, 4.0),
     paste=window_grid(-0.965, 0, 1.19, 1.17, 1.39, 1.37, 2, 2) + window_grid(1.56, 0, 1.40, 1.17, 0, 1.37, 1, 2),
+    vias=_vias((-2.075, 0), (-0.965, 0), (0.145, 0), (-0.965, 1.075), (-0.965, -1.075),
+               (1.56, 0), (1.56, 1.075), (1.56, -1.075)),
     # the joining bar / spine of each multi-pin terminal is named 21, 24, 32 or 34
     joined=(("20", "21", "22"), ("23", "24", "25"), ("32", "33"), ("34", "35")))
 
@@ -177,11 +192,13 @@ VQFN_HR15_RNM = Footprint(
 #   (0.25), 6X (0.5) pitch, (1.9) between column centres; pad 9 (0.9) x (1.6).
 # Paste: "DSG0008A EXAMPLE STENCIL DESIGN", p.31: pad 9 as two (0.9) x (0.7)
 #   windows centred (0.45) above / below SYMM (87 %); leads 1:1.
+# Vias (p.30): 2X (0.2) on the vertical SYMM line, (0.55) above / below the centre.
 WSON8_DSG_2X2 = Footprint(
     "WSON8_DSG_2X2", "TI DSG0008A WSON-8 2x2 mm, 0.5 mm pitch, 0.9x1.6 mm thermal pad (TPS22965)",
     _r05(dual(8, 0.5, 1.9, 0.5, 0.25)) + [_ep("9", 0, 0, 0.9, 1.6)],
     body=(2.0, 2.0),
-    paste=window_grid(0, 0, 0.9, 0.7, 0, 0.9, 1, 2))
+    paste=window_grid(0, 0, 0.9, 0.7, 0, 0.9, 1, 2),
+    vias=_vias((0, 0.55), (0, -0.55)))
 
 # ---------------------------------------------------------------- TVS2200 DRV
 # TI TVS2200 surge clamp, DRV0006A WSON-6 2 x 2 mm, 0.65 mm pitch, thermal pad = 7.
@@ -193,11 +210,13 @@ WSON8_DSG_2X2 = Footprint(
 #   (0.3), 4X (0.65) pitch, (1.95) between column centres; pad 7 (1) x (1.6).
 # Paste: "DRV0006A EXAMPLE STENCIL DESIGN", p.20: pad 7 as two (1) x (0.7)
 #   windows centred (0.45) above / below SYMM (88 %); leads 1:1.
+# Vias (p.19): 2X (0.2) on the vertical SYMM line, (1.1) apart.
 WSON6_DRV_2X2 = Footprint(
     "WSON6_DRV_2X2", "TI DRV0006A WSON-6 2x2 mm, 0.65 mm pitch, 1.0x1.6 mm thermal pad (TVS2200)",
     _r05(dual(6, 0.65, 1.95, 0.45, 0.3)) + [_ep("7", 0, 0, 1.0, 1.6)],
     body=(2.0, 2.0),
-    paste=window_grid(0, 0, 1.0, 0.7, 0, 0.9, 1, 2))
+    paste=window_grid(0, 0, 1.0, 0.7, 0, 0.9, 1, 2),
+    vias=_vias((0, 0.55), (0, -0.55)))
 
 # ---------------------------------------------------------------- TPS22996 DRL
 # TI TPS22996 dual load switch, DRL0008A SOT-583-8 (SOT-5X3), 0.5 mm pitch, no pad.

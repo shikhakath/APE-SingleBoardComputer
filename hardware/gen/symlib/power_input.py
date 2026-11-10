@@ -18,7 +18,8 @@ from schgen import box
 #   B8 SBU2.
 #   Shell: 4 plated oval slots (two 0.60 x 1.40 front, at the board edge; two
 #   0.60 x 1.70 rear, next to the SMD pads); the drawing does not number them,
-#   so they are S1/S2 (front) and S3/S4 (rear). The two 0.60 mm round holes are non-plated locating posts (no pin).
+#   so S1-S4 follow the LCSC footprint's shell pads 1-4: S1 rear right, S2 front
+#   right, S3 front left, S4 rear left. The two 0.60 mm round holes are non-plated locating posts (no pin).
 TYPE_C_31_M_12 = box("TYPE-C-31-M-12", "USB Type-C receptacle, USB 2.0 16-contact, SMD R/A, 4 THT shell pegs", [
     ("A1B12", "GND", "pas", "L"),
     ("B1A12", "GND", "pas", "L"),

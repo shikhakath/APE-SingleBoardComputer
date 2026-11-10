@@ -217,20 +217,19 @@ The conventions are at the top of `footprints.py`:
 
 ### Board rules the footprints rely on
 
-`create_footprints_batch` has no per-pad mask or paste fields, so the footprints carry copper only. The PCB needs these rules (values from `docs/research/bom/jlcpcb-stackup-and-cost.md` section 5); `build.py pcb rules` creates them (section 11):
+Mask and paste come from these board rules (values from `docs/research/bom/jlcpcb-stackup-and-cost.md` section 5); `build.py pcb rules` creates them (section 11). Pads that need something else carry it in the footprint (`Pad.paste` / `Pad.mask`): every pad under a stencil window prints no paste of its own, the Tag-Connect pads print none, and TFP410 pad 65 has its own mask and paste. `create_footprints_batch` cannot set these, so `build.py footprints` applies them with `altium/ApeFootprints.pas` (PadMasks). The last two paste rules below are therefore only a backstop:
 
 | Rule | Scope | Value |
 |---|---|---|
 | Solder mask expansion | All | 0.05 mm |
 | Solder mask expansion | `InComponent('U1')`: SiP lands, 0.20 mm NSMD | 0 (1:1 opening) |
 | Paste mask expansion | All | 0 |
-| Paste mask expansion | The query that `build.py footprints` prints: exposed and HotRod pads whose stencil is split into windows (the windows are fills on Top Paste) | −2.5 mm, so the pad itself adds no paste |
+| Paste mask expansion | The query that `build.py footprints` prints: exposed and HotRod pads whose stencil is split into windows (the windows are fills on Top Paste) | −2.5 mm (backstop; the pads already print no paste) |
 | Paste mask expansion | `HasFootprint('TC2070-NL')` | −2.5 mm (the Tag-Connect pads stay bare) |
 
 Layout items that are not in the footprints:
 
-- **TFP410 (`HTQFP64_PAP_10X10`):** TI's thermal land is 8.0 × 8.0 mm of GND copper under solder mask with a 5.0 mm opening. Pad 65 is only the opening. Add the 8 mm GND polygon and the 6 × 6 grid of 0.2 mm vias at 1.3 mm pitch.
-- **Exposed pads:** add thermal vias as the TI layouts show.
+- **Thermal vias** are in the footprints (`Footprint.vias`, 0.2 / 0.4 mm at the positions of each TI example layout, including the 36 under TFP410 pad 65, which is TI's 8.0 mm land with a 5.0 mm mask-defined opening). After updating a part from the library, check that its vias took the pad's net.
 - **Murata beads (`FB0402`, `FB0603`):** Murata's lands are mask-defined, so the pad is the opening. Route at least 0.7 mm of copper into each land, or 3.3 mm for the 6 A BLM18SG260.
 - **`USON10_DQA`:** the DQA0010B variant joins pads 3 and 8 (both GND) with a 0.3 mm bar. Draw a GND track between them.
 - **`STANDOFF_WE_9774015243R`:** the copper ring is on both layers (non-plated through-hole pad), and the paste ring is drawn on Top Paste. Check that Altium adds no paste of its own.
@@ -241,12 +240,12 @@ The manufacturer drawings for these parts do not give the pad numbering used her
 
 | Footprint | Parts | Assumed | Item |
 |---|---|---|---|
-| `USB-C_HRO_TYPE-C-31-M-12` | J100, J1500 | Shell slots S1/S2 front (0.6 × 1.4 mm, at the board edge), S3/S4 rear (0.6 × 1.7 mm). The shared pads A1B12, A4B9, B4A9 and B1A12 are as drawn. | B2 |
+| `USB-C_HRO_TYPE-C-31-M-12` | J100, J1500 | Shell slots follow the LCSC footprint's pads 1–4: S1 rear-right, S2 front-right, S3 front-left, S4 rear-left (rear 0.6 × 1.7 mm, front 0.6 × 1.4 mm). The shared pads A1B12, A4B9, B4A9 and B1A12 are as drawn. | B2 |
 | `HDMI_A_XFCN_19F_S_D` | J1000 | Pins 1–19 in HDMI type-A order, pin 1 at +x with the opening down (as on SK-AM62B J5); legs 20–23 | B3 |
 | `JACK_HRO_PJ-320DB` | J1100 | The drawing numbers the pads. Only the contact roles (sleeve, tip, rings) come from its schematic. | B4 |
 | `FPC_TE_1-1734248-5` | J1200 | Both tails of circuit n are pad n; circuit 1 at the right, as drawn | B5 |
 | `B2B_LSM_GB042-34P-H10`, `-30P-H10` | J700, J701 | The LS Mtron catalogue gives geometry but no pin numbers. Numbering: 1–17 along one row and 18–34 back along the other, taken from a third-party flex board with this plug and the ROCK64 / ROCK 3A symbols. There are no hold-down pads, so pins 35–38 / 31–34 were removed from the symbols. | B6 |
-| `MICROSD_HRO_TF-01A` | J702 | Card detect "Cd" = 9; shell tabs 10/11 rear, 12/13 front | B7 |
+| `MICROSD_HRO_TF-01A` | J702 | Card detect "Cd" = 9; shell tabs as the LCSC footprint: 10 rear-left, 11 front-left, 12 front-right, 13 rear-right | B7 |
 | `USBA_2X_BX-TYPE-A-MWC44` | J900 | Pins 1–4 = lower port in the front row, VBUS–D−–D+–GND left to right seen from the front; 5–8 upper port; 9–12 shell | B8 |
 | `M2_KEYE_APCI0085` | J1300 | SMT tabs 76 (left, pin-1 end) and 77 | B9 |
 | `HDR_2X20_P2.54_THT` | J1400 | Raspberry Pi numbering, odd row toward −y, square pin 1 | B10 |
@@ -262,7 +261,7 @@ The pad sizes of `HDR_2X20_P2.54_THT` and `RJ45_HANRUN_HR911130A` were also chos
 1. Write it in the matching `fplib/` module with the source comment. Its name must be the symbol's `footprint=`.
 2. Run `python hardware/gen/footprints.py <module>` until it reports no problems. Render it with `--png` and compare it with the drawing.
 3. Run `python hardware/gen/build.py check`.
-4. In Altium, run `build.py footprints NAME` for a new footprint, or `build.py footprints --fresh` after a change (close the library first).
+4. In Altium, run `build.py footprints NAME` for a new footprint, `build.py footprints --replace NAME ...` after a change (deletes the old copies first), or `build.py footprints --fresh` to rebuild the whole library (close it first). Then update the board's parts from the library.
 
 
 **Layout notes from the footprint check (2026-10-21):** keep vias and copper out from between the pads of the PMIC inductors L200–L202 (Murata DFE252012F: no copper under the coil). Route no tracks between the pads of the 32.768 kHz crystal Y600 (Epson FC-135). Check D101–D103, D902 and LED1600–LED1603 in JLCPCB's placement preview: pad 1 is the anode, matching the symbols, not IPC's cathode-on-pin-1.
@@ -450,3 +449,4 @@ Sources: **SPRSP58C** is `datasheets/am625.pdf`. **SPRAAR7J** is TI's High-Speed
 | `powerplanes.py` | Planner for the L4 and L5 pours, and the power fan-out `fanout.py` uses |
 | `altium/SheetTemplate.SchDoc` | Empty sheet that every build starts from |
 | `altium/ApeScripts.PrjScr`, `altium/ApeScripts.pas` | Altium script project run by `build.py`. Procedures: `Ping`, `SaveDocs`, `CloseDocs`, `NewLib`, `DropDefaultFootprint`, `AddToProject`, `CloseApeProject`, `OpenApeProject`, `BuildSheet`, and for the PCB `PcbOutline`, `PcbStack`, `PcbImpedance`, `PcbImport`, `PcbClear`, `PcbClasses`, `PcbRules`, `PcbReport`, `PcbDrc`, `PcbClearMarkers`. Input and output files are in `C:\Users\Public\altium_mcp\` (`ape_*.txt`, `ape_log.txt`, `ape_result.json`). |
+| `altium/ApeFootprints.PrjScr`, `altium/ApeFootprints.pas` | Script project run by `build.py footprints` (through `footprints.run_fp`): `RemoveFootprints` (for `--replace`) and `PadMasks`, which sets each pad's paste and solder mask expansion from the `PADMASK` records of the footprint spec. Not yet run in Altium. |

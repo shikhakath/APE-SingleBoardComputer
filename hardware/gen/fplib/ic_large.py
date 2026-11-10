@@ -67,19 +67,22 @@ def _span_len(z, g):
 #   Stencil (same page, "Stencil Openings ... 0.125 mm"): leads 1.5 x 0.3 (= land);
 #     centre pad 5.00 x 5.00 at 0.127 mm (table: 0.1 mm 5.59, 0.152 mm 4.56,
 #     0.178 mm 4.23).
-# Pad 65 is the 5.0 x 5.0 solder-mask-defined opening: the tool has no per-pad
-# mask, and an 8.0 mm pad with the board's +0.05 mask rule would expose copper
-# 0.95 mm from the leads. Layout: put an 8.0 x 8.0 GND polygon under pad 65 (it
-# is covered by mask) and the 36 vias (6 x 6, 1.3 mm pitch, d0.2, plugged/capped).
-# Paste: the board rule (0 expansion) gives 5.00 x 5.00 = TI's single opening for a
-# 0.127 mm stencil, so no Top Paste windows; JLCPCB's 0.10-0.12 mm stencil sits
-# between the 5.00 and 5.59 rows, 5.00 is the conservative end.
+# Pad 65 is TI's thermal land as drawn: 8.0 x 8.0 copper with its own solder
+# mask expansion of -1.5 mm, which leaves the 5.0 x 5.0 solder-mask-defined
+# opening, and its own paste expansion of -1.5 mm = TI's single 5.00 x 5.00
+# opening for a 0.127 mm stencil (JLCPCB's 0.10-0.12 mm stencil sits between the
+# 5.00 and 5.59 rows; 5.00 is the conservative end). The 8.0 copper edge is
+# 0.95 mm from the lead lands, under mask. Vias: the 36 x d0.2 "centered on pad"
+# on a 6 x 6 grid at 1.3 pitch (x, y = +-0.65, +-1.95, +-3.25), 0.4 mm pad.
+_PAP_EP = smd("65", 0, 0, 8.0, 8.0, "rect")
+_PAP_EP.mask, _PAP_EP.paste = -1.5, -1.5
+_PAP_GRID = [-3.25, -1.95, -0.65, 0.65, 1.95, 3.25]
 HTQFP64_PAP = Footprint(
     "HTQFP64_PAP_10X10",
-    "TI HTQFP-64 PowerPAD (PAP), 10x10 mm, 0.5 mm pitch, 5.0 mm exposed pad (TFP410)",
-    quad(16, 16, 0.5, 11.4, 11.4, 1.5, 0.3)
-    + [smd("65", 0, 0, 5.0, 5.0, "rect")],
-    body=(10.0, 10.0))
+    "TI HTQFP-64 PowerPAD (PAP), 10x10 mm, 0.5 mm pitch, 8.0 mm thermal land, 5.0 mm mask opening (TFP410)",
+    quad(16, 16, 0.5, 11.4, 11.4, 1.5, 0.3) + [_PAP_EP],
+    body=(10.0, 10.0),
+    vias=[(x, y, 0.2, 0.4) for x in _PAP_GRID for y in _PAP_GRID])
 
 # ------------------------------------------------------------------ TLV320AIC3104
 # TI TLV320AIC3104IRHBR, VQFN-32, package RHB0032E, 5 x 5 mm, 0.5 mm pitch.
@@ -87,8 +90,9 @@ HTQFP64_PAP = Footprint(
 #   PDF p.100 "PACKAGE OUTLINE" RHB0032E 4223442/B 08/2019: body 4.9-5.1, exposed
 #     thermal pad 3.45 +-0.1, pins 1-8 left, 9-16 bottom, 17-24 right, 25-32 top.
 #   PDF p.101 "EXAMPLE BOARD LAYOUT": 32X (0.6) x (0.25) lands, 28X (0.5) pitch,
-#     (4.8) pad-centre span both ways, thermal land (3.45) square = pin 33; optional
-#     d0.2 vias at the centre and +-1.475 on both axes (layout item, not in here).
+#     (4.8) pad-centre span both ways, thermal land (3.45) square = pin 33;
+#     5X (0.2) vias at the centre and +-(1.475) on both axes, all on the stencil
+#     webs (0.4 mm via pads).
 #   PDF p.102 "EXAMPLE STENCIL DESIGN" (0.125 mm stencil): pad 33 split into
 #     4X (1.49) squares centred at (+-0.845, +-0.845) -> pitch 1.69, 0.20 webs;
 #     75 % coverage (4 x 1.49^2 / 3.45^2 = 74.6 %). Lead apertures = land.
@@ -98,7 +102,8 @@ VQFN32_RHB = Footprint(
     quad(8, 8, 0.5, 4.8, 4.8, 0.6, 0.25)
     + [smd("33", 0, 0, 3.45, 3.45, "rect")],
     body=(5.0, 5.0),
-    paste=window_grid(0, 0, 1.49, 1.49, 1.69, 1.69, 2, 2))
+    paste=window_grid(0, 0, 1.49, 1.49, 1.69, 1.69, 2, 2),
+    vias=[(x, y, 0.2, 0.4) for x, y in ((0, 0), (1.475, 0), (-1.475, 0), (0, 1.475), (0, -1.475))])
 
 # ------------------------------------------------------------------ DP83867
 # TI DP83867IS/E/CS (and IR/CR) RGZ, VQFN-48, package RGZ0048B, 7 x 7 mm, 0.5 mm pitch.
@@ -107,8 +112,9 @@ VQFN32_RHB = Footprint(
 #     exposed thermal pad 4.1 +-0.1, pins 1-12 left, 13-24 bottom, 25-36 right,
 #     37-48 top.
 #   PDF p.127 "EXAMPLE BOARD LAYOUT": 48X (0.6) x (0.24) lands, 44X (0.5) pitch,
-#     (6.8) pad-centre span, thermal land (4.1) square = pin 49; optional d0.2 vias
-#     on a 1.115 / 0.685 grid (layout item, not in here).
+#     (6.8) pad-centre span, thermal land (4.1) square = pin 49; 12X (0.2) vias at
+#     x, y = +-(0.685) and +-(0.685 + 1.115) = +-1.80, all 16 grid points except
+#     the four corners, on the stencil webs (0.4 mm via pads).
 #   PDF p.128 "EXAMPLE STENCIL DESIGN" (0.125 mm stencil): pad 49 split into
 #     9X (1.17) squares on a (1.37) pitch, 3 x 3 centred -> 0.20 webs; 73 %
 #     coverage (9 x 1.17^2 / 4.1^2 = 73.3 %). Lead apertures = land.
@@ -119,7 +125,9 @@ VQFN48_RGZ = Footprint(
     quad(12, 12, 0.5, 6.8, 6.8, 0.6, 0.24)
     + [smd("49", 0, 0, 4.1, 4.1, "rect")],
     body=(7.0, 7.0),
-    paste=window_grid(0, 0, 1.17, 1.17, 1.37, 1.37, 3, 3))
+    paste=window_grid(0, 0, 1.17, 1.17, 1.37, 1.37, 3, 3),
+    vias=[(x, y, 0.2, 0.4) for x in (-1.8, -0.685, 0.685, 1.8) for y in (-1.8, -0.685, 0.685, 1.8)
+          if not (abs(x) == 1.8 and abs(y) == 1.8)])
 
 # ------------------------------------------------------------------ FT4232HL
 # FTDI FT4232HL, LQFP-64, 10 x 10 mm body, 0.5 mm pitch, no exposed pad.
